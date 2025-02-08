@@ -1,0 +1,67 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>de.kugidev</groupId>
+    <artifactId>battleoftheuniverse</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>backend</module>
+        <module>frontend</module>
+    </modules>
+
+    <properties>
+        <java.version>23</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>23</maven.compiler.source>
+        <maven.compiler.target>23</maven.compiler.target>
+    </properties>
+
+    <repositories>
+        <!-- Maven Central (wird standardmäßig verwendet, trotzdem hier zur Übersichtlichkeit) -->
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+
+        <!-- Spring Plugins Repository (falls Spring-spezifische Abhängigkeiten benötigt werden) -->
+        <repository>
+            <id>spring-plugins</id>
+            <url>https://repo.spring.io/plugins-release</url>
+        </repository>
+
+        <!-- Node.js Repository (z. B. für Frontend Plugins oder Angular spezifisches Setup) -->
+        <repository>
+            <id>node-repo</id>
+            <url>https://registry.npmjs.org/</url>
+        </repository>
+
+        <!-- Sonatype Snapshots (für experimentelle oder Snapshot-Versionen) -->
+        <repository>
+            <id>sonatype-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <!-- Zusätzlich für Plugins -->
+        <pluginRepository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>spring-plugins</id>
+            <url>https://repo.spring.io/plugins-release</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>
