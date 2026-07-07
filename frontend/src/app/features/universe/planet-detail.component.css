@@ -28,22 +28,18 @@
   color: #e6e8eb;
 }
 
-.error {
-  color: #f87171;
+.dispatch-card {
+  max-width: 420px;
+  margin-bottom: 1.5rem;
 }
 
-.building-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
+.coordinate-inputs {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.cost {
-  color: #94a3b8;
-  font-size: 0.85rem;
+.coordinate-inputs .input {
+  width: 100%;
+  min-width: 0;
 }
 
-.countdown {
-  color: #7dd3fc;
-  font-size: 0.85rem;
-}

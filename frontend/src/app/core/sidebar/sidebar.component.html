@@ -23,6 +23,10 @@
     }
   </div>
 
+  <div class="tree-node">
+    <a class="tree-toggle" routerLink="/research" routerLinkActive="active">Research</a>
+  </div>
+
   @if (isAdmin()) {
     <div class="tree-node">
       <button type="button" class="tree-toggle" (click)="toggleAdmin()">

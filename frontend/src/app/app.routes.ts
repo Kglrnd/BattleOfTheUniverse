@@ -23,6 +23,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/universe/planet-detail.component').then((m) => m.PlanetDetailComponent)
   },
   {
+    path: 'research',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/research/research.component').then((m) => m.ResearchComponent)
+  },
+  {
     path: 'admin/catalog/:type',
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/catalog-editor.component').then((m) => m.CatalogEditorComponent)

@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
         displayName = "Fleet",
-        allowedDependencies = {}
+        allowedDependencies = {"planet", "resource", "catalog", "user", "research"}
 )
 package de.kugi.dev.battleoftheuniverse.fleet;

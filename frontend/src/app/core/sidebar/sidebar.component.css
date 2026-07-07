@@ -33,6 +33,15 @@
   background: var(--color-surface-alt);
 }
 
+a.tree-toggle {
+  text-decoration: none;
+}
+
+a.tree-toggle.active {
+  background: var(--color-surface-alt);
+  color: var(--color-accent);
+}
+
 .chevron {
   display: inline-block;
   transition: transform 0.15s ease;

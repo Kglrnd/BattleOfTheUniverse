@@ -17,7 +17,7 @@
 }
 
 <h2>Buildings</h2>
-<div class="building-grid">
+<div class="card-grid">
   @for (building of buildings(); track building.key) {
     <div class="card building-card">
       <div class="card-header">
@@ -51,3 +51,109 @@
     </div>
   }
 </div>
+
+<h2>Shipyard</h2>
+<div class="card-grid">
+  @for (ship of ships(); track ship.key) {
+    <div class="card building-card">
+      <div class="card-header">
+        <div class="card-title">{{ ship.name }}</div>
+        <div class="card-subtitle">Owned: {{ ship.owned }}</div>
+      </div>
+      <div class="card-content">
+        <p>{{ ship.description }}</p>
+        @if (ship.buildActive) {
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">
+            Building {{ ship.buildingQuantity }} — {{ remainingShipLabel(ship) }}
+          </p>
+        } @else {
+          <p class="cost">
+            Per unit: {{ ship.unitCost.metal }} metal, {{ ship.unitCost.crystal }} crystal,
+            {{ ship.unitCost.deuterium }} deuterium ({{ ship.unitBuildTimeSeconds }}s)
+          </p>
+        }
+      </div>
+      <div class="card-actions">
+        <input #qty type="number" class="input" min="1" value="1" style="width: 4rem" />
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
+          (click)="buildShip(ship, qty.valueAsNumber)"
+        >
+          Build
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<h2>Fleet</h2>
+<div class="card dispatch-card">
+  <div class="card-header">
+    <div class="card-title">Dispatch mission</div>
+    <div class="card-subtitle">Mission type: Colonize</div>
+  </div>
+  <div class="card-content">
+    <div class="field">
+      <label for="dispatch-ship">Ship</label>
+      <select id="dispatch-ship" class="select" #shipSelect>
+        @for (ship of ships(); track ship.key) {
+          <option [value]="ship.key" [disabled]="ship.owned === 0">{{ ship.name }} (owned: {{ ship.owned }})</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="dispatch-qty">Quantity</label>
+      <input id="dispatch-qty" #dispatchQty type="number" class="input" min="1" value="1" style="width: 6rem" />
+    </div>
+    <div class="field">
+      <label>Target coordinates [galaxy:system:position]</label>
+      <div class="coordinate-inputs">
+        <input #targetGalaxy type="number" class="input" min="1" placeholder="Galaxy" />
+        <input #targetSystem type="number" class="input" min="1" placeholder="System" />
+        <input #targetPosition type="number" class="input" min="1" placeholder="Position" />
+      </div>
+    </div>
+  </div>
+  <div class="card-actions">
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="dispatching() || shipsAvailable(shipSelect.value) === 0"
+      (click)="
+        dispatch(
+          shipSelect.value,
+          dispatchQty.valueAsNumber,
+          targetGalaxy.valueAsNumber,
+          targetSystem.valueAsNumber,
+          targetPosition.valueAsNumber
+        )
+      "
+    >
+      Dispatch
+    </button>
+  </div>
+</div>
+
+@if (movements().length > 0) {
+  <div class="card-grid">
+    @for (movement of movements(); track movement.id) {
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-subtitle">{{ movement.missionType }}</div>
+        </div>
+        <div class="card-content">
+          <p class="cost">
+            From planet #{{ movement.originPlanetId }} to
+            [{{ movement.targetGalaxy }}:{{ movement.targetSystem }}:{{ movement.targetPosition }}]
+          </p>
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
+        </div>
+      </div>
+    }
+  </div>
+}

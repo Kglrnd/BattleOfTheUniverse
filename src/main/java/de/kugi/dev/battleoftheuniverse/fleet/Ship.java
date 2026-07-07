@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Domain skeleton only for this pass: a stationed ship stack on a planet. No shipyard
- * queue, movement, or mission logic yet — see the rebuild plan for the intended scope.
+ * A stationed ship stack on a planet. Built up via {@link ShipyardJob}, drawn down
+ * when dispatched on a {@link FleetMovement} (see {@link FleetService}).
  */
 @Entity
 @Table(name = "ships")

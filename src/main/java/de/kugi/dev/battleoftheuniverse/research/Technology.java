@@ -10,8 +10,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Domain skeleton only for this pass: a researched technology level for a user. No
- * research queue/lab-level gating yet — see the rebuild plan for the intended scope.
+ * A researched technology level for a user, built up via {@link ResearchJob}/
+ * {@link ResearchService}. Research is account-wide rather than per-planet, matching
+ * how a single research lab queue benefits every colony.
  */
 @Entity
 @Table(name = "technologies")

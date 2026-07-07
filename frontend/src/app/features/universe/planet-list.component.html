@@ -5,7 +5,7 @@
 } @else if (planets().length === 0) {
   <p>No planets yet.</p>
 } @else {
-  <div class="planet-grid">
+  <div class="card-grid">
     @for (planet of planets(); track planet.id) {
       <div class="card planet-card" [routerLink]="['/universe', planet.id]">
         <div class="card-header">

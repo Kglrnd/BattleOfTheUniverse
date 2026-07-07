@@ -180,3 +180,33 @@ a {
     transform: translateX(350%);
   }
 }
+
+/* Shared page fragments (card grids, status text) reused across planet/research/fleet views */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.cost {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.countdown {
+  color: var(--color-accent);
+  font-size: 0.85rem;
+}
+
+.class-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  color: var(--color-accent);
+  font-size: 0.8rem;
+}

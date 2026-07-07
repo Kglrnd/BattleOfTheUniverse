@@ -6,7 +6,9 @@
       "description": "Foundation for more advanced power generation and weapons.",
       "baseCost": { "metal": 0, "crystal": 800, "deuterium": 400 },
       "costGrowthFactor": 2.0,
-      "baseResearchTimeSeconds": 900
+      "baseResearchTimeSeconds": 900,
+      "driveScope": "NONE",
+      "driveSpeedBonusPerLevel": 0.0
     },
     {
       "key": "laser_technology",
@@ -14,7 +16,9 @@
       "description": "Improves weapon damage output.",
       "baseCost": { "metal": 200, "crystal": 100, "deuterium": 0 },
       "costGrowthFactor": 2.0,
-      "baseResearchTimeSeconds": 600
+      "baseResearchTimeSeconds": 600,
+      "driveScope": "NONE",
+      "driveSpeedBonusPerLevel": 0.0
     },
     {
       "key": "armor_technology",
@@ -22,7 +26,59 @@
       "description": "Strengthens hull plating on all ships.",
       "baseCost": { "metal": 1000, "crystal": 0, "deuterium": 0 },
       "costGrowthFactor": 2.0,
-      "baseResearchTimeSeconds": 600
+      "baseResearchTimeSeconds": 600,
+      "driveScope": "NONE",
+      "driveSpeedBonusPerLevel": 0.0
+    },
+    {
+      "key": "chemical_drive",
+      "name": "Chemical Drive",
+      "description": "Basic thruster technology. Enables travel between positions within a system.",
+      "baseCost": { "metal": 100, "crystal": 50, "deuterium": 0 },
+      "costGrowthFactor": 1.5,
+      "baseResearchTimeSeconds": 60,
+      "driveScope": "SYSTEM",
+      "driveSpeedBonusPerLevel": 0.05
+    },
+    {
+      "key": "ion_drive",
+      "name": "Ion Drive",
+      "description": "Higher-efficiency in-system thruster, faster than chemical propulsion.",
+      "baseCost": { "metal": 500, "crystal": 300, "deuterium": 100 },
+      "costGrowthFactor": 1.6,
+      "baseResearchTimeSeconds": 180,
+      "driveScope": "SYSTEM",
+      "driveSpeedBonusPerLevel": 0.08
+    },
+    {
+      "key": "impulse_drive",
+      "name": "Impulse Drive",
+      "description": "Enables travel between systems within the same galaxy.",
+      "baseCost": { "metal": 2000, "crystal": 1500, "deuterium": 600 },
+      "costGrowthFactor": 1.8,
+      "baseResearchTimeSeconds": 600,
+      "driveScope": "INTER_SYSTEM",
+      "driveSpeedBonusPerLevel": 0.10
+    },
+    {
+      "key": "warp_drive",
+      "name": "Warp Drive",
+      "description": "Advanced inter-system propulsion, significantly faster than impulse drive.",
+      "baseCost": { "metal": 8000, "crystal": 6000, "deuterium": 3000 },
+      "costGrowthFactor": 2.0,
+      "baseResearchTimeSeconds": 1800,
+      "driveScope": "INTER_SYSTEM",
+      "driveSpeedBonusPerLevel": 0.15
+    },
+    {
+      "key": "hyperspace_drive",
+      "name": "Hyperspace Drive",
+      "description": "Folds space itself, enabling travel between galaxies.",
+      "baseCost": { "metal": 20000, "crystal": 15000, "deuterium": 10000 },
+      "costGrowthFactor": 2.2,
+      "baseResearchTimeSeconds": 3600,
+      "driveScope": "GALAXY",
+      "driveSpeedBonusPerLevel": 0.20
     }
   ]
 }

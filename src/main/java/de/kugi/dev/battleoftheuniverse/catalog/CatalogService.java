@@ -67,8 +67,24 @@ public class CatalogService {
         return List.copyOf(shipsByKey.values());
     }
 
+    public ShipDefinition ship(String key) {
+        ShipDefinition definition = shipsByKey.get(key);
+        if (definition == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown ship: " + key);
+        }
+        return definition;
+    }
+
     public List<TechnologyDefinition> technologies() {
         return List.copyOf(technologiesByKey.values());
+    }
+
+    public TechnologyDefinition technology(String key) {
+        TechnologyDefinition definition = technologiesByKey.get(key);
+        if (definition == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown technology: " + key);
+        }
+        return definition;
     }
 
     public ResourceCost costFor(BuildingDefinition definition, int targetLevel) {
@@ -77,6 +93,14 @@ public class CatalogService {
 
     public Duration buildTimeFor(BuildingDefinition definition, int targetLevel) {
         return Duration.ofSeconds((long) definition.baseBuildTimeSeconds() * targetLevel);
+    }
+
+    public ResourceCost costFor(TechnologyDefinition definition, int targetLevel) {
+        return definition.baseCost().scaled(Math.pow(definition.costGrowthFactor(), targetLevel - 1));
+    }
+
+    public Duration researchTimeFor(TechnologyDefinition definition, int targetLevel) {
+        return Duration.ofSeconds((long) definition.baseResearchTimeSeconds() * targetLevel);
     }
 
     /** Resource units produced per hour by a building at the given level. */
