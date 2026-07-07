@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Backend (Spring Boot)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="de.kugi.dev.battleoftheuniverse.BattleOfTheUniverseApplication" />
-    <module name="Battleoftheuniverse" />
+    <module name="battleoftheuniverse" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="de.kugi.dev.battleoftheuniverse.*" />
