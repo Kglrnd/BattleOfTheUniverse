@@ -1,0 +1,15 @@
+game:
+  dev:
+    seed-accounts: true
+    admin:
+      username: admin
+      email: admin@battleoftheuniverse.local
+      password: admin123
+    player:
+      username: player
+      email: player@battleoftheuniverse.local
+      password: player123
+
+logging:
+  level:
+    de.kugi.dev.battleoftheuniverse: DEBUG

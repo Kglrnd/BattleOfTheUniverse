@@ -1,6 +1,8 @@
 spring:
   application:
     name: battleoftheuniverse
+  profiles:
+    default: dev
 
   datasource:
     url: jdbc:h2:file:./data/battleoftheuniverse;AUTO_SERVER=TRUE
@@ -29,7 +31,3 @@ server:
 game:
   cors:
     allowed-origins: http://localhost:4200
-
-logging:
-  level:
-    de.kugi.dev.battleoftheuniverse: DEBUG
