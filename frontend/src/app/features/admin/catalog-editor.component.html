@@ -1,0 +1,25 @@
+<h1>Catalog editor</h1>
+
+<nav class="type-nav">
+  <a routerLink="/admin/catalog/buildings" routerLinkActive="active">Buildings</a>
+  <a routerLink="/admin/catalog/ships" routerLinkActive="active">Ships</a>
+  <a routerLink="/admin/catalog/technologies" routerLinkActive="active">Technologies</a>
+</nav>
+
+@if (schema(); as s) {
+  @if (data(); as d) {
+    <jsonforms [schema]="s" [data]="d" [renderers]="renderers" (dataChange)="onDataChange($event)" />
+
+    <div class="actions">
+      <button mat-flat-button color="primary" [disabled]="saving()" (click)="save()">Save</button>
+      @if (savedMessage()) {
+        <span class="saved">{{ savedMessage() }}</span>
+      }
+      @if (errorMessage()) {
+        <span class="error">{{ errorMessage() }}</span>
+      }
+    </div>
+  }
+} @else {
+  <p>Loading…</p>
+}

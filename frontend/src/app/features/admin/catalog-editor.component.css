@@ -1,0 +1,32 @@
+.type-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.type-nav a {
+  color: #cbd5e1;
+  text-decoration: none;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid transparent;
+}
+
+.type-nav a.active {
+  color: #7dd3fc;
+  border-bottom-color: #7dd3fc;
+}
+
+.actions {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.saved {
+  color: #4ade80;
+}
+
+.error {
+  color: #f87171;
+}

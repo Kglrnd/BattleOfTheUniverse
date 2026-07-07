@@ -1,0 +1,57 @@
+import { Component, inject, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { HttpErrorResponse } from '@angular/common/http';
+
+import { AuthService } from '../../core/auth.service';
+
+@Component({
+  selector: 'app-register',
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  templateUrl: './register.component.html',
+  styleUrl: './auth-form.css'
+})
+export class RegisterComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly submitting = signal(false);
+
+  protected readonly form = this.fb.nonNullable.group({
+    username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
+
+  submit(): void {
+    if (this.form.invalid || this.submitting()) {
+      return;
+    }
+    this.errorMessage.set(null);
+    this.submitting.set(true);
+    const request = this.form.getRawValue();
+    this.auth.register(request).subscribe({
+      next: () => {
+        this.auth.login(request.username, request.password).subscribe({
+          next: () => {
+            this.submitting.set(false);
+            this.router.navigate(['/universe']);
+          },
+          error: () => {
+            this.submitting.set(false);
+            this.router.navigate(['/login']);
+          }
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.submitting.set(false);
+        this.errorMessage.set(err.error?.message ?? 'Registration failed.');
+      }
+    });
+  }
+}

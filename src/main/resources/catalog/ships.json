@@ -1,0 +1,48 @@
+{
+  "ships": [
+    {
+      "key": "light_fighter",
+      "name": "Light Fighter",
+      "description": "Fast, cheap interceptor.",
+      "attack": 50,
+      "defense": 10,
+      "speed": 12500,
+      "cargoCapacity": 50,
+      "baseCost": { "metal": 3000, "crystal": 1000, "deuterium": 0 },
+      "baseBuildTimeSeconds": 300
+    },
+    {
+      "key": "cruiser",
+      "name": "Cruiser",
+      "description": "Balanced mid-tier warship.",
+      "attack": 400,
+      "defense": 270,
+      "speed": 15000,
+      "cargoCapacity": 800,
+      "baseCost": { "metal": 20000, "crystal": 7000, "deuterium": 2000 },
+      "baseBuildTimeSeconds": 1800
+    },
+    {
+      "key": "small_cargo",
+      "name": "Small Cargo Ship",
+      "description": "Basic transport for moving resources between planets.",
+      "attack": 5,
+      "defense": 10,
+      "speed": 10000,
+      "cargoCapacity": 5000,
+      "baseCost": { "metal": 2000, "crystal": 2000, "deuterium": 0 },
+      "baseBuildTimeSeconds": 600
+    },
+    {
+      "key": "colony_ship",
+      "name": "Colony Ship",
+      "description": "Carries the equipment needed to found a new colony.",
+      "attack": 0,
+      "defense": 100,
+      "speed": 2500,
+      "cargoCapacity": 7500,
+      "baseCost": { "metal": 10000, "crystal": 20000, "deuterium": 10000 },
+      "baseBuildTimeSeconds": 3600
+    }
+  ]
+}

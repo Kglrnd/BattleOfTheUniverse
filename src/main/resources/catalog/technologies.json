@@ -1,0 +1,28 @@
+{
+  "technologies": [
+    {
+      "key": "energy_technology",
+      "name": "Energy Technology",
+      "description": "Foundation for more advanced power generation and weapons.",
+      "baseCost": { "metal": 0, "crystal": 800, "deuterium": 400 },
+      "costGrowthFactor": 2.0,
+      "baseResearchTimeSeconds": 900
+    },
+    {
+      "key": "laser_technology",
+      "name": "Laser Technology",
+      "description": "Improves weapon damage output.",
+      "baseCost": { "metal": 200, "crystal": 100, "deuterium": 0 },
+      "costGrowthFactor": 2.0,
+      "baseResearchTimeSeconds": 600
+    },
+    {
+      "key": "armor_technology",
+      "name": "Armor Technology",
+      "description": "Strengthens hull plating on all ships.",
+      "baseCost": { "metal": 1000, "crystal": 0, "deuterium": 0 },
+      "costGrowthFactor": 2.0,
+      "baseResearchTimeSeconds": 600
+    }
+  ]
+}

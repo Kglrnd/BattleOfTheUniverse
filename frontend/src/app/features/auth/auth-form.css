@@ -1,0 +1,22 @@
+.auth-card {
+  max-width: 360px;
+  margin: 3rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.error {
+  color: #f87171;
+  margin: 0 0 0.5rem;
+}
+
+.switch {
+  color: #94a3b8;
+}

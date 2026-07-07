@@ -1,0 +1,21 @@
+<h1>Your planets</h1>
+
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (planets().length === 0) {
+  <p>No planets yet.</p>
+} @else {
+  <div class="planet-grid">
+    @for (planet of planets(); track planet.id) {
+      <mat-card class="planet-card" [routerLink]="['/universe', planet.id]">
+        <mat-card-header>
+          <mat-card-title>{{ planet.name }}</mat-card-title>
+          <mat-card-subtitle>{{ planet.coordinates }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <span class="class-badge">{{ planet.planetClass }}</span>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+}

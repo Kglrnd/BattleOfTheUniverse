@@ -1,0 +1,53 @@
+@if (planet(); as p) {
+  <h1>{{ p.name }}</h1>
+  <p class="coordinates">{{ p.coordinates }} · {{ p.planetClass }}</p>
+}
+
+<div class="resource-bar">
+  @for (resource of resources(); track resource.resourceKey) {
+    <div class="resource">
+      <span class="label">{{ resource.displayName }}</span>
+      <span class="amount">{{ resource.amount }}</span>
+    </div>
+  }
+</div>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+<h2>Buildings</h2>
+<div class="building-grid">
+  @for (building of buildings(); track building.key) {
+    <mat-card class="building-card">
+      <mat-card-header>
+        <mat-card-title>{{ building.name }}</mat-card-title>
+        <mat-card-subtitle>Level {{ building.level }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p>{{ building.description }}</p>
+        @if (building.constructionActive) {
+          <mat-progress-bar mode="indeterminate" />
+          <p class="countdown">Upgrading to level {{ building.level + 1 }} — {{ remainingLabel(building) }}</p>
+        } @else {
+          <p class="cost">
+            Next level: {{ building.nextLevelCost.metal }} metal,
+            {{ building.nextLevelCost.crystal }} crystal,
+            {{ building.nextLevelCost.deuterium }} deuterium
+            ({{ building.nextLevelBuildTimeSeconds }}s)
+          </p>
+        }
+      </mat-card-content>
+      <mat-card-actions>
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="building.constructionActive || hasActiveConstruction() || upgrading() === building.key"
+          (click)="upgrade(building)"
+        >
+          Upgrade
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

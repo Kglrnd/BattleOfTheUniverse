@@ -1,0 +1,47 @@
+import { Component, inject, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+
+import { AuthService } from '../../core/auth.service';
+
+@Component({
+  selector: 'app-login',
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  templateUrl: './login.component.html',
+  styleUrl: './auth-form.css'
+})
+export class LoginComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly submitting = signal(false);
+
+  protected readonly form = this.fb.nonNullable.group({
+    username: ['', Validators.required],
+    password: ['', Validators.required]
+  });
+
+  submit(): void {
+    if (this.form.invalid || this.submitting()) {
+      return;
+    }
+    this.errorMessage.set(null);
+    this.submitting.set(true);
+    const { username, password } = this.form.getRawValue();
+    this.auth.login(username, password).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.router.navigate(['/universe']);
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.errorMessage.set('Invalid username or password.');
+      }
+    });
+  }
+}
