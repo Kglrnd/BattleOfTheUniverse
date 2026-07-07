@@ -1,0 +1,52 @@
+<h1>Research</h1>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+@if (planets().length === 0) {
+  <p>You need at least one planet to fund research.</p>
+}
+
+<div class="card-grid">
+  @for (tech of technologies(); track tech.key) {
+    <div class="card tech-card">
+      <div class="card-header">
+        <div class="card-title">
+          {{ tech.name }}
+          @if (tech.driveScope !== 'NONE') {
+            <span class="class-badge">{{ tech.driveScope }}</span>
+          }
+        </div>
+        <div class="card-subtitle">Level {{ tech.level }}</div>
+      </div>
+      <div class="card-content">
+        <p>{{ tech.description }}</p>
+        @if (tech.researchActive) {
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">Researching level {{ tech.researchTargetLevel }} — {{ remainingLabel(tech) }}</p>
+        } @else {
+          <p class="cost">
+            Next level: {{ tech.nextLevelCost.metal }} metal, {{ tech.nextLevelCost.crystal }} crystal,
+            {{ tech.nextLevelCost.deuterium }} deuterium ({{ tech.nextLevelResearchTimeSeconds }}s)
+          </p>
+        }
+      </div>
+      <div class="card-actions">
+        <select #planetSelect class="select" [disabled]="planets().length === 0">
+          @for (planet of planets(); track planet.id) {
+            <option [value]="planet.id">{{ planet.name }}</option>
+          }
+        </select>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="tech.researchActive || hasActiveResearch() || starting() === tech.key || planets().length === 0"
+          (click)="start(tech, +planetSelect.value)"
+        >
+          Research
+        </button>
+      </div>
+    </div>
+  }
+</div>
