@@ -2,15 +2,14 @@ import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { JsonFormsModule } from '@jsonforms/angular';
-import { JsonFormsAngularMaterialModule, angularMaterialRenderers } from '@jsonforms/angular-material';
 import { JsonSchema } from '@jsonforms/core';
-import { MatButtonModule } from '@angular/material/button';
 
 import { AdminCatalogApiService } from './admin-catalog-api.service';
+import { catalogEditorRenderers } from './renderers';
 
 @Component({
   selector: 'app-catalog-editor',
-  imports: [RouterLink, RouterLinkActive, JsonFormsModule, JsonFormsAngularMaterialModule, MatButtonModule],
+  imports: [RouterLink, RouterLinkActive, JsonFormsModule],
   templateUrl: './catalog-editor.component.html',
   styleUrl: './catalog-editor.component.css'
 })
@@ -18,7 +17,7 @@ export class CatalogEditorComponent {
   private readonly api = inject(AdminCatalogApiService);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly renderers = angularMaterialRenderers;
+  protected readonly renderers = catalogEditorRenderers;
   protected readonly type = signal('buildings');
   protected readonly schema = signal<JsonSchema | undefined>(undefined);
   protected readonly data = signal<unknown>(undefined);

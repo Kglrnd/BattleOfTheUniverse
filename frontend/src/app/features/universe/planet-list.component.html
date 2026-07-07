@@ -7,15 +7,15 @@
 } @else {
   <div class="planet-grid">
     @for (planet of planets(); track planet.id) {
-      <mat-card class="planet-card" [routerLink]="['/universe', planet.id]">
-        <mat-card-header>
-          <mat-card-title>{{ planet.name }}</mat-card-title>
-          <mat-card-subtitle>{{ planet.coordinates }}</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
+      <div class="card planet-card" [routerLink]="['/universe', planet.id]">
+        <div class="card-header">
+          <div class="card-title">{{ planet.name }}</div>
+          <div class="card-subtitle">{{ planet.coordinates }}</div>
+        </div>
+        <div class="card-content">
           <span class="class-badge">{{ planet.planetClass }}</span>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
     }
   </div>
 }

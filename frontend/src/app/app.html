@@ -2,12 +2,8 @@
   <a class="brand" routerLink="/universe">Battle of the Universe</a>
   <nav>
     @if (auth.isAuthenticated()) {
-      <a routerLink="/universe" routerLinkActive="active">Universe</a>
-      @if (auth.isAdmin()) {
-        <a routerLink="/admin/catalog/buildings" routerLinkActive="active">Admin</a>
-      }
       <span class="username">{{ auth.currentUser()?.username }}</span>
-      <button type="button" (click)="logout()">Log out</button>
+      <button type="button" class="btn" (click)="logout()">Log out</button>
     } @else {
       <a routerLink="/login" routerLinkActive="active">Log in</a>
       <a routerLink="/register" routerLinkActive="active">Register</a>
@@ -15,6 +11,11 @@
   </nav>
 </header>
 
-<main>
-  <router-outlet />
-</main>
+<div class="app-shell">
+  @if (auth.isAuthenticated()) {
+    <app-sidebar />
+  }
+  <main>
+    <router-outlet />
+  </main>
+</div>

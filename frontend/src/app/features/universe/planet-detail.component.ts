@@ -1,15 +1,12 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { BuildingView, PlanetView, ResourceView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-detail',
-  imports: [MatCardModule, MatButtonModule, MatProgressBarModule],
+  imports: [],
   templateUrl: './planet-detail.component.html',
   styleUrl: './planet-detail.component.css'
 })

@@ -1,0 +1,43 @@
+<nav class="sidebar-tree" aria-label="Main menu">
+  <div class="tree-node">
+    <button type="button" class="tree-toggle" (click)="toggleUniverse()">
+      <span class="chevron" [class.expanded]="universeExpanded()">▸</span>
+      Universe
+    </button>
+    @if (universeExpanded()) {
+      <ul class="tree-children">
+        <li>
+          <a routerLink="/universe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+            All planets
+          </a>
+        </li>
+        @for (planet of planets(); track planet.id) {
+          <li>
+            <a [routerLink]="['/universe', planet.id]" routerLinkActive="active">
+              <span>{{ planet.name }}</span>
+              <span class="tree-node-meta">{{ planet.coordinates }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  @if (isAdmin()) {
+    <div class="tree-node">
+      <button type="button" class="tree-toggle" (click)="toggleAdmin()">
+        <span class="chevron" [class.expanded]="adminExpanded()">▸</span>
+        Admin
+      </button>
+      @if (adminExpanded()) {
+        <ul class="tree-children">
+          @for (catalog of catalogTypes; track catalog.type) {
+            <li>
+              <a [routerLink]="['/admin/catalog', catalog.type]" routerLinkActive="active">{{ catalog.label }}</a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</nav>

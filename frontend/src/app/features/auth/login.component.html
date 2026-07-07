@@ -2,21 +2,21 @@
   <h1>Log in</h1>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
-    <mat-form-field appearance="outline">
-      <mat-label>Username</mat-label>
-      <input matInput formControlName="username" autocomplete="username" />
-    </mat-form-field>
+    <div class="field">
+      <label for="login-username">Username</label>
+      <input class="input" id="login-username" formControlName="username" autocomplete="username" />
+    </div>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Password</mat-label>
-      <input matInput type="password" formControlName="password" autocomplete="current-password" />
-    </mat-form-field>
+    <div class="field">
+      <label for="login-password">Password</label>
+      <input class="input" id="login-password" type="password" formControlName="password" autocomplete="current-password" />
+    </div>
 
     @if (errorMessage()) {
       <p class="error">{{ errorMessage() }}</p>
     }
 
-    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting()">
+    <button class="btn btn-primary" type="submit" [disabled]="form.invalid || submitting()">
       Log in
     </button>
   </form>

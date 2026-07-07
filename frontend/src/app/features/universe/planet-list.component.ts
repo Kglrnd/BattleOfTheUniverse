@@ -1,13 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 
 import { PlanetView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-list',
-  imports: [RouterLink, MatCardModule],
+  imports: [RouterLink],
   templateUrl: './planet-list.component.html',
   styleUrl: './planet-list.component.css'
 })
