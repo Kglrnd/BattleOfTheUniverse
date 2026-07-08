@@ -119,6 +119,7 @@ export interface DispatchRequest {
   targetGalaxy: number;
   targetSystem: number;
   targetPosition: number;
+  driveKey: string;
 }
 
 export interface FleetMovementView {
@@ -134,7 +135,12 @@ export interface FleetMovementView {
   arrivesAt: string;
 }
 
-export interface TravelTimeView {
+export interface DriveOptionView {
+  key: string;
+  name: string;
+  driveScope: DriveScope;
+  level: number;
+  speedMultiplier: number;
   etaSeconds: number;
 }
 

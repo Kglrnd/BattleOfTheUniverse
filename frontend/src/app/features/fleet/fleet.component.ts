@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatCountdown } from '../../core/countdown';
 import { isAttackMission, missionLabel } from '../../core/fleet-mission';
-import { FleetMissionType, FleetMovementView, PlanetView, ShipyardView } from '../../core/models';
+import { DriveOptionView, FleetMissionType, FleetMovementView, PlanetView, ShipyardView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 import { FleetApiService } from './fleet-api.service';
 
@@ -29,9 +29,10 @@ export class FleetComponent {
   protected readonly queuingShip = signal<string | null>(null);
   protected readonly dispatching = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly eta = signal<number | null>(null);
-  protected readonly etaLoading = signal(false);
-  protected readonly etaError = signal<string | null>(null);
+  protected readonly driveOptions = signal<DriveOptionView[]>([]);
+  protected readonly selectedDriveKey = signal<string | null>(null);
+  protected readonly driveOptionsLoading = signal(false);
+  protected readonly driveOptionsError = signal<string | null>(null);
   /** Bumped every second purely to force countdown text to re-render. */
   protected readonly clockTick = signal(0);
 
@@ -84,13 +85,13 @@ export class FleetComponent {
 
   onOriginChange(id: number): void {
     this.originPlanetId.set(id);
-    this.resetEta();
+    this.resetDriveOptions();
     this.loadShips();
   }
 
   setMissionType(type: FleetMissionType): void {
     this.missionType.set(type);
-    this.resetEta();
+    this.resetDriveOptions();
   }
 
   onTargetPlanetChange(
@@ -108,35 +109,46 @@ export class FleetComponent {
     galaxyInput.value = String(target.galaxy);
     systemInput.value = String(target.system);
     positionInput.value = String(target.position);
-    this.checkEta(shipKey, target.galaxy, target.system, target.position);
+    this.refreshDriveOptions(shipKey, target.galaxy, target.system, target.position);
   }
 
-  checkEta(shipKey: string, galaxy: number, system: number, position: number): void {
+  refreshDriveOptions(shipKey: string, galaxy: number, system: number, position: number): void {
     const originId = this.originPlanetId();
     if (!originId || !shipKey || !galaxy || !system || !position) {
-      this.resetEta();
+      this.resetDriveOptions();
       return;
     }
-    this.etaLoading.set(true);
-    this.etaError.set(null);
-    this.fleetApi.travelTime(originId, shipKey, galaxy, system, position).subscribe({
-      next: (result) => {
-        this.etaLoading.set(false);
-        this.eta.set(result.etaSeconds);
+    this.driveOptionsLoading.set(true);
+    this.driveOptionsError.set(null);
+    this.fleetApi.driveOptions(originId, shipKey, galaxy, system, position).subscribe({
+      next: (options) => {
+        this.driveOptionsLoading.set(false);
+        this.driveOptions.set(options);
+        if (options.length === 0) {
+          this.selectedDriveKey.set(null);
+          this.driveOptionsError.set('No researched drive is capable of this mission.');
+          return;
+        }
+        const stillOffered = options.some((o) => o.key === this.selectedDriveKey());
+        if (!stillOffered) {
+          const fastest = options.reduce((best, o) => (o.etaSeconds < best.etaSeconds ? o : best));
+          this.selectedDriveKey.set(fastest.key);
+        }
       },
       error: (err) => {
-        this.etaLoading.set(false);
-        this.eta.set(null);
-        this.etaError.set(err.error?.message ?? 'Could not compute travel time.');
+        this.driveOptionsLoading.set(false);
+        this.driveOptions.set([]);
+        this.selectedDriveKey.set(null);
+        this.driveOptionsError.set(err.error?.message ?? 'Could not compute drive options.');
       }
     });
   }
 
-  etaLabel(): string {
-    const seconds = this.eta();
-    if (seconds === null) {
-      return '';
-    }
+  selectDrive(key: string): void {
+    this.selectedDriveKey.set(key);
+  }
+
+  formatEta(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
@@ -175,7 +187,18 @@ export class FleetComponent {
 
   dispatch(shipKey: string, quantity: number, galaxy: number, system: number, position: number): void {
     const originId = this.originPlanetId();
-    if (this.dispatching() || !originId || !shipKey || !quantity || quantity < 1 || !galaxy || !system || !position) {
+    const driveKey = this.selectedDriveKey();
+    if (
+      this.dispatching() ||
+      !originId ||
+      !shipKey ||
+      !quantity ||
+      quantity < 1 ||
+      !galaxy ||
+      !system ||
+      !position ||
+      !driveKey
+    ) {
       return;
     }
     this.errorMessage.set(null);
@@ -188,12 +211,13 @@ export class FleetComponent {
         missionType: this.missionType(),
         targetGalaxy: galaxy,
         targetSystem: system,
-        targetPosition: position
+        targetPosition: position,
+        driveKey
       })
       .subscribe({
         next: () => {
           this.dispatching.set(false);
-          this.resetEta();
+          this.resetDriveOptions();
           this.loadShips();
           this.refreshMovements();
         },
@@ -213,9 +237,10 @@ export class FleetComponent {
     return this.countdown(movement.arrivesAt);
   }
 
-  private resetEta(): void {
-    this.eta.set(null);
-    this.etaError.set(null);
+  private resetDriveOptions(): void {
+    this.driveOptions.set([]);
+    this.selectedDriveKey.set(null);
+    this.driveOptionsError.set(null);
   }
 
   private loadShips(): void {

@@ -4,6 +4,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.TechnologyDefinition;
+import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.research.dto.ResearchStartResponse;
 import de.kugi.dev.battleoftheuniverse.research.dto.TechnologyView;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,13 +102,30 @@ public class ResearchService {
     }
 
     /**
-     * The best travel-speed multiplier the user's researched drives grant for a mission
-     * of the given range, or empty if no researched drive reaches that far. A drive's
-     * scope also covers every narrower one, so e.g. a researched GALAXY drive answers
-     * for a same-system hop too — see {@link DriveScope}.
+     * The travel-speed multiplier a specific researched drive grants, or empty if the user
+     * hasn't researched it or its scope doesn't reach far enough. A drive's scope also covers
+     * every narrower one, so e.g. a researched GALAXY drive answers for a same-system hop
+     * too — see {@link DriveScope}.
      */
-    public Optional<Double> speedMultiplierFor(Long userId, DriveScope requiredScope) {
-        double best = -1;
+    public Optional<Double> speedMultiplierForDrive(Long userId, String driveKey, DriveScope requiredScope) {
+        int level = currentLevel(userId, driveKey);
+        if (level <= 0) {
+            return Optional.empty();
+        }
+        TechnologyDefinition definition = catalogService.technology(driveKey);
+        if (definition.driveScope() == DriveScope.NONE || definition.driveScope().ordinal() < requiredScope.ordinal()) {
+            return Optional.empty();
+        }
+        return Optional.of(definition.baseSpeedMultiplier() + definition.driveSpeedBonusPerLevel() * level);
+    }
+
+    /**
+     * Every researched drive the user could pick for a mission of the given range, each with
+     * its own current speed multiplier - lets the player compare and choose rather than the
+     * game silently picking the fastest one for them.
+     */
+    public List<DriveOption> listAvailableDrives(Long userId, DriveScope requiredScope) {
+        List<DriveOption> options = new ArrayList<>();
         for (Technology technology : technologyRepository.findByUserId(userId)) {
             if (technology.getLevel() <= 0) {
                 continue;
@@ -115,10 +134,10 @@ public class ResearchService {
             if (definition.driveScope() == DriveScope.NONE || definition.driveScope().ordinal() < requiredScope.ordinal()) {
                 continue;
             }
-            double multiplier = 1.0 + definition.driveSpeedBonusPerLevel() * technology.getLevel();
-            best = Math.max(best, multiplier);
+            double multiplier = definition.baseSpeedMultiplier() + definition.driveSpeedBonusPerLevel() * technology.getLevel();
+            options.add(new DriveOption(definition.key(), definition.name(), definition.driveScope(), technology.getLevel(), multiplier));
         }
-        return best < 0 ? Optional.empty() : Optional.of(best);
+        return options;
     }
 
     private int currentLevel(Long userId, String technologyKey) {

@@ -13,6 +13,7 @@ public record DispatchRequest(
         @NotNull FleetMissionType missionType,
         @Min(1) int targetGalaxy,
         @Min(1) int targetSystem,
-        @Min(1) int targetPosition
+        @Min(1) int targetPosition,
+        @NotBlank String driveKey
 ) {
 }

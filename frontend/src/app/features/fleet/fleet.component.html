@@ -94,7 +94,7 @@
         id="dispatch-ship"
         class="select"
         #shipSelect
-        (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+        (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
       >
         @for (ship of ships(); track ship.key) {
           <option [value]="ship.key" [disabled]="ship.owned === 0">{{ ship.name }} (owned: {{ ship.owned }})</option>
@@ -136,7 +136,7 @@
             min="1"
             placeholder="Galaxy"
             [readOnly]="missionType() === 'STATION'"
-            (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
         <div class="coordinate-field">
@@ -149,7 +149,7 @@
             min="1"
             placeholder="System"
             [readOnly]="missionType() === 'STATION'"
-            (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
         <div class="coordinate-field">
@@ -162,7 +162,7 @@
             min="1"
             placeholder="Position"
             [readOnly]="missionType() === 'STATION'"
-            (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
       </div>
@@ -173,19 +173,40 @@
       }
     </div>
 
-    @if (etaLoading()) {
-      <p class="field-hint">Calculating flight time…</p>
-    } @else if (etaError()) {
-      <p class="field-error">{{ etaError() }}</p>
-    } @else if (eta() !== null) {
-      <p class="cost">Estimated travel time: {{ etaLabel() }}</p>
+    @if (driveOptionsLoading()) {
+      <p class="field-hint">Calculating drive options…</p>
+    } @else if (driveOptionsError()) {
+      <p class="field-error">{{ driveOptionsError() }}</p>
+    } @else if (driveOptions().length > 0) {
+      <div class="field">
+        <span class="field-label-text">Drive</span>
+        <div class="drive-options">
+          @for (option of driveOptions(); track option.key) {
+            <button
+              type="button"
+              class="drive-option"
+              [class.drive-option-selected]="selectedDriveKey() === option.key"
+              (click)="selectDrive(option.key)"
+            >
+              <span class="drive-option-row">
+                <span class="drive-option-name">{{ option.name }}</span>
+                <span class="class-badge">{{ option.driveScope }}</span>
+              </span>
+              <span class="drive-option-row">
+                <span class="drive-option-detail">Level {{ option.level }} · x{{ option.speedMultiplier.toFixed(2) }} speed</span>
+                <span class="drive-option-eta">ETA {{ formatEta(option.etaSeconds) }}</span>
+              </span>
+            </button>
+          }
+        </div>
+      </div>
     }
   </div>
   <div class="card-actions">
     <button
       type="button"
       class="btn btn-primary"
-      [disabled]="dispatching() || shipsAvailable(shipSelect.value) === 0"
+      [disabled]="dispatching() || shipsAvailable(shipSelect.value) === 0 || !selectedDriveKey()"
       (click)="
         dispatch(
           shipSelect.value,

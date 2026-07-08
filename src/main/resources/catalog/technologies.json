@@ -8,6 +8,7 @@
       "costGrowthFactor": 2.0,
       "baseResearchTimeSeconds": 900,
       "driveScope": "NONE",
+      "baseSpeedMultiplier": 1.0,
       "driveSpeedBonusPerLevel": 0.0
     },
     {
@@ -18,6 +19,7 @@
       "costGrowthFactor": 2.0,
       "baseResearchTimeSeconds": 600,
       "driveScope": "NONE",
+      "baseSpeedMultiplier": 1.0,
       "driveSpeedBonusPerLevel": 0.0
     },
     {
@@ -28,47 +30,52 @@
       "costGrowthFactor": 2.0,
       "baseResearchTimeSeconds": 600,
       "driveScope": "NONE",
+      "baseSpeedMultiplier": 1.0,
       "driveSpeedBonusPerLevel": 0.0
     },
     {
       "key": "chemical_drive",
       "name": "Chemical Drive",
-      "description": "Basic thruster technology. Enables travel between positions within a system.",
+      "description": "Basic thruster technology. Enables travel between positions within a system. Cheap and improves steadily - overtakes the Ion Drive at high levels.",
       "baseCost": { "metal": 100, "crystal": 50, "deuterium": 0 },
       "costGrowthFactor": 1.5,
       "baseResearchTimeSeconds": 60,
       "driveScope": "SYSTEM",
+      "baseSpeedMultiplier": 1.0,
       "driveSpeedBonusPerLevel": 0.05
     },
     {
       "key": "ion_drive",
       "name": "Ion Drive",
-      "description": "Higher-efficiency in-system thruster, faster than chemical propulsion.",
+      "description": "Higher-efficiency in-system thruster. Pricier and faster than the Chemical Drive out of the gate, but improves more slowly per level.",
       "baseCost": { "metal": 500, "crystal": 300, "deuterium": 100 },
       "costGrowthFactor": 1.6,
       "baseResearchTimeSeconds": 180,
       "driveScope": "SYSTEM",
-      "driveSpeedBonusPerLevel": 0.08
+      "baseSpeedMultiplier": 1.3,
+      "driveSpeedBonusPerLevel": 0.03
     },
     {
       "key": "impulse_drive",
       "name": "Impulse Drive",
-      "description": "Enables travel between systems within the same galaxy.",
+      "description": "Enables travel between systems within the same galaxy. Cheap and improves steadily - overtakes the Warp Drive at high levels.",
       "baseCost": { "metal": 2000, "crystal": 1500, "deuterium": 600 },
       "costGrowthFactor": 1.8,
       "baseResearchTimeSeconds": 600,
       "driveScope": "INTER_SYSTEM",
+      "baseSpeedMultiplier": 1.0,
       "driveSpeedBonusPerLevel": 0.10
     },
     {
       "key": "warp_drive",
       "name": "Warp Drive",
-      "description": "Advanced inter-system propulsion, significantly faster than impulse drive.",
+      "description": "Advanced inter-system propulsion. Pricier and faster than the Impulse Drive out of the gate, but improves more slowly per level.",
       "baseCost": { "metal": 8000, "crystal": 6000, "deuterium": 3000 },
       "costGrowthFactor": 2.0,
       "baseResearchTimeSeconds": 1800,
       "driveScope": "INTER_SYSTEM",
-      "driveSpeedBonusPerLevel": 0.15
+      "baseSpeedMultiplier": 1.4,
+      "driveSpeedBonusPerLevel": 0.07
     },
     {
       "key": "hyperspace_drive",
@@ -78,6 +85,7 @@
       "costGrowthFactor": 2.2,
       "baseResearchTimeSeconds": 3600,
       "driveScope": "GALAXY",
+      "baseSpeedMultiplier": 1.0,
       "driveSpeedBonusPerLevel": 0.20
     }
   ]

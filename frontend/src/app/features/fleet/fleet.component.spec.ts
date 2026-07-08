@@ -34,7 +34,7 @@ describe('FleetComponent', () => {
     const fleetApiStub = {
       movements: vi.fn(() => of([] as FleetMovementView[])),
       dispatch: vi.fn(),
-      travelTime: vi.fn()
+      driveOptions: vi.fn(() => of([]))
     };
 
     await TestBed.configureTestingModule({

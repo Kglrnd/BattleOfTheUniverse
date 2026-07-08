@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { DispatchRequest, FleetMovementView, IncomingMovementView, TravelTimeView } from '../../core/models';
+import { DispatchRequest, DriveOptionView, FleetMovementView, IncomingMovementView } from '../../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class FleetApiService {
@@ -20,19 +20,19 @@ export class FleetApiService {
     return this.http.get<IncomingMovementView[]>('/api/fleet/movements/incoming');
   }
 
-  travelTime(
+  driveOptions(
     originPlanetId: number,
     shipKey: string,
     targetGalaxy: number,
     targetSystem: number,
     targetPosition: number
-  ): Observable<TravelTimeView> {
+  ): Observable<DriveOptionView[]> {
     const params = new HttpParams()
       .set('originPlanetId', originPlanetId)
       .set('shipKey', shipKey)
       .set('targetGalaxy', targetGalaxy)
       .set('targetSystem', targetSystem)
       .set('targetPosition', targetPosition);
-    return this.http.get<TravelTimeView>('/api/fleet/travel-time', { params });
+    return this.http.get<DriveOptionView[]>('/api/fleet/drive-options', { params });
   }
 }

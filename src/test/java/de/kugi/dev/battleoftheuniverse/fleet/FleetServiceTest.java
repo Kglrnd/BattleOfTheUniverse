@@ -1,13 +1,16 @@
 package de.kugi.dev.battleoftheuniverse.fleet;
 
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
+import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
+import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
@@ -36,6 +39,7 @@ class FleetServiceTest {
     private static final Long OWNER_ID = 1L;
     private static final Long OTHER_OWNER_ID = 2L;
     private static final Long ORIGIN_ID = 10L;
+    private static final String DRIVE_KEY = "chemical_drive";
 
     @Mock
     private ShipRepository shipRepository;
@@ -60,6 +64,9 @@ class FleetServiceTest {
     private final ShipDefinition colonyShip = new ShipDefinition(
             "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500,
             new ResourceCost(10000, 20000, 10000), 3600);
+    private final ShipDefinition cruiser = new ShipDefinition(
+            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50,
+            new ResourceCost(20000, 7000, 2000), 1800);
 
     @BeforeEach
     void setUp() {
@@ -72,7 +79,7 @@ class FleetServiceTest {
     void dispatchRejectsColonizeWithANonColonyShip() {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.COLONIZE, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -85,7 +92,7 @@ class FleetServiceTest {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
         when(planetService.isColonizable(1, 1, 2)).thenReturn(false);
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -98,11 +105,11 @@ class FleetServiceTest {
         when(planetService.isColonizable(1, 1, 2)).thenReturn(true);
         when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "colony_ship"))
                 .thenReturn(Optional.of(new Ship(ORIGIN_ID, "colony_ship", 1)));
-        when(researchService.speedMultiplierFor(any(), any())).thenReturn(Optional.of(1.0));
+        when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.of(1.0));
         when(catalogService.ship("colony_ship")).thenReturn(colonyShip);
         when(movementRepository.save(any(FleetMovement.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
         service.dispatch(OWNER_ID, request);
 
         var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
@@ -111,11 +118,27 @@ class FleetServiceTest {
     }
 
     @Test
+    void dispatchRejectsAnUnresearchedOrOutOfScopeDrive() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        when(planetService.isColonizable(1, 1, 2)).thenReturn(true);
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "colony_ship"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "colony_ship", 1)));
+        when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.empty());
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Chosen drive");
+        verify(shipRepository, never()).save(any());
+    }
+
+    @Test
     void dispatchRejectsStationWhenNoPlanetExistsAtTheTarget() {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.empty());
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.STATION, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -128,7 +151,7 @@ class FleetServiceTest {
         Planet foreignPlanet = new Planet("Not mine", OTHER_OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(foreignPlanet));
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.STATION, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -141,7 +164,7 @@ class FleetServiceTest {
         Planet ownPlanet = new Planet("Also mine", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(ownPlanet));
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -153,7 +176,7 @@ class FleetServiceTest {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.empty());
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -229,5 +252,23 @@ class FleetServiceTest {
         assertThat(incoming.getFirst().targetPlanetId()).isEqualTo(50L);
         assertThat(incoming.getFirst().targetPlanetName()).isEqualTo("My Homeworld");
         assertThat(incoming.getFirst().originOwnerUsername()).isEqualTo("raider");
+    }
+
+    @Test
+    void listDriveOptionsReturnsEveryEligibleDriveWithItsOwnEta() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(researchService.listAvailableDrives(OWNER_ID, DriveScope.SYSTEM)).thenReturn(List.of(
+                new DriveOption("chemical_drive", "Chemical Drive", DriveScope.SYSTEM, 20, 2.0),
+                new DriveOption("ion_drive", "Ion Drive", DriveScope.SYSTEM, 20, 1.9)
+        ));
+
+        List<DriveOptionView> options = service.listDriveOptions(OWNER_ID, ORIGIN_ID, "cruiser", 1, 1, 3001);
+
+        assertThat(options).hasSize(2);
+        assertThat(options).extracting(DriveOptionView::key).containsExactly("chemical_drive", "ion_drive");
+        DriveOptionView chemical = options.getFirst();
+        assertThat(chemical.speedMultiplier()).isEqualTo(2.0);
+        assertThat(chemical.etaSeconds()).isLessThan(options.get(1).etaSeconds());
     }
 }

@@ -5,6 +5,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
@@ -12,6 +13,7 @@ import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
+import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
@@ -186,7 +188,7 @@ public class FleetService {
                 .filter(s -> s.getQuantity() >= request.quantity())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Not enough ships stationed on this planet"));
 
-        long travelSeconds = previewTravelTimeSeconds(ownerId, origin, request.shipKey(),
+        long travelSeconds = travelSecondsForDrive(ownerId, origin, request.driveKey(), request.shipKey(),
                 request.targetGalaxy(), request.targetSystem(), request.targetPosition());
 
         ship.setQuantity(ship.getQuantity() - request.quantity());
@@ -219,19 +221,35 @@ public class FleetService {
         }
     }
 
-    /** Estimated travel time for a hypothetical dispatch, without actually sending anything. */
-    public long previewTravelTimeSeconds(Long ownerId, Long originPlanetId, String shipKey,
-                                          int targetGalaxy, int targetSystem, int targetPosition) {
+    /**
+     * Every drive the player could pick for a hypothetical dispatch, each with the ETA it
+     * would produce for the given ship - lets the player compare before committing to one via
+     * {@link #dispatch}, without actually sending anything.
+     */
+    public List<DriveOptionView> listDriveOptions(Long ownerId, Long originPlanetId, String shipKey,
+                                                    int targetGalaxy, int targetSystem, int targetPosition) {
         Planet origin = planetService.getOwned(originPlanetId, ownerId);
-        return previewTravelTimeSeconds(ownerId, origin, shipKey, targetGalaxy, targetSystem, targetPosition);
+        DriveScope requiredScope = requiredScope(origin, targetGalaxy, targetSystem);
+        ShipDefinition shipDefinition = catalogService.ship(shipKey);
+
+        return researchService.listAvailableDrives(ownerId, requiredScope).stream()
+                .map(drive -> toDriveOptionView(drive, origin, shipDefinition, targetGalaxy, targetSystem, targetPosition))
+                .toList();
     }
 
-    private long previewTravelTimeSeconds(Long ownerId, Planet origin, String shipKey,
-                                           int targetGalaxy, int targetSystem, int targetPosition) {
+    private DriveOptionView toDriveOptionView(DriveOption drive, Planet origin, ShipDefinition shipDefinition,
+                                               int targetGalaxy, int targetSystem, int targetPosition) {
+        long etaSeconds = travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition,
+                shipDefinition.speed(), drive.speedMultiplier());
+        return new DriveOptionView(drive.key(), drive.name(), drive.driveScope(), drive.level(), drive.speedMultiplier(), etaSeconds);
+    }
+
+    private long travelSecondsForDrive(Long ownerId, Planet origin, String driveKey, String shipKey,
+                                        int targetGalaxy, int targetSystem, int targetPosition) {
         DriveScope requiredScope = requiredScope(origin, targetGalaxy, targetSystem);
-        double driveMultiplier = researchService.speedMultiplierFor(ownerId, requiredScope)
+        double driveMultiplier = researchService.speedMultiplierForDrive(ownerId, driveKey, requiredScope)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
-                        "No researched drive is capable of a " + requiredScope + " mission"));
+                        "Chosen drive is not researched or not capable of a " + requiredScope + " mission"));
 
         ShipDefinition shipDefinition = catalogService.ship(shipKey);
         return travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition, shipDefinition.speed(), driveMultiplier);
