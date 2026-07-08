@@ -47,5 +47,10 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/catalog-editor.component').then((m) => m.CatalogEditorComponent)
   },
+  {
+    path: 'admin/planets',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-planets.component').then((m) => m.AdminPlanetsComponent)
+  },
   { path: '**', redirectTo: 'universe' }
 ];

@@ -1,7 +1,10 @@
 package de.kugi.dev.battleoftheuniverse.planet;
 
+import de.kugi.dev.battleoftheuniverse.planet.dto.AdminPlanetView;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SlotStatus;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SystemView;
+import de.kugi.dev.battleoftheuniverse.user.User;
+import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +19,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,13 +28,15 @@ class PlanetServiceTest {
     @Mock
     private PlanetRepository planetRepository;
     @Mock
+    private UserRepository userRepository;
+    @Mock
     private ApplicationEventPublisher events;
 
     private PlanetService service;
 
     @BeforeEach
     void setUp() {
-        service = new PlanetService(planetRepository, events);
+        service = new PlanetService(planetRepository, userRepository, events);
     }
 
     @Test
@@ -144,5 +150,24 @@ class PlanetServiceTest {
         assertThat(planet.getOwnerId()).isEqualTo(2L);
         assertThat(planet.getPosition()).isEqualTo(position);
         assertThat(planet.isHomeworld()).isFalse();
+    }
+
+    @Test
+    void listAllForAdminResolvesOwnerUsernamesAndFallsBackForUnknownOwners() {
+        Planet ownedPlanet = new Planet("Owned", 1L, 1, 1, 1, PlanetClass.TEMPERATE);
+        Planet orphanedPlanet = new Planet("Orphaned", 99L, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetRepository.findAll()).thenReturn(List.of(ownedPlanet, orphanedPlanet));
+
+        User owner = new User("alice", "alice@example.com", "hash");
+        owner.setId(1L);
+        when(userRepository.findAllById(any())).thenReturn(List.of(owner));
+
+        List<AdminPlanetView> views = service.listAllForAdmin();
+
+        assertThat(views).hasSize(2);
+        assertThat(views).filteredOn(v -> v.name().equals("Owned")).first()
+                .satisfies(v -> assertThat(v.ownerUsername()).isEqualTo("alice"));
+        assertThat(views).filteredOn(v -> v.name().equals("Orphaned")).first()
+                .satisfies(v -> assertThat(v.ownerUsername()).isEqualTo("unknown"));
     }
 }

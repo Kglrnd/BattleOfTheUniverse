@@ -1,7 +1,10 @@
 package de.kugi.dev.battleoftheuniverse.planet;
 
+import de.kugi.dev.battleoftheuniverse.planet.dto.AdminPlanetView;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SystemSlotView;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SystemView;
+import de.kugi.dev.battleoftheuniverse.user.User;
+import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,11 +24,13 @@ import java.util.stream.Collectors;
 public class PlanetService {
 
     private final PlanetRepository planetRepository;
+    private final UserRepository userRepository;
     private final ApplicationEventPublisher events;
     private final SecureRandom random = new SecureRandom();
 
-    public PlanetService(PlanetRepository planetRepository, ApplicationEventPublisher events) {
+    public PlanetService(PlanetRepository planetRepository, UserRepository userRepository, ApplicationEventPublisher events) {
         this.planetRepository = planetRepository;
+        this.userRepository = userRepository;
         this.events = events;
     }
 
@@ -84,6 +89,18 @@ public class PlanetService {
 
     public List<Planet> listMine(Long ownerId) {
         return planetRepository.findByOwnerId(ownerId);
+    }
+
+    /** Every planet in the game, owner username resolved - admin-only, so no owner scoping. */
+    public List<AdminPlanetView> listAllForAdmin() {
+        List<Planet> planets = planetRepository.findAll();
+        Set<Long> ownerIds = planets.stream().map(Planet::getOwnerId).collect(Collectors.toSet());
+        Map<Long, String> usernamesByOwnerId = userRepository.findAllById(ownerIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getUsername));
+
+        return planets.stream()
+                .map(planet -> AdminPlanetView.from(planet, usernamesByOwnerId.getOrDefault(planet.getOwnerId(), "unknown")))
+                .toList();
     }
 
     public Planet getOwned(Long planetId, Long ownerId) {

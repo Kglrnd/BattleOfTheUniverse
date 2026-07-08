@@ -18,6 +18,20 @@ export interface PlanetView {
   homeworld: boolean;
 }
 
+export interface AdminPlanetView {
+  id: number;
+  name: string;
+  ownerId: number;
+  ownerUsername: string;
+  galaxy: number;
+  system: number;
+  position: number;
+  coordinates: string;
+  planetClass: string;
+  homeworld: boolean;
+  createdAt: string;
+}
+
 export interface ResourceView {
   resourceKey: 'METAL' | 'CRYSTAL' | 'DEUTERIUM' | 'ENERGY';
   displayName: string;
