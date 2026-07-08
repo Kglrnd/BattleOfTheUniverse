@@ -241,3 +241,23 @@ a {
 .table tbody tr:hover {
   background: var(--color-surface-alt);
 }
+
+/* Flags an attack-mission fleet movement, wherever it's listed (fleet page, planet views) */
+.card-attack {
+  border-color: var(--color-danger);
+}
+
+.card-attack .card-subtitle {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.badge-attack {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: var(--color-accent-contrast);
+  font-size: 0.75rem;
+  font-weight: 600;
+}

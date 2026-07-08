@@ -7,13 +7,22 @@
 } @else {
   <div class="card-grid">
     @for (planet of planets(); track planet.id) {
-      <div class="card planet-card" [routerLink]="['/universe', planet.id]">
+      <div class="card planet-card" [class.card-attack]="hasIncomingAttack(planet.id)" [routerLink]="['/universe', planet.id]">
         <div class="card-header">
           <div class="card-title">{{ planet.name }}</div>
           <div class="card-subtitle">{{ planet.coordinates }}</div>
         </div>
         <div class="card-content">
           <span class="class-badge">{{ planet.planetClass }}</span>
+          @if (incomingAttackCount(planet.id) > 0) {
+            <span class="badge-attack">⚠ {{ incomingAttackCount(planet.id) }} attack(s) incoming</span>
+          }
+          @if (incomingFriendlyCount(planet.id) > 0) {
+            <span class="class-badge">{{ incomingFriendlyCount(planet.id) }} incoming</span>
+          }
+          @if (outgoingCount(planet.id) > 0) {
+            <span class="class-badge">{{ outgoingCount(planet.id) }} outgoing</span>
+          }
         </div>
       </div>
     }

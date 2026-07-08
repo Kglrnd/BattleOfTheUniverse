@@ -9,6 +9,8 @@ import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import de.kugi.dev.battleoftheuniverse.user.User;
+import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +51,8 @@ class FleetServiceTest {
     private PlanetService planetService;
     @Mock
     private ResearchService researchService;
+    @Mock
+    private UserRepository userRepository;
 
     private FleetService service;
 
@@ -60,7 +64,7 @@ class FleetServiceTest {
     @BeforeEach
     void setUp() {
         service = new FleetService(shipRepository, jobRepository, movementRepository, catalogService,
-                resourceService, planetService, researchService);
+                resourceService, planetService, researchService, userRepository);
         origin.setId(ORIGIN_ID);
     }
 
@@ -132,6 +136,31 @@ class FleetServiceTest {
     }
 
     @Test
+    void dispatchRejectsAttackingYourOwnPlanet() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet ownPlanet = new Planet("Also mine", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(ownPlanet));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("own planet");
+    }
+
+    @Test
+    void dispatchRejectsAttackWhenNoPlanetExistsAtTheTarget() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.empty());
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("No planet");
+    }
+
+    @Test
     void completeDueMissionsFoundsAColonyForADueColonizeMovement() {
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, "colony_ship", 1, FleetMissionType.COLONIZE,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
@@ -159,5 +188,46 @@ class FleetServiceTest {
         verify(shipRepository).save(shipCaptor.capture());
         assertThat(shipCaptor.getValue().getQuantity()).isEqualTo(7);
         verify(movementRepository).delete(movement);
+    }
+
+    @Test
+    void completeDueMissionsReturnsShipsToTheOriginForADueAttackMovement() {
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, "cruiser", 5, FleetMissionType.ATTACK,
+                9, 9, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
+        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser")).thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 10)));
+
+        service.completeDueMissions();
+
+        var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
+        verify(shipRepository).save(shipCaptor.capture());
+        assertThat(shipCaptor.getValue().getPlanetId()).isEqualTo(ORIGIN_ID);
+        assertThat(shipCaptor.getValue().getQuantity()).isEqualTo(15);
+        verify(movementRepository).delete(movement);
+    }
+
+    @Test
+    void listIncomingReturnsOnlyMovementsTargetingMyPlanetsWithResolvedNames() {
+        Planet myPlanet = new Planet("My Homeworld", OWNER_ID, 3, 7, 4, PlanetClass.TEMPERATE);
+        myPlanet.setId(50L);
+        when(planetService.listMine(OWNER_ID)).thenReturn(List.of(myPlanet));
+
+        FleetMovement attackOnMe = new FleetMovement(99L, OTHER_OWNER_ID, "cruiser", 5, FleetMissionType.ATTACK,
+                3, 7, 4, Instant.now(), Instant.now().plusSeconds(60));
+        FleetMovement unrelatedMovement = new FleetMovement(77L, OTHER_OWNER_ID, "cruiser", 2, FleetMissionType.STATION,
+                1, 1, 1, Instant.now(), Instant.now().plusSeconds(60));
+        when(movementRepository.findAll()).thenReturn(List.of(attackOnMe, unrelatedMovement));
+
+        User attacker = new User("raider", "raider@example.com", "hash");
+        attacker.setId(OTHER_OWNER_ID);
+        when(userRepository.findAllById(any())).thenReturn(List.of(attacker));
+
+        List<de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView> incoming = service.listIncoming(OWNER_ID);
+
+        assertThat(incoming).hasSize(1);
+        assertThat(incoming.getFirst().missionType()).isEqualTo(FleetMissionType.ATTACK);
+        assertThat(incoming.getFirst().targetPlanetId()).isEqualTo(50L);
+        assertThat(incoming.getFirst().targetPlanetName()).isEqualTo("My Homeworld");
+        assertThat(incoming.getFirst().originOwnerUsername()).isEqualTo("raider");
     }
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatCountdown } from '../../core/countdown';
+import { isAttackMission, missionLabel } from '../../core/fleet-mission';
 import { FleetMissionType, FleetMovementView, PlanetView, ShipyardView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 import { FleetApiService } from './fleet-api.service';
@@ -33,6 +34,9 @@ export class FleetComponent {
   protected readonly etaError = signal<string | null>(null);
   /** Bumped every second purely to force countdown text to re-render. */
   protected readonly clockTick = signal(0);
+
+  protected readonly missionLabel = missionLabel;
+  protected readonly isAttackMission = isAttackMission;
 
   constructor() {
     this.api.listPlanets().subscribe((planets) => {
@@ -198,10 +202,6 @@ export class FleetComponent {
           this.errorMessage.set(err.error?.message ?? 'Dispatch failed.');
         }
       });
-  }
-
-  missionLabel(type: FleetMissionType): string {
-    return type === 'COLONIZE' ? 'Colonizing' : 'Stationing';
   }
 
   originLabel(planetId: number): string {

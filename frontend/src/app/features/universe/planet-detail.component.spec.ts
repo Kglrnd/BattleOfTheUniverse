@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 
-import { BuildingView, PlanetView, ResourceView } from '../../core/models';
+import { BuildingView, FleetMovementView, IncomingMovementView, PlanetView, ResourceView } from '../../core/models';
+import { FleetApiService } from '../fleet/fleet-api.service';
 import { PlanetDetailComponent } from './planet-detail.component';
 import { UniverseApiService } from './universe-api.service';
 
@@ -32,11 +33,16 @@ describe('PlanetDetailComponent', () => {
       getResources: vi.fn(() => of([] as ResourceView[])),
       getBuildings: vi.fn(() => of([] as BuildingView[]))
     };
+    const fleetApiStub = {
+      movements: vi.fn(() => of([] as FleetMovementView[])),
+      incomingMovements: vi.fn(() => of([] as IncomingMovementView[]))
+    };
 
     await TestBed.configureTestingModule({
       imports: [PlanetDetailComponent],
       providers: [
         { provide: UniverseApiService, useValue: apiStub as unknown as UniverseApiService },
+        { provide: FleetApiService, useValue: fleetApiStub as unknown as FleetApiService },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: paramMap$, snapshot: { paramMap: convertToParamMap({ id: '1' }) } }

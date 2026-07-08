@@ -3,7 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatCountdown } from '../../core/countdown';
-import { BuildingView, PlanetView, ResourceView } from '../../core/models';
+import { isAttackMission, missionLabel } from '../../core/fleet-mission';
+import { BuildingView, FleetMovementView, IncomingMovementView, PlanetView, ResourceView } from '../../core/models';
+import { FleetApiService } from '../fleet/fleet-api.service';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
@@ -14,6 +16,7 @@ import { UniverseApiService } from './universe-api.service';
 })
 export class PlanetDetailComponent {
   private readonly api = inject(UniverseApiService);
+  private readonly fleetApi = inject(FleetApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -27,10 +30,15 @@ export class PlanetDetailComponent {
   protected readonly planet = signal<PlanetView | null>(null);
   protected readonly resources = signal<ResourceView[]>([]);
   protected readonly buildings = signal<BuildingView[]>([]);
+  protected readonly outgoingMovements = signal<FleetMovementView[]>([]);
+  protected readonly incomingMovements = signal<IncomingMovementView[]>([]);
   protected readonly upgrading = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   /** Bumped every second purely to force the countdown text to re-render. */
   protected readonly clockTick = signal(0);
+
+  protected readonly missionLabel = missionLabel;
+  protected readonly isAttackMission = isAttackMission;
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -52,6 +60,12 @@ export class PlanetDetailComponent {
   private refresh(): void {
     this.api.getResources(this.planetId).subscribe((resources) => this.resources.set(resources));
     this.api.getBuildings(this.planetId).subscribe((buildings) => this.buildings.set(buildings));
+    this.fleetApi.movements().subscribe((movements) => {
+      this.outgoingMovements.set(movements.filter((m) => m.originPlanetId === this.planetId));
+    });
+    this.fleetApi.incomingMovements().subscribe((movements) => {
+      this.incomingMovements.set(movements.filter((m) => m.targetPlanetId === this.planetId));
+    });
   }
 
   upgrade(building: BuildingView): void {
@@ -78,6 +92,10 @@ export class PlanetDetailComponent {
 
   remainingLabel(building: BuildingView): string {
     return this.countdown(building.constructionEndsAt);
+  }
+
+  remainingMovementLabel(movement: FleetMovementView | IncomingMovementView): string {
+    return this.countdown(movement.arrivesAt);
   }
 
   private countdown(endsAt: string | null): string {

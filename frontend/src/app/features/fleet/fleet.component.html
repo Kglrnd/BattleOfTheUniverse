@@ -77,7 +77,14 @@
         >
           Station
         </button>
-        <button type="button" class="btn" disabled title="Combat is not implemented yet">Attack (coming soon)</button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="missionType() === 'ATTACK'"
+          (click)="setMissionType('ATTACK')"
+        >
+          Attack
+        </button>
       </div>
     </div>
 
@@ -161,6 +168,8 @@
       </div>
       @if (missionType() === 'COLONIZE') {
         <p class="field-hint">Only colony ships can found a colony. Find a free slot in <a routerLink="/universe/system">System view</a>.</p>
+      } @else if (missionType() === 'ATTACK') {
+        <p class="field-hint">Enter the coordinates of another player's planet. There's no combat yet - the fleet returns home on arrival.</p>
       }
     </div>
 
@@ -198,7 +207,7 @@
 } @else {
   <div class="card-grid">
     @for (movement of movements(); track movement.id) {
-      <div class="card">
+      <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
         <div class="card-header">
           <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
           <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>

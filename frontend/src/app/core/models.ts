@@ -109,7 +109,7 @@ export interface ResearchStartResponse {
   endsAt: string;
 }
 
-export type FleetMissionType = 'COLONIZE' | 'STATION';
+export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK';
 
 export interface DispatchRequest {
   originPlanetId: number;
@@ -136,6 +136,19 @@ export interface FleetMovementView {
 
 export interface TravelTimeView {
   etaSeconds: number;
+}
+
+export interface IncomingMovementView {
+  id: number;
+  shipKey: string;
+  quantity: number;
+  missionType: FleetMissionType;
+  originPlanetId: number;
+  originOwnerUsername: string;
+  targetPlanetId: number;
+  targetPlanetName: string;
+  departedAt: string;
+  arrivesAt: string;
 }
 
 export type SlotStatus = 'OCCUPIED' | 'FREE' | 'VOID';

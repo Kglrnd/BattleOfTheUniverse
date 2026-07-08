@@ -2,6 +2,7 @@ package de.kugi.dev.battleoftheuniverse.fleet;
 
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.TravelTimeView;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
 import jakarta.validation.Valid;
@@ -34,6 +35,11 @@ public class FleetMissionController {
     @GetMapping("/movements")
     public List<FleetMovementView> movements(@AuthenticationPrincipal AppUserPrincipal principal) {
         return fleetService.listMovements(principal.getId());
+    }
+
+    @GetMapping("/movements/incoming")
+    public List<IncomingMovementView> incomingMovements(@AuthenticationPrincipal AppUserPrincipal principal) {
+        return fleetService.listIncoming(principal.getId());
     }
 
     @GetMapping("/travel-time")

@@ -20,6 +20,45 @@
   <p class="error">{{ errorMessage() }}</p>
 }
 
+@if (incomingMovements().length > 0) {
+  <h2>Incoming fleets</h2>
+  <div class="card-grid">
+    @for (movement of incomingMovements(); track movement.id) {
+      <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
+        <div class="card-header">
+          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-subtitle">{{ missionLabel(movement.missionType) }} · {{ movement.originOwnerUsername }}</div>
+        </div>
+        <div class="card-content">
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (outgoingMovements().length > 0) {
+  <h2>Outgoing fleets</h2>
+  <div class="card-grid">
+    @for (movement of outgoingMovements(); track movement.id) {
+      <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
+        <div class="card-header">
+          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
+        </div>
+        <div class="card-content">
+          <p class="cost">
+            To [{{ movement.targetGalaxy }}:{{ movement.targetSystem }}:{{ movement.targetPosition }}]
+          </p>
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
+        </div>
+      </div>
+    }
+  </div>
+}
+
 <h2>Buildings</h2>
 <div class="card-grid">
   @for (building of buildings(); track building.key) {

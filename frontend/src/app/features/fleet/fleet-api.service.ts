@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { DispatchRequest, FleetMovementView, TravelTimeView } from '../../core/models';
+import { DispatchRequest, FleetMovementView, IncomingMovementView, TravelTimeView } from '../../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class FleetApiService {
@@ -14,6 +14,10 @@ export class FleetApiService {
 
   movements(): Observable<FleetMovementView[]> {
     return this.http.get<FleetMovementView[]>('/api/fleet/movements');
+  }
+
+  incomingMovements(): Observable<IncomingMovementView[]> {
+    return this.http.get<IncomingMovementView[]>('/api/fleet/movements/incoming');
   }
 
   travelTime(

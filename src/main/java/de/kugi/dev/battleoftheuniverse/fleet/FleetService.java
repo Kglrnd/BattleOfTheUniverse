@@ -6,12 +6,15 @@ import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import de.kugi.dev.battleoftheuniverse.user.User;
+import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class FleetService {
@@ -42,11 +49,12 @@ public class FleetService {
     private final ResourceService resourceService;
     private final PlanetService planetService;
     private final ResearchService researchService;
+    private final UserRepository userRepository;
 
     public FleetService(ShipRepository shipRepository, ShipyardJobRepository jobRepository,
                          FleetMovementRepository movementRepository, CatalogService catalogService,
                          ResourceService resourceService, PlanetService planetService,
-                         ResearchService researchService) {
+                         ResearchService researchService, UserRepository userRepository) {
         this.shipRepository = shipRepository;
         this.jobRepository = jobRepository;
         this.movementRepository = movementRepository;
@@ -54,6 +62,7 @@ public class FleetService {
         this.resourceService = resourceService;
         this.planetService = planetService;
         this.researchService = researchService;
+        this.userRepository = userRepository;
     }
 
     public List<ShipyardView> listForPlanet(Long planetId) {
@@ -127,6 +136,42 @@ public class FleetService {
                 .toList();
     }
 
+    /** Every in-flight movement (sent by anyone) currently headed for one of this player's own planets. */
+    public List<IncomingMovementView> listIncoming(Long ownerId) {
+        Map<String, Planet> myPlanetsByCoordinates = planetService.listMine(ownerId).stream()
+                .collect(Collectors.toMap(FleetService::coordinateKey, Function.identity()));
+        if (myPlanetsByCoordinates.isEmpty()) {
+            return List.of();
+        }
+
+        List<FleetMovement> incoming = movementRepository.findAll().stream()
+                .filter(m -> myPlanetsByCoordinates.containsKey(coordinateKey(m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition())))
+                .toList();
+
+        Set<Long> senderIds = incoming.stream().map(FleetMovement::getOwnerId).collect(Collectors.toSet());
+        Map<Long, String> usernamesBySenderId = userRepository.findAllById(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getUsername));
+
+        return incoming.stream()
+                .map(m -> {
+                    Planet target = myPlanetsByCoordinates.get(coordinateKey(m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition()));
+                    return new IncomingMovementView(
+                            m.getId(), m.getShipKey(), m.getQuantity(), m.getMissionType(),
+                            m.getOriginPlanetId(), usernamesBySenderId.getOrDefault(m.getOwnerId(), "unknown"),
+                            target.getId(), target.getName(), m.getDepartedAt(), m.getArrivesAt()
+                    );
+                })
+                .toList();
+    }
+
+    private static String coordinateKey(Planet planet) {
+        return coordinateKey(planet.getGalaxy(), planet.getSystem(), planet.getPosition());
+    }
+
+    private static String coordinateKey(int galaxy, int system, int position) {
+        return galaxy + ":" + system + ":" + position;
+    }
+
     @Transactional
     public FleetMovementView dispatch(Long ownerId, DispatchRequest request) {
         Planet origin = planetService.getOwned(request.originPlanetId(), ownerId);
@@ -168,6 +213,7 @@ public class FleetService {
                         "Colony [%d:%d:%d]".formatted(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition()),
                         movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition());
                 case STATION -> stationShips(movement);
+                case ATTACK -> returnFleetToOrigin(movement);
             }
             movementRepository.delete(movement);
         }
@@ -208,15 +254,31 @@ public class FleetService {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Can only station fleets at your own planets");
                 }
             }
+            case ATTACK -> {
+                Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                if (target.getOwnerId().equals(ownerId)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot attack your own planet");
+                }
+            }
         }
     }
 
     private void stationShips(FleetMovement movement) {
         Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
                 .orElseThrow(() -> new IllegalStateException("Station target planet no longer exists"));
-        Ship ship = shipRepository.findByPlanetIdAndShipKey(target.getId(), movement.getShipKey())
-                .orElseGet(() -> new Ship(target.getId(), movement.getShipKey(), 0));
-        ship.setQuantity(ship.getQuantity() + movement.getQuantity());
+        creditShips(target.getId(), movement.getShipKey(), movement.getQuantity());
+    }
+
+    /** No combat resolution exists yet, so an attack fleet just turns around empty-handed. */
+    private void returnFleetToOrigin(FleetMovement movement) {
+        creditShips(movement.getOriginPlanetId(), movement.getShipKey(), movement.getQuantity());
+    }
+
+    private void creditShips(Long planetId, String shipKey, int quantity) {
+        Ship ship = shipRepository.findByPlanetIdAndShipKey(planetId, shipKey)
+                .orElseGet(() -> new Ship(planetId, shipKey, 0));
+        ship.setQuantity(ship.getQuantity() + quantity);
         shipRepository.save(ship);
     }
 
