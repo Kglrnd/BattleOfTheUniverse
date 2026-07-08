@@ -46,6 +46,9 @@
           <li>
             <a routerLink="/admin/planets" routerLinkActive="active">Planets</a>
           </li>
+          <li>
+            <a routerLink="/admin/users" routerLinkActive="active">Users</a>
+          </li>
           @for (catalog of catalogTypes; track catalog.type) {
             <li>
               <a [routerLink]="['/admin/catalog', catalog.type]" routerLinkActive="active">{{ catalog.label }}</a>

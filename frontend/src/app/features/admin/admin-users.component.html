@@ -1,0 +1,51 @@
+<h1>Users</h1>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (users().length === 0) {
+  <p>No users found.</p>
+} @else {
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Active</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              @if (user.id === currentUserId) {
+                <span title="You cannot change your own role">{{ user.role }}</span>
+              } @else {
+                <select
+                  class="select role-select"
+                  [ngModel]="user.role"
+                  [disabled]="savingUserId() === user.id"
+                  (ngModelChange)="changeRole(user, $event)"
+                >
+                  @for (role of roles; track role) {
+                    <option [value]="role">{{ role }}</option>
+                  }
+                </select>
+              }
+            </td>
+            <td>{{ user.active ? 'Yes' : 'No' }}</td>
+            <td>{{ formatCreatedAt(user.createdAt) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

@@ -1,10 +1,19 @@
-export type Role = 'PLAYER' | 'ADMIN';
+export type Role = 'PLAYER' | 'MODERATOR' | 'ADMIN';
 
 export interface UserView {
   id: number;
   username: string;
   email: string | null;
   role: Role;
+}
+
+export interface AdminUserView {
+  id: number;
+  username: string;
+  email: string;
+  role: Role;
+  active: boolean;
+  createdAt: string;
 }
 
 export interface PlanetView {
