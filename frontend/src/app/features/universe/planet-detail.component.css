@@ -28,18 +28,3 @@
   color: #e6e8eb;
 }
 
-.dispatch-card {
-  max-width: 420px;
-  margin-bottom: 1.5rem;
-}
-
-.coordinate-inputs {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.coordinate-inputs .input {
-  width: 100%;
-  min-width: 0;
-}
-

@@ -12,6 +12,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,6 +39,26 @@ public class PlanetService {
         return createPlanet(ownerId, name, false);
     }
 
+    /** Founds a colony at an exact, previously-scouted position - used when a colonize mission arrives. */
+    @Transactional
+    public Planet createColonyPlanetAt(Long ownerId, String name, int galaxy, int system, int position) {
+        if (!isColonizable(galaxy, system, position)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Target position can no longer be colonized");
+        }
+        return place(ownerId, name, galaxy, system, position, false);
+    }
+
+    /** In bounds, on a usable slot, and not already occupied. */
+    public boolean isColonizable(int galaxy, int system, int position) {
+        return SystemLayout.isInBounds(galaxy, system)
+                && SystemLayout.usablePositions(galaxy, system).contains(position)
+                && planetRepository.findByGalaxyAndSystemAndPosition(galaxy, system, position).isEmpty();
+    }
+
+    public Optional<Planet> findAtPosition(int galaxy, int system, int position) {
+        return planetRepository.findByGalaxyAndSystemAndPosition(galaxy, system, position);
+    }
+
     private Planet createPlanet(Long ownerId, String name, boolean homeworld) {
         int galaxy;
         int system;
@@ -49,6 +70,10 @@ public class PlanetService {
             position = usable.get(random.nextInt(usable.size()));
         } while (planetRepository.existsByGalaxyAndSystemAndPosition(galaxy, system, position));
 
+        return place(ownerId, name, galaxy, system, position, homeworld);
+    }
+
+    private Planet place(Long ownerId, String name, int galaxy, int system, int position, boolean homeworld) {
         Planet planet = new Planet(name, ownerId, galaxy, system, position, PlanetClass.TEMPERATE);
         planet.setHomeworld(homeworld);
         planet = planetRepository.save(planet);

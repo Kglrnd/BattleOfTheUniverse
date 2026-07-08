@@ -12,7 +12,6 @@ import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +32,9 @@ public class FleetService {
     private static final long SYSTEM_STEP = 1_000;
     private static final long POSITION_STEP = 100;
 
+    /** Only this ship can found a colony - matches the "colony_ship" entry in the ship catalog. */
+    private static final String COLONY_SHIP_KEY = "colony_ship";
+
     private final ShipRepository shipRepository;
     private final ShipyardJobRepository jobRepository;
     private final FleetMovementRepository movementRepository;
@@ -40,12 +42,11 @@ public class FleetService {
     private final ResourceService resourceService;
     private final PlanetService planetService;
     private final ResearchService researchService;
-    private final ApplicationEventPublisher events;
 
     public FleetService(ShipRepository shipRepository, ShipyardJobRepository jobRepository,
                          FleetMovementRepository movementRepository, CatalogService catalogService,
                          ResourceService resourceService, PlanetService planetService,
-                         ResearchService researchService, ApplicationEventPublisher events) {
+                         ResearchService researchService) {
         this.shipRepository = shipRepository;
         this.jobRepository = jobRepository;
         this.movementRepository = movementRepository;
@@ -53,7 +54,6 @@ public class FleetService {
         this.resourceService = resourceService;
         this.planetService = planetService;
         this.researchService = researchService;
-        this.events = events;
     }
 
     public List<ShipyardView> listForPlanet(Long planetId) {
@@ -135,19 +135,14 @@ public class FleetService {
                 && origin.getPosition() == request.targetPosition()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target must differ from the origin planet");
         }
+        validateMissionTarget(ownerId, request);
 
         Ship ship = shipRepository.findByPlanetIdAndShipKey(origin.getId(), request.shipKey())
                 .filter(s -> s.getQuantity() >= request.quantity())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Not enough ships stationed on this planet"));
 
-        DriveScope requiredScope = requiredScope(origin, request.targetGalaxy(), request.targetSystem());
-        double driveMultiplier = researchService.speedMultiplierFor(ownerId, requiredScope)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
-                        "No researched drive is capable of a " + requiredScope + " mission"));
-
-        ShipDefinition shipDefinition = catalogService.ship(request.shipKey());
-        long travelSeconds = travelTimeSeconds(origin, request.targetGalaxy(), request.targetSystem(),
-                request.targetPosition(), shipDefinition.speed(), driveMultiplier);
+        long travelSeconds = previewTravelTimeSeconds(ownerId, origin, request.shipKey(),
+                request.targetGalaxy(), request.targetSystem(), request.targetPosition());
 
         ship.setQuantity(ship.getQuantity() - request.quantity());
         shipRepository.save(ship);
@@ -167,14 +162,62 @@ public class FleetService {
     @Transactional
     public void completeDueMissions() {
         for (FleetMovement movement : movementRepository.findByArrivesAtBefore(Instant.now())) {
-            if (movement.getMissionType() == FleetMissionType.COLONIZE) {
-                events.publishEvent(new ColonizationArrived(
-                        movement.getOwnerId(), movement.getShipKey(), movement.getQuantity(),
-                        movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition()
-                ));
+            switch (movement.getMissionType()) {
+                case COLONIZE -> planetService.createColonyPlanetAt(
+                        movement.getOwnerId(),
+                        "Colony [%d:%d:%d]".formatted(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition()),
+                        movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition());
+                case STATION -> stationShips(movement);
             }
             movementRepository.delete(movement);
         }
+    }
+
+    /** Estimated travel time for a hypothetical dispatch, without actually sending anything. */
+    public long previewTravelTimeSeconds(Long ownerId, Long originPlanetId, String shipKey,
+                                          int targetGalaxy, int targetSystem, int targetPosition) {
+        Planet origin = planetService.getOwned(originPlanetId, ownerId);
+        return previewTravelTimeSeconds(ownerId, origin, shipKey, targetGalaxy, targetSystem, targetPosition);
+    }
+
+    private long previewTravelTimeSeconds(Long ownerId, Planet origin, String shipKey,
+                                           int targetGalaxy, int targetSystem, int targetPosition) {
+        DriveScope requiredScope = requiredScope(origin, targetGalaxy, targetSystem);
+        double driveMultiplier = researchService.speedMultiplierFor(ownerId, requiredScope)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                        "No researched drive is capable of a " + requiredScope + " mission"));
+
+        ShipDefinition shipDefinition = catalogService.ship(shipKey);
+        return travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition, shipDefinition.speed(), driveMultiplier);
+    }
+
+    private void validateMissionTarget(Long ownerId, DispatchRequest request) {
+        switch (request.missionType()) {
+            case COLONIZE -> {
+                if (!COLONY_SHIP_KEY.equals(request.shipKey())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only colony ships can found a colony");
+                }
+                if (!planetService.isColonizable(request.targetGalaxy(), request.targetSystem(), request.targetPosition())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Target position cannot be colonized");
+                }
+            }
+            case STATION -> {
+                Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                if (!target.getOwnerId().equals(ownerId)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Can only station fleets at your own planets");
+                }
+            }
+        }
+    }
+
+    private void stationShips(FleetMovement movement) {
+        Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
+                .orElseThrow(() -> new IllegalStateException("Station target planet no longer exists"));
+        Ship ship = shipRepository.findByPlanetIdAndShipKey(target.getId(), movement.getShipKey())
+                .orElseGet(() -> new Ship(target.getId(), movement.getShipKey(), 0));
+        ship.setQuantity(ship.getQuantity() + movement.getQuantity());
+        shipRepository.save(ship);
     }
 
     private DriveScope requiredScope(Planet origin, int targetGalaxy, int targetSystem) {
@@ -189,9 +232,9 @@ public class FleetService {
 
     private long travelTimeSeconds(Planet origin, int targetGalaxy, int targetSystem, int targetPosition,
                                     int shipSpeed, double driveMultiplier) {
-        long distance = (long) Math.abs(origin.getGalaxy() - targetGalaxy) * GALAXY_STEP
-                + (long) Math.abs(origin.getSystem() - targetSystem) * SYSTEM_STEP
-                + (long) Math.abs(origin.getPosition() - targetPosition) * POSITION_STEP;
+        long distance = Math.abs(origin.getGalaxy() - targetGalaxy) * GALAXY_STEP
+                + Math.abs(origin.getSystem() - targetSystem) * SYSTEM_STEP
+                + Math.abs(origin.getPosition() - targetPosition) * POSITION_STEP;
         distance = Math.max(distance, POSITION_STEP);
 
         double effectiveSpeed = shipSpeed * driveMultiplier;

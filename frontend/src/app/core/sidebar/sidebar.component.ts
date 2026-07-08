@@ -1,5 +1,5 @@
 import { Component, effect, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../auth.service';
 import { PlanetView } from '../models';
@@ -14,6 +14,7 @@ import { UniverseApiService } from '../../features/universe/universe-api.service
 export class SidebarComponent {
   private readonly auth = inject(AuthService);
   private readonly api = inject(UniverseApiService);
+  private readonly router = inject(Router);
 
   protected readonly isAdmin = this.auth.isAdmin;
   protected readonly planets = signal<PlanetView[]>([]);
@@ -42,5 +43,14 @@ export class SidebarComponent {
 
   toggleAdmin(): void {
     this.adminExpanded.update((v) => !v);
+  }
+
+  goToPlanet(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const id = Number(select.value);
+    select.value = '';
+    if (id) {
+      this.router.navigate(['/universe', id]);
+    }
   }
 }

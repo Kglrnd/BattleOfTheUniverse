@@ -14,16 +14,21 @@
         <li>
           <a routerLink="/universe/system" routerLinkActive="active">System view</a>
         </li>
-        @for (planet of planets(); track planet.id) {
-          <li>
-            <a [routerLink]="['/universe', planet.id]" routerLinkActive="active">
-              <span>{{ planet.name }}</span>
-              <span class="tree-node-meta">{{ planet.coordinates }}</span>
-            </a>
-          </li>
-        }
+        <li class="tree-select-item">
+          <label class="tree-select-label" for="jump-to-planet-select">Jump to planet</label>
+          <select id="jump-to-planet-select" class="select tree-select" (change)="goToPlanet($event)">
+            <option value="" disabled selected>Jump to planet…</option>
+            @for (planet of planets(); track planet.id) {
+              <option [value]="planet.id">{{ planet.coordinates }}</option>
+            }
+          </select>
+        </li>
       </ul>
     }
+  </div>
+
+  <div class="tree-node">
+    <a class="tree-toggle" routerLink="/fleet" routerLinkActive="active">Fleet</a>
   </div>
 
   <div class="tree-node">

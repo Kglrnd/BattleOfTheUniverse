@@ -3,6 +3,7 @@ package de.kugi.dev.battleoftheuniverse.config;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -34,7 +35,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
-                        error -> error.getField(),
+                        FieldError::getField,
                         error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "invalid",
                         (a, b) -> a));
         return ResponseEntity.badRequest()

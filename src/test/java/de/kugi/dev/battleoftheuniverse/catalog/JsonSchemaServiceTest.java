@@ -13,10 +13,10 @@ class JsonSchemaServiceTest {
     void generatesSchemaWithArrayOfBuildingDefinitions() {
         JsonNode schema = service.schemaFor(BuildingCatalog.class);
 
-        assertThat(schema.get("type").asText()).isEqualTo("object");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
         JsonNode buildingsProperty = schema.get("properties").get("buildings");
         assertThat(buildingsProperty).isNotNull();
-        assertThat(buildingsProperty.get("type").asText()).isEqualTo("array");
+        assertThat(buildingsProperty.get("type").asString()).isEqualTo("array");
     }
 
     @Test

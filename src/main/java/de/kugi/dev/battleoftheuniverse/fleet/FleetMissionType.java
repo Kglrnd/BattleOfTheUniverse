@@ -1,9 +1,11 @@
 package de.kugi.dev.battleoftheuniverse.fleet;
 
 /**
- * Only COLONIZE exists for now; TRANSPORT/ATTACK are natural follow-ups once
- * cargo and combat exist.
+ * ATTACK is a natural follow-up once combat exists; not offered yet.
  */
 public enum FleetMissionType {
-    COLONIZE
+    /** Founds a new colony at an empty, colonizable slot. Consumes the colony ships. */
+    COLONIZE,
+    /** Relocates ships to one of the sender's own planets. Ships are not consumed. */
+    STATION
 }

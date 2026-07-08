@@ -1,0 +1,217 @@
+<h1>Fleet</h1>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+<div class="field origin-field">
+  <label for="origin-select">Origin planet</label>
+  <select id="origin-select" class="select" name="origin" [ngModel]="originPlanetId()" (ngModelChange)="onOriginChange($event)">
+    @for (p of planets(); track p.id) {
+      <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+    }
+  </select>
+</div>
+
+<h2>Shipyard</h2>
+@if (ships().length === 0) {
+  <p>No ships available yet.</p>
+} @else {
+  <div class="card-grid">
+    @for (ship of ships(); track ship.key) {
+      <div class="card building-card">
+        <div class="card-header">
+          <div class="card-title">{{ ship.name }}</div>
+          <div class="card-subtitle">Owned: {{ ship.owned }}</div>
+        </div>
+        <div class="card-content">
+          <p>{{ ship.description }}</p>
+          @if (ship.buildActive) {
+            <div class="progress progress-indeterminate"></div>
+            <p class="countdown">
+              Building {{ ship.buildingQuantity }} — {{ remainingShipLabel(ship) }}
+            </p>
+          } @else {
+            <p class="cost">
+              Per unit: {{ ship.unitCost.metal }} metal, {{ ship.unitCost.crystal }} crystal,
+              {{ ship.unitCost.deuterium }} deuterium ({{ ship.unitBuildTimeSeconds }}s)
+            </p>
+          }
+        </div>
+        <div class="card-actions">
+          <label class="qty-label" [for]="'ship-qty-' + ship.key">Qty</label>
+          <input [id]="'ship-qty-' + ship.key" #qty type="number" class="input" min="1" value="1" style="width: 4rem" />
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
+            (click)="buildShip(ship, qty.valueAsNumber)"
+          >
+            Build
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<h2>Dispatch mission</h2>
+<div class="card dispatch-card">
+  <div class="card-content">
+    <div class="field">
+      <span class="field-label-text">Mission type</span>
+      <div class="mission-type-toggle">
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="missionType() === 'COLONIZE'"
+          (click)="setMissionType('COLONIZE')"
+        >
+          Colonize
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="missionType() === 'STATION'"
+          (click)="setMissionType('STATION')"
+        >
+          Station
+        </button>
+        <button type="button" class="btn" disabled title="Combat is not implemented yet">Attack (coming soon)</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="dispatch-ship">Ship</label>
+      <select
+        id="dispatch-ship"
+        class="select"
+        #shipSelect
+        (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+      >
+        @for (ship of ships(); track ship.key) {
+          <option [value]="ship.key" [disabled]="ship.owned === 0">{{ ship.name }} (owned: {{ ship.owned }})</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="dispatch-qty">Quantity</label>
+      <input id="dispatch-qty" #dispatchQty type="number" class="input" min="1" value="1" style="width: 6rem" />
+    </div>
+
+    @if (missionType() === 'STATION') {
+      <div class="field">
+        <label for="dispatch-target-planet">Target planet</label>
+        <select
+          id="dispatch-target-planet"
+          class="select"
+          (change)="onTargetPlanetChange($event, targetGalaxy, targetSystem, targetPosition, shipSelect.value)"
+        >
+          <option value="" disabled selected>Choose one of your planets…</option>
+          @for (p of otherPlanets(); track p.id) {
+            <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="field">
+      <span class="field-label-text">Target coordinates [galaxy:system:position]</span>
+      <div class="coordinate-inputs">
+        <div class="coordinate-field">
+          <label class="coordinate-label" for="target-galaxy">Galaxy</label>
+          <input
+            id="target-galaxy"
+            #targetGalaxy
+            type="number"
+            class="input"
+            min="1"
+            placeholder="Galaxy"
+            [readOnly]="missionType() === 'STATION'"
+            (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+          />
+        </div>
+        <div class="coordinate-field">
+          <label class="coordinate-label" for="target-system">System</label>
+          <input
+            id="target-system"
+            #targetSystem
+            type="number"
+            class="input"
+            min="1"
+            placeholder="System"
+            [readOnly]="missionType() === 'STATION'"
+            (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+          />
+        </div>
+        <div class="coordinate-field">
+          <label class="coordinate-label" for="target-position">Position</label>
+          <input
+            id="target-position"
+            #targetPosition
+            type="number"
+            class="input"
+            min="1"
+            placeholder="Position"
+            [readOnly]="missionType() === 'STATION'"
+            (change)="checkEta(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+          />
+        </div>
+      </div>
+      @if (missionType() === 'COLONIZE') {
+        <p class="field-hint">Only colony ships can found a colony. Find a free slot in <a routerLink="/universe/system">System view</a>.</p>
+      }
+    </div>
+
+    @if (etaLoading()) {
+      <p class="field-hint">Calculating flight time…</p>
+    } @else if (etaError()) {
+      <p class="field-error">{{ etaError() }}</p>
+    } @else if (eta() !== null) {
+      <p class="cost">Estimated travel time: {{ etaLabel() }}</p>
+    }
+  </div>
+  <div class="card-actions">
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="dispatching() || shipsAvailable(shipSelect.value) === 0"
+      (click)="
+        dispatch(
+          shipSelect.value,
+          dispatchQty.valueAsNumber,
+          targetGalaxy.valueAsNumber,
+          targetSystem.valueAsNumber,
+          targetPosition.valueAsNumber
+        )
+      "
+    >
+      Dispatch
+    </button>
+  </div>
+</div>
+
+<h2>Active fleet movements</h2>
+@if (movements().length === 0) {
+  <p>No fleets currently in flight.</p>
+} @else {
+  <div class="card-grid">
+    @for (movement of movements(); track movement.id) {
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
+        </div>
+        <div class="card-content">
+          <p class="cost">
+            From {{ originLabel(movement.originPlanetId) }} to
+            [{{ movement.targetGalaxy }}:{{ movement.targetSystem }}:{{ movement.targetPosition }}]
+          </p>
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
+        </div>
+      </div>
+    }
+  </div>
+}

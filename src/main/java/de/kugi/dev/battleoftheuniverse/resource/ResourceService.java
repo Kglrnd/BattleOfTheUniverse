@@ -8,9 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The resource ledger for a planet. Deliberately knows nothing about buildings —
@@ -34,27 +32,8 @@ public class ResourceService {
         repository.save(new PlanetResource(planetId, ResourceKey.ENERGY, 0));
     }
 
-    public Map<ResourceKey, Long> balances(Long planetId) {
-        Map<ResourceKey, Long> result = new EnumMap<>(ResourceKey.class);
-        for (PlanetResource resource : repository.findByPlanetId(planetId)) {
-            result.put(resource.getResourceKey(), resource.getAmount());
-        }
-        return result;
-    }
-
     public List<PlanetResource> raw(Long planetId) {
         return repository.findByPlanetId(planetId);
-    }
-
-    @Transactional
-    public void credit(Long planetId, ResourceKey key, long amount) {
-        if (amount == 0) {
-            return;
-        }
-        PlanetResource resource = require(planetId, key);
-        resource.setAmount(resource.getAmount() + amount);
-        resource.setLastUpdate(Instant.now());
-        repository.save(resource);
     }
 
     /**

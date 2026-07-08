@@ -33,6 +33,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/universe/planet-detail.component').then((m) => m.PlanetDetailComponent)
   },
   {
+    path: 'fleet',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/fleet/fleet.component').then((m) => m.FleetComponent)
+  },
+  {
     path: 'research',
     canActivate: [authGuard],
     loadComponent: () => import('./features/research/research.component').then((m) => m.ResearchComponent)

@@ -20,6 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @Configuration
 @EnableMethodSecurity
@@ -28,7 +29,7 @@ public class SecurityConfig {
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, UrlBasedCorsConfigurationSource corsSource) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UrlBasedCorsConfigurationSource corsSource) {
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
 
         http
@@ -58,7 +59,8 @@ public class SecurityConfig {
 
     private void onLoginSuccess(HttpServletRequest request, HttpServletResponse response,
                                  org.springframework.security.core.Authentication authentication) throws IOException {
-        AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
+        AppUserPrincipal principal = (AppUserPrincipal) Objects.requireNonNull(authentication.getPrincipal(),
+                "Authenticated principal must not be null");
         UserView view = new UserView(principal.getId(), principal.getUsername(), principal.getEmail(), principal.getRole());
         writeJson(response, HttpStatus.OK, view);
     }

@@ -12,6 +12,8 @@ public interface PlanetRepository extends JpaRepository<Planet, Long> {
 
     List<Planet> findByGalaxyAndSystem(int galaxy, int system);
 
+    Optional<Planet> findByGalaxyAndSystemAndPosition(int galaxy, int system, int position);
+
     Optional<Planet> findByIdAndOwnerId(Long id, Long ownerId);
 
     Optional<Planet> findByOwnerIdAndHomeworldTrue(Long ownerId);

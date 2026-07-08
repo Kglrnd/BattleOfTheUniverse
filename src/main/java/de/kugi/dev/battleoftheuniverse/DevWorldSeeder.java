@@ -6,8 +6,10 @@ import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.user.DevAccountsProperties;
+import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import de.kugi.dev.battleoftheuniverse.user.UserService;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,11 +39,12 @@ public class DevWorldSeeder implements ApplicationRunner {
     private static final int MAX_LEVEL = 20;
     private static final int SHIP_QUANTITY = 500;
     private static final int PLANETS_PER_ENEMY = 3;
+    private static final String ENEMY_PASSWORD = "enemy1234";
 
     private static final List<DevAccountsProperties.Account> ENEMIES = List.of(
-            new DevAccountsProperties.Account("raider_vex", "raider_vex@battleoftheuniverse.local", "enemy1234"),
-            new DevAccountsProperties.Account("outlaw_korrin", "outlaw_korrin@battleoftheuniverse.local", "enemy1234"),
-            new DevAccountsProperties.Account("pirate_zara", "pirate_zara@battleoftheuniverse.local", "enemy1234")
+            new DevAccountsProperties.Account("raider_vex", "raider_vex@battleoftheuniverse.local", ENEMY_PASSWORD),
+            new DevAccountsProperties.Account("outlaw_korrin", "outlaw_korrin@battleoftheuniverse.local", ENEMY_PASSWORD),
+            new DevAccountsProperties.Account("pirate_zara", "pirate_zara@battleoftheuniverse.local", ENEMY_PASSWORD)
     );
 
     private final UserRepository userRepository;
@@ -90,11 +93,11 @@ public class DevWorldSeeder implements ApplicationRunner {
         }
     }
 
-    private void boostPlayer(DevAccountsProperties.Account account) {
+    private void boostPlayer(DevAccountsProperties.@Nullable Account account) {
         if (account == null) {
             return;
         }
-        Long playerId = userRepository.findByUsername(account.username()).map(u -> u.getId()).orElse(null);
+        Long playerId = userRepository.findByUsername(account.username()).map(User::getId).orElse(null);
         if (playerId == null) {
             return;
         }
@@ -112,14 +115,14 @@ public class DevWorldSeeder implements ApplicationRunner {
      * (see {@code planet.UserRegistrationListener}), so it may not exist the instant
      * registration returns. Dev-startup-only polling to bridge that gap.
      */
-    private Planet awaitHomePlanet(Long ownerId) {
+    private @Nullable Planet awaitHomePlanet(Long ownerId) {
         for (int attempt = 0; attempt < 50; attempt++) {
             try {
                 return planetService.getHome(ownerId);
-            } catch (ResponseStatusException e) {
+            } catch (ResponseStatusException _) {
                 try {
                     Thread.sleep(100);
-                } catch (InterruptedException ie) {
+                } catch (InterruptedException _) {
                     Thread.currentThread().interrupt();
                     return null;
                 }

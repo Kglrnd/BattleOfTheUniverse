@@ -1,0 +1,50 @@
+.origin-field {
+  max-width: 320px;
+  margin-bottom: 1.5rem;
+}
+
+.dispatch-card {
+  max-width: 420px;
+  margin-bottom: 1.5rem;
+}
+
+.mission-type-toggle {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.field-label-text {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.qty-label {
+  align-self: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.coordinate-inputs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.coordinate-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.coordinate-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.coordinate-field .input {
+  width: 100%;
+  min-width: 0;
+}

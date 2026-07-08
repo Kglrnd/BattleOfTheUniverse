@@ -86,7 +86,7 @@ export interface ResearchStartResponse {
   endsAt: string;
 }
 
-export type FleetMissionType = 'COLONIZE';
+export type FleetMissionType = 'COLONIZE' | 'STATION';
 
 export interface DispatchRequest {
   originPlanetId: number;
@@ -109,6 +109,10 @@ export interface FleetMovementView {
   targetPosition: number;
   departedAt: string;
   arrivesAt: string;
+}
+
+export interface TravelTimeView {
+  etaSeconds: number;
 }
 
 export type SlotStatus = 'OCCUPIED' | 'FREE' | 'VOID';

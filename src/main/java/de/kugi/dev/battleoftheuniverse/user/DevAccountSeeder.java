@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,7 +43,7 @@ public class DevAccountSeeder implements ApplicationRunner {
         seedPlayer(properties.player());
     }
 
-    private void seedAdmin(DevAccountsProperties.Account account) {
+    private void seedAdmin(DevAccountsProperties.@Nullable Account account) {
         if (account == null || userRepository.existsByUsername(account.username())) {
             return;
         }
@@ -51,7 +52,7 @@ public class DevAccountSeeder implements ApplicationRunner {
         userRepository.save(admin);
     }
 
-    private void seedPlayer(DevAccountsProperties.Account account) {
+    private void seedPlayer(DevAccountsProperties.@Nullable Account account) {
         if (account == null || userRepository.existsByUsername(account.username())) {
             return;
         }
