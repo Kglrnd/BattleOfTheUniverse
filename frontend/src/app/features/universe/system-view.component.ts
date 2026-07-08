@@ -18,6 +18,8 @@ export class SystemViewComponent {
 
   private static readonly MIN_SYSTEM = 1;
   private static readonly MAX_SYSTEM = 100;
+  private static readonly MIN_GALAXY = 1;
+  private static readonly MAX_GALAXY = 5;
 
   protected readonly system = signal<SystemView | null>(null);
   protected readonly loading = signal(true);
@@ -49,24 +51,62 @@ export class SystemViewComponent {
     this.goTo(galaxy, system);
   }
 
+  /** Wraps into the previous galaxy's last system once system 1 is passed, so browsing is continuous. */
   previousSystem(): void {
     const current = this.system();
-    if (!current || current.system <= SystemViewComponent.MIN_SYSTEM) {
+    if (!current) {
       return;
     }
-    this.goTo(current.galaxy, current.system - 1);
+    let { galaxy, system } = current;
+    system -= 1;
+    if (system < SystemViewComponent.MIN_SYSTEM) {
+      system = SystemViewComponent.MAX_SYSTEM;
+      galaxy = this.previousGalaxyNumber(galaxy);
+    }
+    this.goTo(galaxy, system);
   }
 
+  /** Wraps into the next galaxy's first system once system 100 is passed, so browsing is continuous. */
   nextSystem(): void {
     const current = this.system();
-    if (!current || current.system >= SystemViewComponent.MAX_SYSTEM) {
+    if (!current) {
       return;
     }
-    this.goTo(current.galaxy, current.system + 1);
+    let { galaxy, system } = current;
+    system += 1;
+    if (system > SystemViewComponent.MAX_SYSTEM) {
+      system = SystemViewComponent.MIN_SYSTEM;
+      galaxy = this.nextGalaxyNumber(galaxy);
+    }
+    this.goTo(galaxy, system);
+  }
+
+  previousGalaxy(): void {
+    const current = this.system();
+    if (!current) {
+      return;
+    }
+    this.goTo(this.previousGalaxyNumber(current.galaxy), current.system);
+  }
+
+  nextGalaxy(): void {
+    const current = this.system();
+    if (!current) {
+      return;
+    }
+    this.goTo(this.nextGalaxyNumber(current.galaxy), current.system);
   }
 
   slotClass(status: string): string {
     return 'slot-' + status.toLowerCase();
+  }
+
+  private previousGalaxyNumber(galaxy: number): number {
+    return galaxy <= SystemViewComponent.MIN_GALAXY ? SystemViewComponent.MAX_GALAXY : galaxy - 1;
+  }
+
+  private nextGalaxyNumber(galaxy: number): number {
+    return galaxy >= SystemViewComponent.MAX_GALAXY ? SystemViewComponent.MIN_GALAXY : galaxy + 1;
   }
 
   private loadHomeSystem(): void {

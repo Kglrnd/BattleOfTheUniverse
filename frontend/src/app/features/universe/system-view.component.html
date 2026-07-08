@@ -8,14 +8,16 @@
   <p class="coordinates">Galaxy {{ s.galaxy }} · System {{ s.system }}</p>
 
   <div class="system-nav">
-    <button type="button" class="btn" [disabled]="s.system <= 1" (click)="previousSystem()">‹ Previous</button>
+    <button type="button" class="btn" title="Previous galaxy" (click)="previousGalaxy()">‹‹ Galaxy</button>
+    <button type="button" class="btn" title="Previous system" (click)="previousSystem()">‹ System</button>
     <div class="jump-form">
       <input #galaxyInput type="number" class="input" min="1" max="5" [value]="s.galaxy" style="width: 4.5rem" />
       <span>:</span>
       <input #systemInput type="number" class="input" min="1" max="100" [value]="s.system" style="width: 5rem" />
       <button type="button" class="btn btn-primary" (click)="jump(galaxyInput, systemInput)">Go</button>
     </div>
-    <button type="button" class="btn" [disabled]="s.system >= 100" (click)="nextSystem()">Next ›</button>
+    <button type="button" class="btn" title="Next system" (click)="nextSystem()">System ›</button>
+    <button type="button" class="btn" title="Next galaxy" (click)="nextGalaxy()">Galaxy ››</button>
   </div>
 
   <div class="slot-grid">
