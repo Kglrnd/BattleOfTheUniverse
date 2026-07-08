@@ -1,6 +1,9 @@
 @if (planet(); as p) {
   <h1>{{ p.name }}</h1>
-  <p class="coordinates">{{ p.coordinates }} · {{ p.planetClass }}</p>
+  <p class="coordinates">
+    {{ p.coordinates }} · {{ p.planetClass }} ·
+    <a [routerLink]="['/universe/system', p.galaxy, p.system]">View system</a>
+  </p>
 }
 
 <div class="resource-bar">

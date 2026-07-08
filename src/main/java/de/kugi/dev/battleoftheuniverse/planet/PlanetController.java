@@ -25,6 +25,11 @@ public class PlanetController {
         return planetService.listMine(principal.getId()).stream().map(PlanetView::from).toList();
     }
 
+    @GetMapping("/home")
+    public PlanetView home(@AuthenticationPrincipal AppUserPrincipal principal) {
+        return PlanetView.from(planetService.getHome(principal.getId()));
+    }
+
     @GetMapping("/{id}")
     public PlanetView get(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal principal) {
         return PlanetView.from(planetService.getOwned(id, principal.getId()));

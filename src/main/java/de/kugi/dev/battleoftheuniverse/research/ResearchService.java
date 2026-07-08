@@ -88,6 +88,17 @@ public class ResearchService {
         }
     }
 
+    /** Dev-only convenience: sets every catalog technology (including all drives) to the given level. */
+    @Transactional
+    public void maxAllTechnologies(Long userId, int level) {
+        for (TechnologyDefinition definition : catalogService.technologies()) {
+            Technology technology = technologyRepository.findByUserIdAndTechnologyKey(userId, definition.key())
+                    .orElseGet(() -> new Technology(userId, definition.key(), 0));
+            technology.setLevel(level);
+            technologyRepository.save(technology);
+        }
+    }
+
     /**
      * The best travel-speed multiplier the user's researched drives grant for a mission
      * of the given range, or empty if no researched drive reaches that far. A drive's

@@ -10,7 +10,8 @@ public record PlanetView(
         int system,
         int position,
         String coordinates,
-        PlanetClass planetClass
+        PlanetClass planetClass,
+        boolean homeworld
 ) {
     public static PlanetView from(Planet planet) {
         return new PlanetView(
@@ -20,7 +21,8 @@ public record PlanetView(
                 planet.getSystem(),
                 planet.getPosition(),
                 planet.getCoordinates(),
-                planet.getPlanetClass()
+                planet.getPlanetClass(),
+                planet.isHomeworld()
         );
     }
 }

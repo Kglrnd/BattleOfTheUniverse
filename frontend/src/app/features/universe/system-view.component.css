@@ -1,0 +1,91 @@
+.coordinates {
+  color: var(--color-text-muted);
+  margin: 0 0 1rem;
+}
+
+.system-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.jump-form {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.slot {
+  position: relative;
+  min-height: 110px;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.slot-position {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.slot-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.slot-status-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.slot-coordinates {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.slot-planet-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.slot-tag {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: 0.7rem;
+}
+
+.slot-link {
+  margin-top: auto;
+  font-size: 0.8rem;
+  color: var(--color-accent);
+}
+
+.slot-free {
+  border-style: dashed;
+  border-color: var(--color-accent);
+}
+
+.slot-void {
+  opacity: 0.45;
+}
+
+.slot-occupied {
+  border-color: var(--color-border);
+}

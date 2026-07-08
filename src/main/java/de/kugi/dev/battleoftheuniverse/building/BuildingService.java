@@ -40,6 +40,17 @@ public class BuildingService {
         }
     }
 
+    /** Dev-only convenience: sets every catalog building on a planet to the given level. */
+    @Transactional
+    public void maxAllBuildings(Long planetId, int level) {
+        for (BuildingDefinition definition : catalogService.buildings()) {
+            PlanetBuilding building = buildingRepository.findByPlanetIdAndBuildingKey(planetId, definition.key())
+                    .orElseGet(() -> new PlanetBuilding(planetId, definition.key(), 0));
+            building.setLevel(level);
+            buildingRepository.save(building);
+        }
+    }
+
     public List<BuildingView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
 

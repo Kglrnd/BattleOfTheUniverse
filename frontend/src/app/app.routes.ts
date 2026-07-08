@@ -18,6 +18,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/universe/planet-list.component').then((m) => m.PlanetListComponent)
   },
   {
+    path: 'universe/system',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/universe/system-view.component').then((m) => m.SystemViewComponent)
+  },
+  {
+    path: 'universe/system/:galaxy/:system',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/universe/system-view.component').then((m) => m.SystemViewComponent)
+  },
+  {
     path: 'universe/:id',
     canActivate: [authGuard],
     loadComponent: () => import('./features/universe/planet-detail.component').then((m) => m.PlanetDetailComponent)

@@ -11,6 +11,9 @@
             All planets
           </a>
         </li>
+        <li>
+          <a routerLink="/universe/system" routerLinkActive="active">System view</a>
+        </li>
         @for (planet of planets(); track planet.id) {
           <li>
             <a [routerLink]="['/universe', planet.id]" routerLinkActive="active">

@@ -2,7 +2,15 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { BuildingView, PlanetView, ResourceView, ShipyardBuildResponse, ShipyardView, UpgradeResponse } from '../../core/models';
+import {
+  BuildingView,
+  PlanetView,
+  ResourceView,
+  ShipyardBuildResponse,
+  ShipyardView,
+  SystemView,
+  UpgradeResponse
+} from '../../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class UniverseApiService {
@@ -12,8 +20,16 @@ export class UniverseApiService {
     return this.http.get<PlanetView[]>('/api/planets');
   }
 
+  getHomePlanet(): Observable<PlanetView> {
+    return this.http.get<PlanetView>('/api/planets/home');
+  }
+
   getPlanet(planetId: number): Observable<PlanetView> {
     return this.http.get<PlanetView>(`/api/planets/${planetId}`);
+  }
+
+  getSystem(galaxy: number, system: number): Observable<SystemView> {
+    return this.http.get<SystemView>(`/api/systems/${galaxy}/${system}`);
   }
 
   getResources(planetId: number): Observable<ResourceView[]> {

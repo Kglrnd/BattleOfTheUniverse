@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { AuthService } from '../../core/auth.service';
+import { UniverseApiService } from '../universe/universe-api.service';
 
 @Component({
   selector: 'app-register',
@@ -15,6 +16,7 @@ export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly universeApi = inject(UniverseApiService);
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
@@ -36,8 +38,16 @@ export class RegisterComponent {
       next: () => {
         this.auth.login(request.username, request.password).subscribe({
           next: () => {
-            this.submitting.set(false);
-            this.router.navigate(['/universe']);
+            this.universeApi.getHomePlanet().subscribe({
+              next: (planet) => {
+                this.submitting.set(false);
+                this.router.navigate(['/universe', planet.id]);
+              },
+              error: () => {
+                this.submitting.set(false);
+                this.router.navigate(['/universe']);
+              }
+            });
           },
           error: () => {
             this.submitting.set(false);

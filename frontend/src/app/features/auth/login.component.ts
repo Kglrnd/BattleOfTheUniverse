@@ -3,6 +3,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth.service';
+import { UniverseApiService } from '../universe/universe-api.service';
 
 @Component({
   selector: 'app-login',
@@ -14,6 +15,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly universeApi = inject(UniverseApiService);
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
@@ -32,8 +34,16 @@ export class LoginComponent {
     const { username, password } = this.form.getRawValue();
     this.auth.login(username, password).subscribe({
       next: () => {
-        this.submitting.set(false);
-        this.router.navigate(['/universe']);
+        this.universeApi.getHomePlanet().subscribe({
+          next: (planet) => {
+            this.submitting.set(false);
+            this.router.navigate(['/universe', planet.id]);
+          },
+          error: () => {
+            this.submitting.set(false);
+            this.router.navigate(['/universe']);
+          }
+        });
       },
       error: () => {
         this.submitting.set(false);

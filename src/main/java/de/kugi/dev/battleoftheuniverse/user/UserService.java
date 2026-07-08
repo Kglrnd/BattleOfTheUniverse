@@ -21,6 +21,12 @@ public class UserService {
         this.events = events;
     }
 
+    /** Convenience for callers outside this module, which can't see the {@code dto} package. */
+    @Transactional
+    public UserView register(String username, String email, String password) {
+        return register(new RegisterRequest(username, email, password));
+    }
+
     @Transactional
     public UserView register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.username())) {

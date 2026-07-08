@@ -15,6 +15,7 @@ export interface PlanetView {
   position: number;
   coordinates: string;
   planetClass: string;
+  homeworld: boolean;
 }
 
 export interface ResourceView {
@@ -108,4 +109,18 @@ export interface FleetMovementView {
   targetPosition: number;
   departedAt: string;
   arrivesAt: string;
+}
+
+export type SlotStatus = 'OCCUPIED' | 'FREE' | 'VOID';
+
+export interface SystemSlotView {
+  position: number;
+  status: SlotStatus;
+  planet: PlanetView | null;
+}
+
+export interface SystemView {
+  galaxy: number;
+  system: number;
+  slots: SystemSlotView[];
 }

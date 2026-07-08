@@ -44,6 +44,8 @@ public class Planet {
 
     private Instant createdAt = Instant.now();
 
+    private boolean homeworld = false;
+
     public Planet(String name, Long ownerId, int galaxy, int system, int position, PlanetClass planetClass) {
         this.name = name;
         this.ownerId = ownerId;

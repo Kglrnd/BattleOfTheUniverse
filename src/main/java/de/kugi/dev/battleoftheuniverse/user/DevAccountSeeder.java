@@ -6,6 +6,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Profile("dev")
 @ConditionalOnProperty(prefix = "game.dev", name = "seed-accounts", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(DevAccountsProperties.class)
+@Order(1)
 public class DevAccountSeeder implements ApplicationRunner {
 
     private final UserRepository userRepository;

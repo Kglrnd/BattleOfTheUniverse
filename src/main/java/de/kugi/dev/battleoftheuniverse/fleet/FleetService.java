@@ -107,6 +107,17 @@ public class FleetService {
         }
     }
 
+    /** Dev-only convenience: sets every catalog ship's stationed quantity on a planet. */
+    @Transactional
+    public void stockAllShips(Long planetId, int quantity) {
+        for (ShipDefinition definition : catalogService.ships()) {
+            Ship ship = shipRepository.findByPlanetIdAndShipKey(planetId, definition.key())
+                    .orElseGet(() -> new Ship(planetId, definition.key(), 0));
+            ship.setQuantity(quantity);
+            shipRepository.save(ship);
+        }
+    }
+
     public List<FleetMovementView> listMovements(Long ownerId) {
         return movementRepository.findByOwnerId(ownerId).stream()
                 .map(m -> new FleetMovementView(

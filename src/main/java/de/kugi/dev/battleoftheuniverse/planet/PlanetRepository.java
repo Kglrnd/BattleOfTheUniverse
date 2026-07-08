@@ -10,5 +10,9 @@ public interface PlanetRepository extends JpaRepository<Planet, Long> {
 
     boolean existsByGalaxyAndSystemAndPosition(int galaxy, int system, int position);
 
+    List<Planet> findByGalaxyAndSystem(int galaxy, int system);
+
     Optional<Planet> findByIdAndOwnerId(Long id, Long ownerId);
+
+    Optional<Planet> findByOwnerIdAndHomeworldTrue(Long ownerId);
 }

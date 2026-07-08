@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { BuildingView, FleetMovementView, PlanetView, ResourceView, ShipyardView } from '../../core/models';
 import { FleetApiService } from '../fleet/fleet-api.service';
@@ -7,7 +7,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-detail',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './planet-detail.component.html',
   styleUrl: './planet-detail.component.css'
 })
