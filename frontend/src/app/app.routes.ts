@@ -53,6 +53,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/research/research.component').then((m) => m.ResearchComponent)
   },
   {
+    path: 'messages',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/messages/messages.component').then((m) => m.MessagesComponent)
+  },
+  {
     path: 'admin/catalog/:type',
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/catalog-editor.component').then((m) => m.CatalogEditorComponent)

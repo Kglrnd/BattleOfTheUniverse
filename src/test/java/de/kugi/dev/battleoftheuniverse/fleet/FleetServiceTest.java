@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -61,6 +62,8 @@ class FleetServiceTest {
     private ResearchService researchService;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private ApplicationEventPublisher events;
 
     private FleetService service;
 
@@ -78,7 +81,7 @@ class FleetServiceTest {
     @BeforeEach
     void setUp() {
         service = new FleetService(shipRepository, jobRepository, movementRepository, catalogService,
-                resourceService, planetService, researchService, userRepository);
+                resourceService, planetService, researchService, userRepository, events);
         origin.setId(ORIGIN_ID);
     }
 

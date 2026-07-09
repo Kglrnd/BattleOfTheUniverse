@@ -19,6 +19,7 @@ import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,11 +57,13 @@ public class FleetService {
     private final PlanetService planetService;
     private final ResearchService researchService;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher events;
 
     public FleetService(ShipRepository shipRepository, ShipyardJobRepository jobRepository,
                          FleetMovementRepository movementRepository, CatalogService catalogService,
                          ResourceService resourceService, PlanetService planetService,
-                         ResearchService researchService, UserRepository userRepository) {
+                         ResearchService researchService, UserRepository userRepository,
+                         ApplicationEventPublisher events) {
         this.shipRepository = shipRepository;
         this.jobRepository = jobRepository;
         this.movementRepository = movementRepository;
@@ -69,6 +72,7 @@ public class FleetService {
         this.planetService = planetService;
         this.researchService = researchService;
         this.userRepository = userRepository;
+        this.events = events;
     }
 
     public List<ShipyardView> listForPlanet(Long planetId) {
@@ -273,6 +277,7 @@ public class FleetService {
                 creditShips(colony.getId(), shipKey, quantity);
             }
         });
+        events.publishEvent(new ColonyFounded(colony.getOwnerId(), colony.getId(), colony.getName()));
     }
 
     /**

@@ -177,6 +177,29 @@ export interface IncomingMovementView {
   arrivesAt: string;
 }
 
+export type MessageType = 'PLAYER' | 'SYSTEM';
+
+export interface MessageView {
+  id: number;
+  senderUsername: string;
+  recipientUsername: string;
+  subject: string;
+  body: string;
+  type: MessageType;
+  sentAt: string;
+  readAt: string | null;
+}
+
+export interface SendMessageRequest {
+  recipientUsername: string;
+  subject: string;
+  body: string;
+}
+
+export interface UnreadCountView {
+  count: number;
+}
+
 export type SlotStatus = 'OCCUPIED' | 'FREE' | 'VOID';
 
 export interface SystemSlotView {

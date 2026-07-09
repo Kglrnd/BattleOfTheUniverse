@@ -1,0 +1,91 @@
+<h1>Messages</h1>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+<div class="messages-toolbar">
+  <div class="mission-type-toggle">
+    <button type="button" class="btn" [class.btn-primary]="activeTab() === 'inbox'" (click)="setTab('inbox')">
+      Inbox
+      @if (unreadCount() > 0) {
+        <span class="badge-unread">{{ unreadCount() }}</span>
+      }
+    </button>
+    <button type="button" class="btn" [class.btn-primary]="activeTab() === 'sent'" (click)="setTab('sent')">
+      Sent
+    </button>
+  </div>
+  <button type="button" class="btn btn-primary" (click)="toggleCompose()">
+    {{ composing() ? 'Cancel' : 'Compose' }}
+  </button>
+</div>
+
+@if (composing()) {
+  <div class="card compose-card">
+    <div class="card-content">
+      <form [formGroup]="composeForm" (ngSubmit)="submitCompose()">
+        <div class="field">
+          <label for="msg-recipient">To (username)</label>
+          <input class="input" id="msg-recipient" formControlName="recipientUsername" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="msg-subject">Subject</label>
+          <input class="input" id="msg-subject" formControlName="subject" />
+        </div>
+        <div class="field">
+          <label for="msg-body">Message</label>
+          <textarea class="input" id="msg-body" rows="4" formControlName="body"></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit" [disabled]="composeForm.invalid || sending()">
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+}
+
+<div class="messages-layout">
+  <div class="table-wrapper">
+    @if (currentMessages().length === 0) {
+      <p>No messages.</p>
+    } @else {
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ activeTab() === 'inbox' ? 'From' : 'To' }}</th>
+            <th>Subject</th>
+            <th>Sent</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (message of currentMessages(); track message.id) {
+            <tr
+              (click)="select(message)"
+              [class.unread]="activeTab() === 'inbox' && !message.readAt"
+              [class.selected]="selected()?.id === message.id"
+            >
+              <td>{{ activeTab() === 'inbox' ? message.senderUsername : message.recipientUsername }}</td>
+              <td>{{ message.subject }}</td>
+              <td>{{ formatTimestamp(message.sentAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  @if (selected(); as message) {
+    <div class="card message-detail">
+      <div class="card-header">
+        <div class="card-title">{{ message.subject }}</div>
+        <div class="card-subtitle">
+          {{ message.senderUsername }} → {{ message.recipientUsername }} · {{ formatTimestamp(message.sentAt) }}
+        </div>
+      </div>
+      <div class="card-content">
+        <p class="message-body">{{ message.body }}</p>
+      </div>
+    </div>
+  }
+</div>

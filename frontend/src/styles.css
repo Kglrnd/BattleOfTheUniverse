@@ -273,3 +273,14 @@ a {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Unread-count indicator, e.g. next to the sidebar "Messages" link or an inbox tab */
+.badge-unread {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
