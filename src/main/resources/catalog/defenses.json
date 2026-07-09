@@ -1,0 +1,26 @@
+{
+  "defenses": [
+    {
+      "key": "light_defense_tower",
+      "name": "Light Defense Tower",
+      "description": "A point-defense turret sized to match a light fighter's firepower.",
+      "defense": 50,
+      "baseCost": { "metal": 2000, "crystal": 500, "deuterium": 0 },
+      "baseBuildTimeSeconds": 300,
+      "requirements": [
+        { "type": "BUILDING", "key": "defense_facility", "level": 1 }
+      ]
+    },
+    {
+      "key": "heavy_defense_tower",
+      "name": "Heavy Defense Tower",
+      "description": "A hardened emplacement built to stand toe-to-toe with a cruiser.",
+      "defense": 400,
+      "baseCost": { "metal": 12000, "crystal": 4000, "deuterium": 1000 },
+      "baseBuildTimeSeconds": 1800,
+      "requirements": [
+        { "type": "BUILDING", "key": "defense_facility", "level": 2 }
+      ]
+    }
+  ]
+}

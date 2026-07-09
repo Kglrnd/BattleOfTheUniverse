@@ -88,6 +88,19 @@
       "requirements": [
         { "type": "BUILDING", "key": "main_building", "level": 2 }
       ]
+    },
+    {
+      "key": "defense_facility",
+      "name": "Defense Facility",
+      "description": "Doesn't defend itself, but unlocks and coordinates ground-based defense towers.",
+      "baseCost": { "metal": 300, "crystal": 200, "deuterium": 0 },
+      "costGrowthFactor": 1.8,
+      "baseBuildTimeSeconds": 300,
+      "producesResource": "NONE",
+      "baseProductionPerLevel": 0,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 2 }
+      ]
     }
   ]
 }

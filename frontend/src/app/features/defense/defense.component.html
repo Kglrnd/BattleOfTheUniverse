@@ -1,0 +1,44 @@
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+<div class="card-grid">
+  @for (tower of towers(); track tower.key) {
+    <div class="card" [class.card-locked]="!tower.unlocked">
+      <div class="card-header">
+        <div class="card-title">{{ tower.name }}</div>
+        <div class="card-subtitle">Owned: {{ tower.owned }} · Defense {{ tower.defense }}</div>
+      </div>
+      <div class="card-content">
+        <p>{{ tower.description }}</p>
+        @if (!tower.unlocked) {
+          <ul class="requirement-list">
+            @for (requirement of tower.missingRequirements; track requirement.label) {
+              <li>Requires {{ requirement.label }} level {{ requirement.requiredLevel }} (currently {{ requirement.currentLevel }})</li>
+            }
+          </ul>
+        } @else if (tower.buildActive) {
+          <div class="progress progress-indeterminate"></div>
+          <p class="countdown">Building {{ tower.buildingQuantity }} — {{ remainingLabel(tower) }}</p>
+        } @else {
+          <p class="cost">
+            Per unit: {{ tower.unitCost.metal }} metal, {{ tower.unitCost.crystal }} crystal,
+            {{ tower.unitCost.deuterium }} deuterium ({{ tower.unitBuildTimeSeconds }}s)
+          </p>
+        }
+      </div>
+      <div class="card-actions">
+        <label class="qty-label" [for]="'tower-qty-' + tower.key">Qty</label>
+        <input [id]="'tower-qty-' + tower.key" #qty type="number" class="input" min="1" value="1" style="width: 4rem" />
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!tower.unlocked || tower.buildActive || hasActiveDefenseJob() || queuingTower() === tower.key"
+          (click)="build(tower, qty.valueAsNumber)"
+        >
+          Build
+        </button>
+      </div>
+    </div>
+  }
+</div>

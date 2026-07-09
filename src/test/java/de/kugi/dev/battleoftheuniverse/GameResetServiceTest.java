@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse;
 
 import de.kugi.dev.battleoftheuniverse.building.BuildingService;
+import de.kugi.dev.battleoftheuniverse.defense.DefenseService;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetService;
 import de.kugi.dev.battleoftheuniverse.message.MessageService;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
@@ -36,12 +37,15 @@ class GameResetServiceTest {
     private FleetService fleetService;
     @Mock
     private MessageService messageService;
+    @Mock
+    private DefenseService defenseService;
 
     private GameResetService service;
 
     @BeforeEach
     void setUp() {
-        service = new GameResetService(planetService, buildingService, resourceService, researchService, fleetService, messageService);
+        service = new GameResetService(planetService, buildingService, resourceService, researchService, fleetService,
+                messageService, defenseService);
     }
 
     @Test
@@ -56,6 +60,7 @@ class GameResetServiceTest {
 
         verify(messageService).wipeAll();
         verify(fleetService).wipeAll();
+        verify(defenseService).wipeAll();
         verify(researchService).wipeAll();
         verify(buildingService).wipeAll();
         verify(resourceService).wipeAll();

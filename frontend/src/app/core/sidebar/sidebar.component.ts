@@ -27,7 +27,8 @@ export class SidebarComponent {
   protected readonly catalogTypes = [
     { type: 'buildings', label: 'Buildings' },
     { type: 'ships', label: 'Ships' },
-    { type: 'technologies', label: 'Technologies' }
+    { type: 'technologies', label: 'Technologies' },
+    { type: 'defenses', label: 'Defenses' }
   ];
 
   constructor() {

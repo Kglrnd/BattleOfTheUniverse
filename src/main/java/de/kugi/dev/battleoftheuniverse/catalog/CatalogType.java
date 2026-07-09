@@ -10,7 +10,8 @@ import java.util.Arrays;
 public enum CatalogType {
     BUILDINGS(BuildingCatalog.class, "buildings.json"),
     SHIPS(ShipCatalog.class, "ships.json"),
-    TECHNOLOGIES(TechnologyCatalog.class, "technologies.json");
+    TECHNOLOGIES(TechnologyCatalog.class, "technologies.json"),
+    DEFENSES(DefenseCatalog.class, "defenses.json");
 
     private final Class<?> catalogClass;
     private final String fileName;

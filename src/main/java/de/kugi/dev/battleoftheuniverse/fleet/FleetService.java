@@ -255,7 +255,7 @@ public class FleetService {
             switch (movement.getMissionType()) {
                 case COLONIZE -> foundColony(movement);
                 case STATION -> stationShips(movement);
-                case ATTACK -> returnFleetToOrigin(movement);
+                case ATTACK -> handleAttackArrival(movement);
                 case ESPIONAGE -> resolveEspionage(movement);
             }
             movementRepository.delete(movement);
@@ -360,9 +360,22 @@ public class FleetService {
         movement.getShips().forEach((shipKey, quantity) -> creditShips(target.getId(), shipKey, quantity));
     }
 
-    /** No combat resolution exists yet, so an attack fleet just turns around empty-handed. */
+    /** The espionage probe(s) always return to the origin planet, win or lose. */
     private void returnFleetToOrigin(FleetMovement movement) {
         movement.getShips().forEach((shipKey, quantity) -> creditShips(movement.getOriginPlanetId(), shipKey, quantity));
+    }
+
+    /**
+     * Hands the attacking fleet off to {@code combat} for battle resolution - see
+     * {@link AttackArrived}. Unlike the other mission types, ships are not credited back
+     * here: {@code combat} decides how many survive and credits them back itself once
+     * losses are known.
+     */
+    private void handleAttackArrival(FleetMovement movement) {
+        Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
+                .orElseThrow(() -> new IllegalStateException("Attack target planet no longer exists"));
+        events.publishEvent(new AttackArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
+                target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
     }
 
     /**
@@ -394,6 +407,41 @@ public class FleetService {
                 success, stationedShips, resources));
 
         returnFleetToOrigin(movement);
+    }
+
+    /** Every ship stationed on a planet, keyed by ship catalog key. Used by combat to read defensive strength. */
+    public Map<String, Integer> stationedShips(Long planetId) {
+        return shipRepository.findByPlanetId(planetId).stream()
+                .collect(Collectors.toMap(Ship::getShipKey, Ship::getQuantity));
+    }
+
+    /** Reduces stationed ship quantities by the given amounts. Used by combat to apply losses. */
+    @Transactional
+    public void applyLosses(Long planetId, Map<String, Integer> losses) {
+        losses.forEach((shipKey, lost) -> {
+            if (lost <= 0) {
+                return;
+            }
+            shipRepository.findByPlanetIdAndShipKey(planetId, shipKey).ifPresent(ship -> {
+                int remaining = Math.max(0, ship.getQuantity() - lost);
+                if (remaining == 0) {
+                    shipRepository.delete(ship);
+                } else {
+                    ship.setQuantity(remaining);
+                    shipRepository.save(ship);
+                }
+            });
+        });
+    }
+
+    /** Credits multiple ship types onto a planet at once - e.g. a surviving fleet returning from battle. */
+    @Transactional
+    public void creditShips(Long planetId, Map<String, Integer> ships) {
+        ships.forEach((shipKey, quantity) -> {
+            if (quantity > 0) {
+                creditShips(planetId, shipKey, quantity);
+            }
+        });
     }
 
     private void creditShips(Long planetId, String shipKey, int quantity) {

@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse;
 
 import de.kugi.dev.battleoftheuniverse.building.BuildingService;
+import de.kugi.dev.battleoftheuniverse.defense.DefenseService;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetService;
 import de.kugi.dev.battleoftheuniverse.message.MessageService;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Admin-triggered full game reset: wipes buildings/resources/research/fleet/messages
+ * Admin-triggered full game reset: wipes buildings/resources/research/fleet/defenses/messages
  * game-wide, deletes every colony, redistributes homeworlds to new random positions, and
  * reseeds each surviving homeworld's starter state. Lives in the base package (not inside
  * any of the {@code @ApplicationModule} packages) for the same reason as {@link DevWorldSeeder}
@@ -29,11 +30,13 @@ public class GameResetService {
     private final ResearchService researchService;
     private final FleetService fleetService;
     private final MessageService messageService;
+    private final DefenseService defenseService;
 
     @Transactional
     public void resetGame() {
         messageService.wipeAll();
         fleetService.wipeAll();
+        defenseService.wipeAll();
         researchService.wipeAll();
         buildingService.wipeAll();
         resourceService.wipeAll();

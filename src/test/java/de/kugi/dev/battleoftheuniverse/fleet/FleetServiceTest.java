@@ -386,18 +386,28 @@ class FleetServiceTest {
     }
 
     @Test
-    void completeDueMissionsReturnsShipsToTheOriginForADueAttackMovement() {
+    void completeDueMissionsPublishesAttackArrivedForADueAttackMovementWithoutCreditingShipsBack() {
+        Planet target = new Planet("Target", OTHER_OWNER_ID, 9, 9, 9, PlanetClass.TEMPERATE);
+        target.setId(20L);
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 5), FleetMissionType.ATTACK,
                 9, 9, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
         when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
-        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser")).thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 10)));
+        when(planetService.findAtPosition(9, 9, 9)).thenReturn(Optional.of(target));
 
         service.completeDueMissions();
 
-        var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
-        verify(shipRepository).save(shipCaptor.capture());
-        assertThat(shipCaptor.getValue().getPlanetId()).isEqualTo(ORIGIN_ID);
-        assertThat(shipCaptor.getValue().getQuantity()).isEqualTo(15);
+        var eventCaptor = org.mockito.ArgumentCaptor.forClass(AttackArrived.class);
+        verify(events).publishEvent(eventCaptor.capture());
+        AttackArrived published = eventCaptor.getValue();
+        assertThat(published.attackerId()).isEqualTo(OWNER_ID);
+        assertThat(published.attackerOriginPlanetId()).isEqualTo(ORIGIN_ID);
+        assertThat(published.defenderId()).isEqualTo(OTHER_OWNER_ID);
+        assertThat(published.defenderPlanetId()).isEqualTo(20L);
+        assertThat(published.defenderPlanetName()).isEqualTo("Target");
+        assertThat(published.attackingShips()).containsExactlyEntriesOf(Map.of("cruiser", 5));
+
+        // Resolving losses/survivors is combat's job now, not fleet's - no ship credited here.
+        verify(shipRepository, never()).save(any());
         verify(movementRepository).delete(movement);
     }
 

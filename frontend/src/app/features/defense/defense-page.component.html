@@ -1,0 +1,24 @@
+<h1>Defense</h1>
+
+@if (planets().length === 0) {
+  <p>You need at least one planet to build defenses.</p>
+} @else {
+  <div class="field origin-field">
+    <label for="defense-planet-select">Planet</label>
+    <select
+      id="defense-planet-select"
+      class="select"
+      name="defense-planet"
+      [ngModel]="selectedPlanetId()"
+      (ngModelChange)="onPlanetChange($event)"
+    >
+      @for (p of planets(); track p.id) {
+        <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+      }
+    </select>
+  </div>
+
+  @if (selectedPlanetId(); as planetId) {
+    <app-defense [planetId]="planetId" />
+  }
+}

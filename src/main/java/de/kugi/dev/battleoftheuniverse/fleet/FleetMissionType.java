@@ -6,8 +6,8 @@ public enum FleetMissionType {
     /** Relocates ships to one of the sender's own planets. Ships are not consumed. */
     STATION,
     /**
-     * Sent at another player's planet. There's no combat resolution yet, so on arrival the
-     * fleet simply turns around and its ships are credited back to the origin planet.
+     * Sent at another player's planet. On arrival, {@code combat} resolves a battle against
+     * the target's defense towers and stationed fleet; survivors return to the origin planet.
      */
     ATTACK,
     /**

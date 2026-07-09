@@ -96,6 +96,27 @@ export interface ShipyardBuildResponse {
   endsAt: string;
 }
 
+export interface TowerView {
+  key: string;
+  name: string;
+  description: string;
+  owned: number;
+  defense: number;
+  unitCost: ResourceCost;
+  unitBuildTimeSeconds: number;
+  buildActive: boolean;
+  buildingQuantity: number | null;
+  buildEndsAt: string | null;
+  unlocked: boolean;
+  missingRequirements: LockedRequirement[];
+}
+
+export interface TowerBuildResponse {
+  towerKey: string;
+  quantity: number;
+  endsAt: string;
+}
+
 export type DriveScope = 'NONE' | 'SYSTEM' | 'INTER_SYSTEM' | 'GALAXY';
 
 export interface TechnologyView {

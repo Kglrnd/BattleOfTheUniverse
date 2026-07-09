@@ -41,6 +41,7 @@ public class CatalogService {
     private final Map<String, BuildingDefinition> buildingsByKey = new ConcurrentHashMap<>();
     private final Map<String, ShipDefinition> shipsByKey = new ConcurrentHashMap<>();
     private final Map<String, TechnologyDefinition> technologiesByKey = new ConcurrentHashMap<>();
+    private final Map<String, DefenseDefinition> defensesByKey = new ConcurrentHashMap<>();
 
     @PostConstruct
     void loadAll() {
@@ -81,6 +82,18 @@ public class CatalogService {
         TechnologyDefinition definition = technologiesByKey.get(key);
         if (definition == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown technology: " + key);
+        }
+        return definition;
+    }
+
+    public List<DefenseDefinition> defenses() {
+        return List.copyOf(defensesByKey.values());
+    }
+
+    public DefenseDefinition defense(String key) {
+        DefenseDefinition definition = defensesByKey.get(key);
+        if (definition == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown defense: " + key);
         }
         return definition;
     }
@@ -154,6 +167,10 @@ public class CatalogService {
             case TECHNOLOGIES -> {
                 TechnologyCatalog catalog = jsonMapper.treeToValue(data, TechnologyCatalog.class);
                 replaceAll(technologiesByKey, catalog.technologies(), TechnologyDefinition::key);
+            }
+            case DEFENSES -> {
+                DefenseCatalog catalog = jsonMapper.treeToValue(data, DefenseCatalog.class);
+                replaceAll(defensesByKey, catalog.defenses(), DefenseDefinition::key);
             }
         }
     }
