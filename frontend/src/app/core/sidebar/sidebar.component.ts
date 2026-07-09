@@ -18,7 +18,6 @@ export class SidebarComponent {
 
   protected readonly isAdmin = this.auth.isAdmin;
   protected readonly planets = signal<PlanetView[]>([]);
-  protected readonly universeExpanded = signal(true);
   protected readonly adminExpanded = signal(true);
 
   protected readonly catalogTypes = [
@@ -35,10 +34,6 @@ export class SidebarComponent {
         this.planets.set([]);
       }
     });
-  }
-
-  toggleUniverse(): void {
-    this.universeExpanded.update((v) => !v);
   }
 
   toggleAdmin(): void {

@@ -10,7 +10,7 @@
 
 <div class="card-grid">
   @for (tech of technologies(); track tech.key) {
-    <div class="card tech-card">
+    <div class="card tech-card" [class.card-locked]="!tech.unlocked">
       <div class="card-header">
         <div class="card-title">
           {{ tech.name }}
@@ -22,7 +22,13 @@
       </div>
       <div class="card-content">
         <p>{{ tech.description }}</p>
-        @if (tech.researchActive) {
+        @if (!tech.unlocked) {
+          <ul class="requirement-list">
+            @for (requirement of tech.missingRequirements; track requirement.label) {
+              <li>Requires {{ requirement.label }} level {{ requirement.requiredLevel }} (currently {{ requirement.currentLevel }})</li>
+            }
+          </ul>
+        } @else if (tech.researchActive) {
           <div class="progress progress-indeterminate"></div>
           <p class="countdown">Researching level {{ tech.researchTargetLevel }} — {{ remainingLabel(tech) }}</p>
         } @else {
@@ -41,7 +47,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          [disabled]="tech.researchActive || hasActiveResearch() || starting() === tech.key || planets().length === 0"
+          [disabled]="!tech.unlocked || tech.researchActive || hasActiveResearch() || starting() === tech.key || planets().length === 0"
           (click)="start(tech, +planetSelect.value)"
         >
           Research

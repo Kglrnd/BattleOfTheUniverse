@@ -1,10 +1,14 @@
 package de.kugi.dev.battleoftheuniverse.building;
 
 import de.kugi.dev.battleoftheuniverse.building.dto.BuildingView;
+import de.kugi.dev.battleoftheuniverse.building.dto.LockedRequirement;
 import de.kugi.dev.battleoftheuniverse.building.dto.UpgradeResponse;
 import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
+import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
+import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,25 +16,28 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class BuildingService {
 
-    private static final Set<String> STARTER_BUILDINGS = Set.of("metal_mine", "crystal_mine", "solar_plant");
+    private static final Set<String> STARTER_BUILDINGS = Set.of("main_building");
 
     private final PlanetBuildingRepository buildingRepository;
     private final ConstructionJobRepository jobRepository;
     private final CatalogService catalogService;
     private final ResourceService resourceService;
+    private final PlanetService planetService;
 
     public BuildingService(PlanetBuildingRepository buildingRepository, ConstructionJobRepository jobRepository,
-                            CatalogService catalogService, ResourceService resourceService) {
+                            CatalogService catalogService, ResourceService resourceService, PlanetService planetService) {
         this.buildingRepository = buildingRepository;
         this.jobRepository = jobRepository;
         this.catalogService = catalogService;
         this.resourceService = resourceService;
+        this.planetService = planetService;
     }
 
     @Transactional
@@ -56,9 +63,10 @@ public class BuildingService {
 
         return catalogService.buildings().stream()
                 .map(definition -> {
-                    int currentLevel = currentLevel(planetId, definition.key());
+                    int currentLevel = levelOf(planetId, definition.key());
                     int targetLevel = currentLevel + 1;
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getBuildingKey().equals(definition.key());
+                    List<LockedRequirement> missingRequirements = missingRequirements(planetId, definition.requirements());
                     return new BuildingView(
                             definition.key(),
                             definition.name(),
@@ -67,7 +75,9 @@ public class BuildingService {
                             catalogService.costFor(definition, targetLevel),
                             catalogService.buildTimeFor(definition, targetLevel).toSeconds(),
                             isBeingBuilt,
-                            isBeingBuilt ? activeJob.get().getEndsAt() : null
+                            isBeingBuilt ? activeJob.get().getEndsAt() : null,
+                            missingRequirements.isEmpty(),
+                            missingRequirements
                     );
                 })
                 .toList();
@@ -80,7 +90,10 @@ public class BuildingService {
         }
 
         BuildingDefinition definition = catalogService.building(buildingKey);
-        int targetLevel = currentLevel(planetId, buildingKey) + 1;
+        if (!requirementsMet(planetId, definition.requirements())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requirements not met for building: " + buildingKey);
+        }
+        int targetLevel = levelOf(planetId, buildingKey) + 1;
 
         ResourceCost cost = catalogService.costFor(definition, targetLevel);
         resourceService.debit(planetId, cost);
@@ -104,9 +117,38 @@ public class BuildingService {
         }
     }
 
-    private int currentLevel(Long planetId, String buildingKey) {
+    /** Current level of a building on a planet, or 0 if it hasn't been built yet. */
+    public int levelOf(Long planetId, String buildingKey) {
         return buildingRepository.findByPlanetIdAndBuildingKey(planetId, buildingKey)
                 .map(PlanetBuilding::getLevel)
                 .orElse(0);
+    }
+
+    private boolean requirementsMet(Long planetId, List<Requirement> requirements) {
+        return missingRequirements(planetId, requirements).isEmpty();
+    }
+
+    private List<LockedRequirement> missingRequirements(Long planetId, List<Requirement> requirements) {
+        List<LockedRequirement> missing = new ArrayList<>();
+        for (Requirement requirement : requirements) {
+            if (requirement.type() != RequirementType.BUILDING) {
+                continue;
+            }
+            int currentLevel = levelOf(planetId, requirement.key());
+            if (currentLevel < requirement.level()) {
+                missing.add(new LockedRequirement(catalogService.building(requirement.key()).name(), requirement.level(), currentLevel));
+            }
+        }
+        return missing;
+    }
+
+    /** Backfills a level-1 command center on any planet that predates the main-building requirement system. */
+    @Transactional
+    public void backfillMainBuilding() {
+        for (Long planetId : planetService.listAllIds()) {
+            if (buildingRepository.findByPlanetIdAndBuildingKey(planetId, "main_building").isEmpty()) {
+                buildingRepository.save(new PlanetBuilding(planetId, "main_building", 1));
+            }
+        }
     }
 }

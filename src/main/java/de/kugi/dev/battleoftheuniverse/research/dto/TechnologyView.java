@@ -4,6 +4,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 
 import java.time.Instant;
+import java.util.List;
 
 public record TechnologyView(
         String key,
@@ -15,6 +16,8 @@ public record TechnologyView(
         long nextLevelResearchTimeSeconds,
         boolean researchActive,
         Integer researchTargetLevel,
-        Instant researchEndsAt
+        Instant researchEndsAt,
+        boolean unlocked,
+        List<LockedRequirement> missingRequirements
 ) {
 }

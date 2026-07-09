@@ -4,13 +4,15 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatCountdown } from '../../core/countdown';
 import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
-import { BuildingView, FleetMovementView, IncomingMovementView, PlanetView, ResourceView } from '../../core/models';
+import { FleetMovementView, IncomingMovementView, PlanetView } from '../../core/models';
 import { FleetApiService } from '../fleet/fleet-api.service';
+import { BuildingListComponent } from './building-list.component';
+import { ResourceBarComponent } from './resource-bar.component';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-detail',
-  imports: [RouterLink],
+  imports: [RouterLink, ResourceBarComponent, BuildingListComponent],
   templateUrl: './planet-detail.component.html',
   styleUrl: './planet-detail.component.css'
 })
@@ -25,15 +27,11 @@ export class PlanetDetailComponent {
    * routes (e.g. picking a different planet from the sidebar dropdown), so the id
    * must be re-read reactively via paramMap - a one-off snapshot read would go stale.
    */
-  private planetId = 0;
+  protected planetId = 0;
 
   protected readonly planet = signal<PlanetView | null>(null);
-  protected readonly resources = signal<ResourceView[]>([]);
-  protected readonly buildings = signal<BuildingView[]>([]);
   protected readonly outgoingMovements = signal<FleetMovementView[]>([]);
   protected readonly incomingMovements = signal<IncomingMovementView[]>([]);
-  protected readonly upgrading = signal<string | null>(null);
-  protected readonly errorMessage = signal<string | null>(null);
   /** Bumped every second purely to force the countdown text to re-render. */
   protected readonly clockTick = signal(0);
 
@@ -44,8 +42,6 @@ export class PlanetDetailComponent {
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.planetId = Number(params.get('id'));
-      this.upgrading.set(null);
-      this.errorMessage.set(null);
       this.api.getPlanet(this.planetId).subscribe((planet) => this.planet.set(planet));
       this.refresh();
     });
@@ -59,8 +55,6 @@ export class PlanetDetailComponent {
   }
 
   private refresh(): void {
-    this.api.getResources(this.planetId).subscribe((resources) => this.resources.set(resources));
-    this.api.getBuildings(this.planetId).subscribe((buildings) => this.buildings.set(buildings));
     this.fleetApi.movements().subscribe((movements) => {
       this.outgoingMovements.set(movements.filter((m) => m.originPlanetId === this.planetId));
     });
@@ -69,38 +63,8 @@ export class PlanetDetailComponent {
     });
   }
 
-  upgrade(building: BuildingView): void {
-    if (this.upgrading()) {
-      return;
-    }
-    this.errorMessage.set(null);
-    this.upgrading.set(building.key);
-    this.api.upgrade(this.planetId, building.key).subscribe({
-      next: () => {
-        this.upgrading.set(null);
-        this.refresh();
-      },
-      error: (err) => {
-        this.upgrading.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Upgrade failed.');
-      }
-    });
-  }
-
-  hasActiveConstruction(): boolean {
-    return this.buildings().some((b) => b.constructionActive);
-  }
-
-  remainingLabel(building: BuildingView): string {
-    return this.countdown(building.constructionEndsAt);
-  }
-
   remainingMovementLabel(movement: FleetMovementView | IncomingMovementView): string {
-    return this.countdown(movement.arrivesAt);
-  }
-
-  private countdown(endsAt: string | null): string {
     this.clockTick();
-    return formatCountdown(endsAt);
+    return formatCountdown(movement.arrivesAt);
   }
 }

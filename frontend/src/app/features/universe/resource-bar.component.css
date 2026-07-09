@@ -1,0 +1,24 @@
+.resource-bar {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #161b22;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.resource {
+  display: flex;
+  flex-direction: column;
+}
+
+.resource .label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.resource .amount {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e6e8eb;
+}

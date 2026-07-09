@@ -91,6 +91,11 @@ public class PlanetService {
         return planetRepository.findByOwnerId(ownerId);
     }
 
+    /** Every planet's ID in the game - used by other modules for one-off backfills. */
+    public List<Long> listAllIds() {
+        return planetRepository.findAll().stream().map(Planet::getId).toList();
+    }
+
     /** Every planet in the game, owner username resolved - admin-only, so no owner scoping. */
     public List<AdminPlanetView> listAllForAdmin() {
         List<Planet> planets = planetRepository.findAll();

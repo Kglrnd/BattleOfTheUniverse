@@ -1,5 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.catalog;
 
+import java.util.List;
+
 /**
  * {@code driveScope}/{@code baseSpeedMultiplier}/{@code driveSpeedBonusPerLevel} only apply
  * to propulsion technologies ("drives"); every other technology sets {@code driveScope} to
@@ -23,6 +25,7 @@ public record TechnologyDefinition(
         int baseResearchTimeSeconds,
         DriveScope driveScope,
         double baseSpeedMultiplier,
-        double driveSpeedBonusPerLevel
+        double driveSpeedBonusPerLevel,
+        List<Requirement> requirements
 ) {
 }

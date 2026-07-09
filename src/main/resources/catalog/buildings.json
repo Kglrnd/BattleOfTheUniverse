@@ -1,6 +1,17 @@
 {
   "buildings": [
     {
+      "key": "main_building",
+      "name": "Command Center",
+      "description": "The planet's core facility. Higher levels unlock construction of more advanced buildings.",
+      "baseCost": { "metal": 100, "crystal": 50, "deuterium": 0 },
+      "costGrowthFactor": 2.0,
+      "baseBuildTimeSeconds": 60,
+      "producesResource": "NONE",
+      "baseProductionPerLevel": 0,
+      "requirements": []
+    },
+    {
       "key": "metal_mine",
       "name": "Metal Mine",
       "description": "Extracts metal ore from the planet's crust.",
@@ -8,7 +19,10 @@
       "costGrowthFactor": 1.5,
       "baseBuildTimeSeconds": 60,
       "producesResource": "METAL",
-      "baseProductionPerLevel": 30
+      "baseProductionPerLevel": 30,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 1 }
+      ]
     },
     {
       "key": "crystal_mine",
@@ -18,7 +32,10 @@
       "costGrowthFactor": 1.6,
       "baseBuildTimeSeconds": 75,
       "producesResource": "CRYSTAL",
-      "baseProductionPerLevel": 20
+      "baseProductionPerLevel": 20,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 1 }
+      ]
     },
     {
       "key": "deuterium_synthesizer",
@@ -28,7 +45,10 @@
       "costGrowthFactor": 1.6,
       "baseBuildTimeSeconds": 120,
       "producesResource": "DEUTERIUM",
-      "baseProductionPerLevel": 10
+      "baseProductionPerLevel": 10,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 1 }
+      ]
     },
     {
       "key": "solar_plant",
@@ -38,7 +58,10 @@
       "costGrowthFactor": 1.5,
       "baseBuildTimeSeconds": 90,
       "producesResource": "ENERGY",
-      "baseProductionPerLevel": 20
+      "baseProductionPerLevel": 20,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 1 }
+      ]
     },
     {
       "key": "shipyard",
@@ -48,7 +71,10 @@
       "costGrowthFactor": 2.0,
       "baseBuildTimeSeconds": 180,
       "producesResource": "NONE",
-      "baseProductionPerLevel": 0
+      "baseProductionPerLevel": 0,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 2 }
+      ]
     },
     {
       "key": "research_lab",
@@ -58,7 +84,10 @@
       "costGrowthFactor": 2.0,
       "baseBuildTimeSeconds": 180,
       "producesResource": "NONE",
-      "baseProductionPerLevel": 0
+      "baseProductionPerLevel": 0,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 2 }
+      ]
     }
   ]
 }

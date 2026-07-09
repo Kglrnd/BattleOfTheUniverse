@@ -53,6 +53,12 @@ export interface ResourceCost {
   deuterium: number;
 }
 
+export interface LockedRequirement {
+  label: string;
+  requiredLevel: number;
+  currentLevel: number;
+}
+
 export interface BuildingView {
   key: string;
   name: string;
@@ -62,6 +68,8 @@ export interface BuildingView {
   nextLevelBuildTimeSeconds: number;
   constructionActive: boolean;
   constructionEndsAt: string | null;
+  unlocked: boolean;
+  missingRequirements: LockedRequirement[];
 }
 
 export interface UpgradeResponse {
@@ -101,6 +109,8 @@ export interface TechnologyView {
   researchActive: boolean;
   researchTargetLevel: number | null;
   researchEndsAt: string | null;
+  unlocked: boolean;
+  missingRequirements: LockedRequirement[];
 }
 
 export interface ResearchStartResponse {

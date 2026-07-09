@@ -1,10 +1,15 @@
 package de.kugi.dev.battleoftheuniverse.research;
 
+import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
+import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.TechnologyDefinition;
+import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
+import de.kugi.dev.battleoftheuniverse.research.dto.LockedRequirement;
 import de.kugi.dev.battleoftheuniverse.research.dto.ResearchStartResponse;
 import de.kugi.dev.battleoftheuniverse.research.dto.TechnologyView;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
@@ -25,13 +30,18 @@ public class ResearchService {
     private final ResearchJobRepository jobRepository;
     private final CatalogService catalogService;
     private final ResourceService resourceService;
+    private final PlanetService planetService;
+    private final BuildingService buildingService;
 
     public ResearchService(TechnologyRepository technologyRepository, ResearchJobRepository jobRepository,
-                            CatalogService catalogService, ResourceService resourceService) {
+                            CatalogService catalogService, ResourceService resourceService,
+                            PlanetService planetService, BuildingService buildingService) {
         this.technologyRepository = technologyRepository;
         this.jobRepository = jobRepository;
         this.catalogService = catalogService;
         this.resourceService = resourceService;
+        this.planetService = planetService;
+        this.buildingService = buildingService;
     }
 
     public List<TechnologyView> listForUser(Long userId) {
@@ -43,6 +53,7 @@ public class ResearchService {
                     int targetLevel = level + 1;
                     boolean isBeingResearched = activeJob.isPresent()
                             && activeJob.get().getTechnologyKey().equals(definition.key());
+                    List<LockedRequirement> missingRequirements = missingRequirements(userId, definition.requirements());
                     return new TechnologyView(
                             definition.key(),
                             definition.name(),
@@ -53,7 +64,9 @@ public class ResearchService {
                             catalogService.researchTimeFor(definition, targetLevel).toSeconds(),
                             isBeingResearched,
                             isBeingResearched ? activeJob.get().getTargetLevel() : null,
-                            isBeingResearched ? activeJob.get().getEndsAt() : null
+                            isBeingResearched ? activeJob.get().getEndsAt() : null,
+                            missingRequirements.isEmpty(),
+                            missingRequirements
                     );
                 })
                 .toList();
@@ -66,6 +79,9 @@ public class ResearchService {
         }
 
         TechnologyDefinition definition = catalogService.technology(technologyKey);
+        if (!missingRequirements(userId, definition.requirements()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requirements not met for technology: " + technologyKey);
+        }
         int targetLevel = currentLevel(userId, technologyKey) + 1;
 
         ResourceCost cost = catalogService.costFor(definition, targetLevel);
@@ -143,6 +159,31 @@ public class ResearchService {
     private int currentLevel(Long userId, String technologyKey) {
         return technologyRepository.findByUserIdAndTechnologyKey(userId, technologyKey)
                 .map(Technology::getLevel)
+                .orElse(0);
+    }
+
+    private List<LockedRequirement> missingRequirements(Long userId, List<Requirement> requirements) {
+        List<LockedRequirement> missing = new ArrayList<>();
+        for (Requirement requirement : requirements) {
+            int currentLevel = switch (requirement.type()) {
+                case TECHNOLOGY -> currentLevel(userId, requirement.key());
+                case BUILDING -> highestBuildingLevel(userId, requirement.key());
+            };
+            if (currentLevel < requirement.level()) {
+                String label = requirement.type() == RequirementType.TECHNOLOGY
+                        ? catalogService.technology(requirement.key()).name()
+                        : catalogService.building(requirement.key()).name();
+                missing.add(new LockedRequirement(label, requirement.level(), currentLevel));
+            }
+        }
+        return missing;
+    }
+
+    /** Research is account-wide, so a building requirement is met if any owned planet qualifies. */
+    private int highestBuildingLevel(Long userId, String buildingKey) {
+        return planetService.listMine(userId).stream()
+                .mapToInt(planet -> buildingService.levelOf(planet.getId(), buildingKey))
+                .max()
                 .orElse(0);
     }
 }

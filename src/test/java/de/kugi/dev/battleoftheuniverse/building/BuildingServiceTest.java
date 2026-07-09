@@ -5,6 +5,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
+import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,17 +37,19 @@ class BuildingServiceTest {
     private CatalogService catalogService;
     @Mock
     private ResourceService resourceService;
+    @Mock
+    private PlanetService planetService;
 
     private BuildingService service;
 
     private static final Long PLANET_ID = 1L;
     private static final BuildingDefinition METAL_MINE = new BuildingDefinition(
             "metal_mine", "Metal Mine", "desc",
-            new ResourceCost(60, 15, 0), 1.5, 60, ResourceKey.METAL, 30);
+            new ResourceCost(60, 15, 0), 1.5, 60, ResourceKey.METAL, 30, List.of());
 
     @BeforeEach
     void setUp() {
-        service = new BuildingService(buildingRepository, jobRepository, catalogService, resourceService);
+        service = new BuildingService(buildingRepository, jobRepository, catalogService, resourceService, planetService);
     }
 
     @Test

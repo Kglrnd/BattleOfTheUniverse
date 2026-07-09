@@ -3,6 +3,7 @@ package de.kugi.dev.battleoftheuniverse.building.dto;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 
 import java.time.Instant;
+import java.util.List;
 
 public record BuildingView(
         String key,
@@ -12,6 +13,8 @@ public record BuildingView(
         ResourceCost nextLevelCost,
         long nextLevelBuildTimeSeconds,
         boolean constructionActive,
-        Instant constructionEndsAt
+        Instant constructionEndsAt,
+        boolean unlocked,
+        List<LockedRequirement> missingRequirements
 ) {
 }

@@ -252,6 +252,18 @@ a {
   font-weight: 600;
 }
 
+/* Not-yet-unlocked building/technology - visible so the player knows what's coming, but dimmed and inert */
+.card-locked {
+  opacity: 0.6;
+}
+
+.requirement-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
 .badge-attack {
   display: inline-block;
   padding: 0.15rem 0.5rem;
