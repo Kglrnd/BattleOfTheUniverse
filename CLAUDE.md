@@ -1,0 +1,80 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project overview
+
+Battle of the Universe is a browser-based, OGame/WarOfGalaxy-style strategy game: a Spring Boot backend (Java 25, Spring Modulith) and an Angular 22 frontend, talking over a cookie-session REST API.
+
+- Backend root: `src/main/java/de/kugi/dev/battleoftheuniverse/`
+- Frontend root: `frontend/src/app/`
+
+## Commands
+
+### Backend (run from repo root)
+
+- Run the app (dev profile is default): `./mvnw spring-boot:run`
+- Build / compile: `./mvnw compile`
+- Run all tests: `./mvnw test`
+- Run a single test class: `./mvnw test -Dtest=FleetServiceTest`
+- Run a single test method: `./mvnw test -Dtest=FleetServiceTest#methodName`
+- Package: `./mvnw package`
+
+On Windows use `mvnw.cmd` instead of `./mvnw` from `cmd.exe`; from Git Bash/PowerShell here `./mvnw` works.
+
+The H2 database file lives at `data/battleoftheuniverse.mv.db` (gitignored). Delete it to reset all game state; it is recreated (and reseeded, in dev) on next startup.
+
+### Frontend (run from `frontend/`)
+
+- Dev server: `npm start` (or `ng serve`) — serves on `http://localhost:4200`, proxying `/api` to the backend on `:8080` via `proxy.conf.json`
+- Build: `npm run build`
+- Unit tests (Vitest): `npm test`
+
+Backend must be running on port 8080 for the frontend dev server's API calls (and its cookie-based auth) to work.
+
+## Architecture
+
+### Spring Modulith module boundaries
+
+The backend is organized as explicit Spring Modulith `@ApplicationModule`s (one per top-level package, declared in each package's `package-info.java`), with enforced `allowedDependencies`. Whenever you add a new cross-package call, check the target module's `allowedDependencies` list first — `ModularityTests` (`./mvnw test -Dtest=ModularityTests`) fails the build if you violate the dependency graph.
+
+Dependency graph (who each module is allowed to call into):
+- `catalog` — depends on nothing. Static game-balance data (buildings/ships/technologies).
+- `user` — depends on nothing. Accounts, auth, roles.
+- `planet` — depends on `user`.
+- `resource` — depends on `planet`, `catalog`, `user`.
+- `building` — depends on `planet`, `resource`, `catalog`, `user`.
+- `research` — depends on `planet`, `resource`, `catalog`, `user`, `building`.
+- `fleet` — depends on `planet`, `resource`, `catalog`, `user`, `research` (and `research::dto`).
+- `combat` — depends on nothing (currently minimal: just `BattleReport`).
+- `config` — an `OPEN` module (exempt from the boundary check), depends on `user`. Cross-cutting security/CORS/error-handling wiring.
+
+Modules communicate either through direct calls allowed by the graph above, or through **Spring Modulith application events** for one-way, decoupled notification across module boundaries not covered by `allowedDependencies` — e.g. `user.UserRegistered` is published by the user module and consumed via `@ApplicationModuleListener` in `planet.UserRegistrationListener` to create a starter planet, and `planet.PlanetCreated` is consumed in `building.PlanetCreatedBuildingListener` and `resource.PlanetCreatedResourceListener` to bootstrap a new planet's buildings/resources. Prefer this event pattern over widening `allowedDependencies` when a module just needs to react to something happening elsewhere.
+
+`DevWorldSeeder` and `DevAccountSeeder` (dev-profile-only `ApplicationRunner`s) deliberately live in the root package, outside any `@ApplicationModule`, because they wire across modules that aren't allowed to depend on each other directly (bootstrap/dev-tooling glue, not game logic).
+
+### Per-module package shape
+
+Most modules follow the same internal layout: an entity (JPA), a `*Repository`, a `*Service` holding business logic, a `*Controller` exposing REST endpoints under `/api/...`, and a `dto/` subpackage of request/response records exposed across the module boundary (only `dto` subpackages are ever added to `allowedDependencies`, e.g. `research::dto`).
+
+### Async game mechanics: schedulers + due-job pattern
+
+Time-based mechanics (construction, research, production, shipyard queues, fleet missions) are modeled as DB rows with a completion timestamp (`ConstructionJob`, `ResearchJob`, `ShipyardJob`, `FleetMovement`), and a `@Scheduled` poller in the same module sweeps for and completes due rows: `ConstructionScheduler`/`ProductionScheduler` (building), `ResearchScheduler`, `ShipyardScheduler` and `FleetMissionScheduler` (fleet). When adding a new time-delayed mechanic, follow this same "persisted job row + scheduler poll" shape rather than in-memory timers.
+
+### Catalog: JSON-driven game balance data
+
+Buildings, ships, and technologies are *not* hardcoded — they're defined in JSON, validated against a JSON Schema generated at runtime from the corresponding Java record (`BuildingDefinition`, `ShipDefinition`, `TechnologyDefinition`) via `jsonschema-generator`, and served/edited through an admin UI (`AdminCatalogController` + frontend `catalog-editor.component.ts`, which renders a form from the generated schema using JSONForms).
+
+`CatalogService` seeds `config/catalog/*.json` (gitignored, mutable at runtime) from the read-only `classpath:catalog/*.json` defaults (`src/main/resources/catalog/`) on first access, validates on every load and save, and keeps parsed definitions in memory. To change default game balance, edit `src/main/resources/catalog/*.json`; to test live edits, use the admin catalog editor or edit `config/catalog/*.json` directly (existing live files are never overwritten by the classpath defaults).
+
+### Auth model
+
+Session-cookie auth via Spring Security form login (not JWT/OAuth): `POST /api/auth/login` and `/api/auth/register` are the only unauthenticated endpoints besides `/actuator/health` and `/h2-console/**`; everything else under `/api/**` requires an authenticated session. CSRF is enabled with a cookie-based token repository (`CsrfCookieFilter` ensures the XSRF cookie is present); the frontend's `credentialsInterceptor` attaches cookies to every `/api` request. Roles are `PLAYER`, `MODERATOR`, `ADMIN` (`Role` enum); admin-only endpoints/routes are gated by `@PreAuthorize`-style method security on the backend and `adminGuard` on the frontend router.
+
+### Frontend structure
+
+Angular 22, standalone components (no NgModules), lazy-loaded routes (`app.routes.ts`) guarded by `authGuard`/`adminGuard` (`core/auth.guard.ts`). `core/` holds cross-cutting concerns (auth service/guard, HTTP interceptor, sidebar shell); `features/` holds one directory per game area (`universe`, `fleet`, `research`, `auth`, `admin`), each typically pairing a `*-api.service.ts` (HTTP calls to the matching backend controller) with one or more components. The admin catalog editor's `renderers/` implement custom JSONForms renderers for editing catalog JSON Schema-driven forms.
+
+### Dev environment seeding
+
+On the `dev` profile (default), `DevAccountSeeder` creates `admin`/`player` accounts and `DevWorldSeeder` creates a few NPC "enemy" accounts with pre-built colonies plus maxes out the `player` account's buildings/research/fleet, so combat and fleet features are exercisable without manual grinding. Configure via `game.dev.*` in `application-dev.yml`; disable with `game.dev.seed-accounts=false`.
