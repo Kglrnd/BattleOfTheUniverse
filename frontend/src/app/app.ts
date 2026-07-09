@@ -3,10 +3,11 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { AuthService } from './core/auth.service';
 import { SidebarComponent } from './core/sidebar/sidebar.component';
+import { ResourceBarComponent } from './features/universe/resource-bar.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, ResourceBarComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

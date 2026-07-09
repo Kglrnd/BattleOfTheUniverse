@@ -42,7 +42,7 @@ nav a.active {
 .app-shell {
   display: flex;
   align-items: flex-start;
-  min-height: calc(100vh - 57px);
+  min-height: calc(100vh - 57px - 49px);
 }
 
 main {

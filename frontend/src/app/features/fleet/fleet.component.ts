@@ -1,8 +1,9 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
 import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
 import {
@@ -25,10 +26,11 @@ import { FleetApiService } from './fleet-api.service';
 export class FleetComponent {
   private readonly api = inject(UniverseApiService);
   private readonly fleetApi = inject(FleetApiService);
+  private readonly currentPlanet = inject(CurrentPlanetService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly planets = signal<PlanetView[]>([]);
+  protected readonly planets = this.currentPlanet.planets;
   protected readonly originPlanetId = signal<number | null>(null);
   protected readonly ships = signal<ShipyardView[]>([]);
   protected readonly movements = signal<FleetMovementView[]>([]);
@@ -50,9 +52,12 @@ export class FleetComponent {
   protected readonly formatShipManifest = formatShipManifest;
 
   constructor() {
-    this.api.listPlanets().subscribe((planets) => {
-      this.planets.set(planets);
-      this.applyRequestedOrigin(this.route.snapshot.queryParamMap.get('origin'));
+    this.currentPlanet.refresh();
+
+    effect(() => {
+      if (this.currentPlanet.planets().length > 0) {
+        this.applyRequestedOrigin(this.route.snapshot.queryParamMap.get('origin'));
+      }
     });
 
     // Angular reuses this component instance across navigations to the same /fleet
@@ -80,11 +85,12 @@ export class FleetComponent {
     }
     const requested = Number(originParam) || null;
     const isValidRequest = requested !== null && planets.some((p) => p.id === requested);
-    const next = isValidRequest
-      ? requested
-      : (this.originPlanetId() ?? planets.find((p) => p.homeworld)?.id ?? planets[0]?.id ?? null);
+    const next = isValidRequest ? requested : (this.originPlanetId() ?? this.currentPlanet.selectedPlanetId());
     if (next !== this.originPlanetId()) {
       this.originPlanetId.set(next);
+      if (next !== null) {
+        this.currentPlanet.select(next);
+      }
       this.manifestQuantities.set({});
       this.resetDriveOptions();
       this.loadShips();
@@ -97,6 +103,7 @@ export class FleetComponent {
 
   onOriginChange(id: number): void {
     this.originPlanetId.set(id);
+    this.currentPlanet.select(id);
     this.manifestQuantities.set({});
     this.resetDriveOptions();
     this.loadShips();

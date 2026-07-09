@@ -1,9 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { PlanetView } from '../../core/models';
+import { CurrentPlanetService } from '../../core/current-planet.service';
 import { DefenseComponent } from './defense.component';
-import { UniverseApiService } from '../universe/universe-api.service';
 
 @Component({
   selector: 'app-defense-page',
@@ -12,19 +11,16 @@ import { UniverseApiService } from '../universe/universe-api.service';
   styleUrl: './defense-page.component.css'
 })
 export class DefensePageComponent {
-  private readonly api = inject(UniverseApiService);
+  private readonly currentPlanet = inject(CurrentPlanetService);
 
-  protected readonly planets = signal<PlanetView[]>([]);
-  protected readonly selectedPlanetId = signal<number | null>(null);
+  protected readonly planets = this.currentPlanet.planets;
+  protected readonly selectedPlanetId = this.currentPlanet.selectedPlanetId;
 
   constructor() {
-    this.api.listPlanets().subscribe((planets) => {
-      this.planets.set(planets);
-      this.selectedPlanetId.set(planets.find((p) => p.homeworld)?.id ?? planets[0]?.id ?? null);
-    });
+    this.currentPlanet.refresh();
   }
 
   onPlanetChange(id: number): void {
-    this.selectedPlanetId.set(id);
+    this.currentPlanet.select(id);
   }
 }

@@ -11,6 +11,10 @@
   </nav>
 </header>
 
+@if (auth.isAuthenticated()) {
+  <app-resource-bar />
+}
+
 <div class="app-shell">
   @if (auth.isAuthenticated()) {
     <app-sidebar />

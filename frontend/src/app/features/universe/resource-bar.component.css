@@ -1,10 +1,17 @@
 .resource-bar {
   display: flex;
+  align-items: center;
   gap: 1.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1.5rem;
   background: #161b22;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.planet-label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding-right: 0.5rem;
+  border-right: 1px solid var(--color-border);
 }
 
 .resource {

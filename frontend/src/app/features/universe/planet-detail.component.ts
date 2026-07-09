@@ -2,23 +2,24 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
 import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
 import { FleetMovementView, IncomingMovementView, PlanetView } from '../../core/models';
 import { FleetApiService } from '../fleet/fleet-api.service';
 import { BuildingListComponent } from './building-list.component';
-import { ResourceBarComponent } from './resource-bar.component';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-detail',
-  imports: [RouterLink, ResourceBarComponent, BuildingListComponent],
+  imports: [RouterLink, BuildingListComponent],
   templateUrl: './planet-detail.component.html',
   styleUrl: './planet-detail.component.css'
 })
 export class PlanetDetailComponent {
   private readonly api = inject(UniverseApiService);
   private readonly fleetApi = inject(FleetApiService);
+  private readonly currentPlanet = inject(CurrentPlanetService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -42,6 +43,7 @@ export class PlanetDetailComponent {
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.planetId = Number(params.get('id'));
+      this.currentPlanet.select(this.planetId);
       this.api.getPlanet(this.planetId).subscribe((planet) => this.planet.set(planet));
       this.refresh();
     });

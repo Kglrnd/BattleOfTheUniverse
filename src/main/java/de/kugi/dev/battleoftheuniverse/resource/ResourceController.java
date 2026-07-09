@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -27,7 +28,10 @@ public class ResourceController {
     @GetMapping
     public List<ResourceView> resources(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {
         requireOwnership(planetId, principal);
-        return resourceService.raw(planetId).stream().map(resourceMapper::toView).toList();
+        return resourceService.raw(planetId).stream()
+                .sorted(Comparator.comparing(PlanetResource::getResourceKey))
+                .map(resourceMapper::toView)
+                .toList();
     }
 
     private void requireOwnership(Long planetId, AppUserPrincipal principal) {
