@@ -15,5 +15,11 @@ public enum FleetMissionType {
      * fleet and resources. Success depends on the sender's espionage research level; on
      * failure the target is notified. Ships always return to the origin planet either way.
      */
-    ESPIONAGE
+    ESPIONAGE,
+    /**
+     * Sends resource cargo to one of the sender's own planets. Ships are not consumed -
+     * they're stationed at the destination exactly like {@link #STATION} - and the cargo is
+     * delivered on arrival.
+     */
+    TRANSPORT
 }

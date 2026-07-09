@@ -41,8 +41,10 @@ export interface AdminPlanetView {
   createdAt: string;
 }
 
+export type ResourceKey = 'METAL' | 'CRYSTAL' | 'DEUTERIUM' | 'HYDROGEN' | 'ENERGY';
+
 export interface ResourceView {
-  resourceKey: 'METAL' | 'CRYSTAL' | 'DEUTERIUM' | 'ENERGY';
+  resourceKey: ResourceKey;
   displayName: string;
   amount: number;
 }
@@ -83,6 +85,8 @@ export interface ShipyardView {
   name: string;
   description: string;
   owned: number;
+  cargoCapacity: number;
+  hydrogenConsumption: number;
   unitCost: ResourceCost;
   unitBuildTimeSeconds: number;
   buildActive: boolean;
@@ -140,11 +144,16 @@ export interface ResearchStartResponse {
   endsAt: string;
 }
 
-export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK' | 'ESPIONAGE';
+export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK' | 'ESPIONAGE' | 'TRANSPORT';
 
 export interface ShipQuantity {
   shipKey: string;
   quantity: number;
+}
+
+export interface ResourceQuantity {
+  resourceKey: ResourceKey;
+  amount: number;
 }
 
 export interface DispatchRequest {
@@ -155,12 +164,14 @@ export interface DispatchRequest {
   targetSystem: number;
   targetPosition: number;
   driveKey: string;
+  cargo?: ResourceQuantity[];
 }
 
 export interface FleetMovementView {
   id: number;
   originPlanetId: number;
   ships: ShipQuantity[];
+  cargo: ResourceQuantity[];
   missionType: FleetMissionType;
   targetGalaxy: number;
   targetSystem: number;
@@ -184,11 +195,13 @@ export interface DriveOptionView {
   level: number;
   speedMultiplier: number;
   etaSeconds: number;
+  fuelCost: number;
 }
 
 export interface IncomingMovementView {
   id: number;
   ships: ShipQuantity[];
+  cargo: ResourceQuantity[];
   missionType: FleetMissionType;
   originPlanetId: number;
   originOwnerUsername: string;

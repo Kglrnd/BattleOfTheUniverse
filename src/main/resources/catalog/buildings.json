@@ -51,6 +51,19 @@
       ]
     },
     {
+      "key": "refinery",
+      "name": "Refinery",
+      "description": "Refines raw ice deposits into hydrogen fuel for ship propulsion.",
+      "baseCost": { "metal": 200, "crystal": 100, "deuterium": 50 },
+      "costGrowthFactor": 1.6,
+      "baseBuildTimeSeconds": 90,
+      "producesResource": "HYDROGEN",
+      "baseProductionPerLevel": 15,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 1 }
+      ]
+    },
+    {
       "key": "solar_plant",
       "name": "Solar Plant",
       "description": "Converts sunlight into energy to power other buildings.",

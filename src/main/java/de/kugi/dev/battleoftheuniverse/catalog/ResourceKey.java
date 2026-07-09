@@ -4,6 +4,7 @@ public enum ResourceKey {
     METAL("Metal"),
     CRYSTAL("Crystal"),
     DEUTERIUM("Deuterium"),
+    HYDROGEN("Hydrogen"),
     ENERGY("Energy"),
     /** Sentinel for "this building produces nothing" — kept out of JSON null/optional-schema territory. */
     NONE("None");

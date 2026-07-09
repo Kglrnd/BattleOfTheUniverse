@@ -37,6 +37,7 @@
               {{ ship.unitCost.deuterium }} deuterium ({{ ship.unitBuildTimeSeconds }}s)
             </p>
           }
+          <p class="field-hint">Cargo: {{ ship.cargoCapacity }} · Fuel: {{ ship.hydrogenConsumption }} hydrogen/hop</p>
         </div>
         <div class="card-actions">
           <label class="qty-label" [for]="'ship-qty-' + ship.key">Qty</label>
@@ -85,6 +86,14 @@
         >
           Attack
         </button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-primary]="missionType() === 'TRANSPORT'"
+          (click)="setMissionType('TRANSPORT')"
+        >
+          Transport
+        </button>
       </div>
     </div>
 
@@ -97,7 +106,7 @@
           @for (ship of ships(); track ship.key) {
             <div class="manifest-row">
               <span class="manifest-ship-name">{{ ship.name }}</span>
-              <span class="manifest-ship-owned">owned: {{ ship.owned }}</span>
+              <span class="manifest-ship-owned">owned: {{ ship.owned }} · cargo: {{ ship.cargoCapacity }} · fuel: {{ ship.hydrogenConsumption }}/hop</span>
               <input
                 [id]="'manifest-qty-' + ship.key"
                 type="number"
@@ -122,7 +131,7 @@
       }
     </div>
 
-    @if (missionType() === 'STATION') {
+    @if (missionType() === 'STATION' || missionType() === 'TRANSPORT') {
       <div class="field">
         <label for="dispatch-target-planet">Target planet</label>
         <select
@@ -138,6 +147,30 @@
       </div>
     }
 
+    @if (missionType() === 'TRANSPORT') {
+      <div class="field">
+        <span class="field-label-text">Cargo ({{ cargoUsed() }} / {{ fleetCargoCapacity() }} capacity used)</span>
+        <div class="fleet-manifest">
+          @for (resourceKey of transportableResources; track resourceKey) {
+            <div class="manifest-row">
+              <span class="manifest-ship-name">{{ resourceKey }}</span>
+              <span class="manifest-ship-owned">on hand: {{ resourceOnHand(resourceKey) }}</span>
+              <input
+                [id]="'cargo-qty-' + resourceKey"
+                type="number"
+                class="input manifest-qty-input"
+                min="0"
+                [max]="resourceOnHand(resourceKey)"
+                [value]="cargoQuantities()[resourceKey] ?? 0"
+                [disabled]="resourceOnHand(resourceKey) === 0"
+                (change)="updateCargoQuantity(resourceKey, $event)"
+              />
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <div class="field">
       <span class="field-label-text">Target coordinates [galaxy:system:position]</span>
       <div class="coordinate-inputs">
@@ -150,7 +183,7 @@
             class="input"
             min="1"
             placeholder="Galaxy"
-            [readOnly]="missionType() === 'STATION'"
+            [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
@@ -163,7 +196,7 @@
             class="input"
             min="1"
             placeholder="System"
-            [readOnly]="missionType() === 'STATION'"
+            [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
@@ -176,7 +209,7 @@
             class="input"
             min="1"
             placeholder="Position"
-            [readOnly]="missionType() === 'STATION'"
+            [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
@@ -187,7 +220,12 @@
           Find a free slot in <a routerLink="/universe/system">System view</a>.
         </p>
       } @else if (missionType() === 'ATTACK') {
-        <p class="field-hint">Enter the coordinates of another player's planet. There's no combat yet - the fleet returns home on arrival.</p>
+        <p class="field-hint">
+          Enter the coordinates of another player's planet. On arrival the fleet battles the target's defenses; survivors
+          return home and both sides receive a battle report.
+        </p>
+      } @else if (missionType() === 'TRANSPORT') {
+        <p class="field-hint">Delivers the loaded cargo to one of your own planets. Ships are not consumed - they're stationed at the destination.</p>
       }
     </div>
 
@@ -212,7 +250,7 @@
               </span>
               <span class="drive-option-row">
                 <span class="drive-option-detail">Level {{ option.level }} · x{{ option.speedMultiplier.toFixed(2) }} speed</span>
-                <span class="drive-option-eta">ETA {{ formatEta(option.etaSeconds) }}</span>
+                <span class="drive-option-eta">ETA {{ formatEta(option.etaSeconds) }} · Fuel {{ option.fuelCost }} hydrogen</span>
               </span>
             </button>
           }
@@ -248,6 +286,9 @@
             From {{ originLabel(movement.originPlanetId) }} to
             [{{ movement.targetGalaxy }}:{{ movement.targetSystem }}:{{ movement.targetPosition }}]
           </p>
+          @if (movement.cargo.length > 0) {
+            <p class="cost">Cargo: {{ formatCargo(movement.cargo) }}</p>
+          }
           <div class="progress progress-indeterminate"></div>
           <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
         </div>

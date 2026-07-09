@@ -16,6 +16,16 @@ public record DispatchRequest(
         @Min(1) int targetGalaxy,
         @Min(1) int targetSystem,
         @Min(1) int targetPosition,
-        @NotBlank String driveKey
+        @NotBlank String driveKey,
+        List<@Valid ResourceQuantity> cargo
 ) {
+    public DispatchRequest {
+        cargo = cargo == null ? List.of() : cargo;
+    }
+
+    /** Convenience overload for callers that never send cargo (every mission but TRANSPORT). */
+    public DispatchRequest(Long originPlanetId, List<ShipQuantity> ships, FleetMissionType missionType,
+                            int targetGalaxy, int targetSystem, int targetPosition, String driveKey) {
+        this(originPlanetId, ships, missionType, targetGalaxy, targetSystem, targetPosition, driveKey, List.of());
+    }
 }

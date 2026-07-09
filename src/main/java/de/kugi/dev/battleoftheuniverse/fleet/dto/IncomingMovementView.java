@@ -9,6 +9,7 @@ import java.util.List;
 public record IncomingMovementView(
         Long id,
         List<ShipQuantity> ships,
+        List<ResourceQuantity> cargo,
         FleetMissionType missionType,
         Long originPlanetId,
         String originOwnerUsername,

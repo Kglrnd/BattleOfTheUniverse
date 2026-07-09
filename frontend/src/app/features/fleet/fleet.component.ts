@@ -5,17 +5,22 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
-import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
+import { formatCargo, formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
 import {
   DriveOptionView,
   FleetMissionType,
   FleetMovementView,
   PlanetView,
+  ResourceKey,
+  ResourceQuantity,
+  ResourceView,
   ShipQuantity,
   ShipyardView
 } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 import { FleetApiService } from './fleet-api.service';
+
+const TRANSPORTABLE_RESOURCES: ResourceKey[] = ['METAL', 'CRYSTAL', 'DEUTERIUM', 'HYDROGEN'];
 
 @Component({
   selector: 'app-fleet',
@@ -33,10 +38,13 @@ export class FleetComponent {
   protected readonly planets = this.currentPlanet.planets;
   protected readonly originPlanetId = signal<number | null>(null);
   protected readonly ships = signal<ShipyardView[]>([]);
+  protected readonly resources = signal<ResourceView[]>([]);
   protected readonly movements = signal<FleetMovementView[]>([]);
   protected readonly missionType = signal<FleetMissionType>('COLONIZE');
   /** Ship key -> quantity picked for the fleet currently being assembled. */
   protected readonly manifestQuantities = signal<Record<string, number>>({});
+  /** Resource key -> amount picked for a TRANSPORT mission's cargo. */
+  protected readonly cargoQuantities = signal<Record<string, number>>({});
   protected readonly queuingShip = signal<string | null>(null);
   protected readonly dispatching = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -50,6 +58,8 @@ export class FleetComponent {
   protected readonly missionLabel = missionLabel;
   protected readonly isAttackMission = isAttackMission;
   protected readonly formatShipManifest = formatShipManifest;
+  protected readonly formatCargo = formatCargo;
+  protected readonly transportableResources = TRANSPORTABLE_RESOURCES;
 
   constructor() {
     this.currentPlanet.refresh();
@@ -92,8 +102,10 @@ export class FleetComponent {
         this.currentPlanet.select(next);
       }
       this.manifestQuantities.set({});
+      this.cargoQuantities.set({});
       this.resetDriveOptions();
       this.loadShips();
+      this.loadResources();
     }
   }
 
@@ -105,12 +117,15 @@ export class FleetComponent {
     this.originPlanetId.set(id);
     this.currentPlanet.select(id);
     this.manifestQuantities.set({});
+    this.cargoQuantities.set({});
     this.resetDriveOptions();
     this.loadShips();
+    this.loadResources();
   }
 
   setMissionType(type: FleetMissionType): void {
     this.missionType.set(type);
+    this.cargoQuantities.set({});
     this.resetDriveOptions();
   }
 
@@ -148,6 +163,41 @@ export class FleetComponent {
     return Object.entries(this.manifestQuantities())
       .filter(([, quantity]) => quantity > 0)
       .map(([shipKey, quantity]) => ({ shipKey, quantity }));
+  }
+
+  protected currentCargo(): ResourceQuantity[] {
+    return Object.entries(this.cargoQuantities())
+      .filter(([, amount]) => amount > 0)
+      .map(([resourceKey, amount]) => ({ resourceKey: resourceKey as ResourceKey, amount }));
+  }
+
+  protected resourceOnHand(resourceKey: ResourceKey): number {
+    return this.resources().find((r) => r.resourceKey === resourceKey)?.amount ?? 0;
+  }
+
+  protected fleetCargoCapacity(): number {
+    return this.currentManifest().reduce((total, entry) => {
+      const ship = this.ships().find((s) => s.key === entry.shipKey);
+      return total + (ship?.cargoCapacity ?? 0) * entry.quantity;
+    }, 0);
+  }
+
+  protected cargoUsed(): number {
+    return this.currentCargo().reduce((total, entry) => total + entry.amount, 0);
+  }
+
+  updateCargoQuantity(resourceKey: ResourceKey, event: Event): void {
+    const requested = (event.target as HTMLInputElement).valueAsNumber || 0;
+    const remainingCapacity = this.fleetCargoCapacity() - this.cargoUsed() + (this.cargoQuantities()[resourceKey] ?? 0);
+    const cap = Math.min(this.resourceOnHand(resourceKey), Math.max(0, remainingCapacity));
+    const amount = Math.max(0, Math.min(requested, cap));
+    const next = { ...this.cargoQuantities() };
+    if (amount > 0) {
+      next[resourceKey] = amount;
+    } else {
+      delete next[resourceKey];
+    }
+    this.cargoQuantities.set(next);
   }
 
   refreshDriveOptions(galaxy: number, system: number, position: number): void {
@@ -243,14 +293,17 @@ export class FleetComponent {
         targetGalaxy: galaxy,
         targetSystem: system,
         targetPosition: position,
-        driveKey
+        driveKey,
+        cargo: this.missionType() === 'TRANSPORT' ? this.currentCargo() : []
       })
       .subscribe({
         next: () => {
           this.dispatching.set(false);
           this.manifestQuantities.set({});
+          this.cargoQuantities.set({});
           this.resetDriveOptions();
           this.loadShips();
+          this.loadResources();
           this.refreshMovements();
         },
         error: (err) => {
@@ -282,6 +335,15 @@ export class FleetComponent {
       return;
     }
     this.api.getShips(originId).subscribe((ships) => this.ships.set(ships));
+  }
+
+  private loadResources(): void {
+    const originId = this.originPlanetId();
+    if (!originId) {
+      this.resources.set([]);
+      return;
+    }
+    this.api.getResources(originId).subscribe((resources) => this.resources.set(resources));
   }
 
   private refreshMovements(): void {

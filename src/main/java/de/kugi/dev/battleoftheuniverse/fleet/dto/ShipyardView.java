@@ -9,6 +9,8 @@ public record ShipyardView(
         String name,
         String description,
         int owned,
+        int cargoCapacity,
+        int hydrogenConsumption,
         ResourceCost unitCost,
         long unitBuildTimeSeconds,
         boolean buildActive,

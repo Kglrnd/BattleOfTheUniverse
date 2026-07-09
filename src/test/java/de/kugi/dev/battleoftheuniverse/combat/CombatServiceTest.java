@@ -54,9 +54,9 @@ class CombatServiceTest {
     private CombatService service;
 
     private final ShipDefinition cruiser = new ShipDefinition(
-            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, new ResourceCost(20000, 7000, 2000), 1800);
+            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4, new ResourceCost(20000, 7000, 2000), 1800);
     private final ShipDefinition lightFighter = new ShipDefinition(
-            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, new ResourceCost(3000, 1000, 0), 60);
+            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, 1, new ResourceCost(3000, 1000, 0), 60);
     private final DefenseDefinition lightTower = new DefenseDefinition(
             "light_defense_tower", "Light Defense Tower", "desc", 50, new ResourceCost(2000, 500, 0), 300, List.of());
 
@@ -142,7 +142,7 @@ class CombatServiceTest {
     void aFleetWithNoAttackPowerIsANoOp() {
         // colony_ship-only "attack" (attack stat 0) - shouldn't normally happen but must degrade gracefully.
         ShipDefinition colonyShip = new ShipDefinition(
-                "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, new ResourceCost(10000, 20000, 10000), 3600);
+                "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, 6, new ResourceCost(10000, 20000, 10000), 3600);
         when(catalogService.ship("colony_ship")).thenReturn(colonyShip);
         when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 5));
         when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());

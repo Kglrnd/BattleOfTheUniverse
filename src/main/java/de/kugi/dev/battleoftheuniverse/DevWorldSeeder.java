@@ -1,10 +1,12 @@
 package de.kugi.dev.battleoftheuniverse;
 
 import de.kugi.dev.battleoftheuniverse.building.BuildingService;
+import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetService;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
+import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import de.kugi.dev.battleoftheuniverse.user.DevAccountsProperties;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
@@ -40,6 +42,7 @@ public class DevWorldSeeder implements ApplicationRunner {
 
     private static final int MAX_LEVEL = 20;
     private static final int SHIP_QUANTITY = 500;
+    private static final long HYDROGEN_STOCKPILE = 1_000_000;
     private static final int PLANETS_PER_ENEMY = 3;
     private static final String ENEMY_PASSWORD = "enemy1234";
 
@@ -55,6 +58,7 @@ public class DevWorldSeeder implements ApplicationRunner {
     private final BuildingService buildingService;
     private final ResearchService researchService;
     private final FleetService fleetService;
+    private final ResourceService resourceService;
     private final DevAccountsProperties properties;
 
     @Override
@@ -98,6 +102,7 @@ public class DevWorldSeeder implements ApplicationRunner {
         buildingService.maxAllBuildings(home.getId(), MAX_LEVEL);
         researchService.maxAllTechnologies(playerId, MAX_LEVEL);
         fleetService.stockAllShips(home.getId(), SHIP_QUANTITY);
+        resourceService.credit(home.getId(), ResourceKey.HYDROGEN, HYDROGEN_STOCKPILE);
     }
 
     /**

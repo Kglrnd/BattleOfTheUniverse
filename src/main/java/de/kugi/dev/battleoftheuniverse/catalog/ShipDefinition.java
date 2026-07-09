@@ -8,6 +8,7 @@ public record ShipDefinition(
         int defense,
         int speed,
         int cargoCapacity,
+        int hydrogenConsumption,
         ResourceCost baseCost,
         int baseBuildTimeSeconds
 ) {

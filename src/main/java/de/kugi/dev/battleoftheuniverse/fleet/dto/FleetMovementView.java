@@ -9,6 +9,7 @@ public record FleetMovementView(
         Long id,
         Long originPlanetId,
         List<ShipQuantity> ships,
+        List<ResourceQuantity> cargo,
         FleetMissionType missionType,
         int targetGalaxy,
         int targetSystem,

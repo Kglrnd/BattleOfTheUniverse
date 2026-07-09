@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.fleet.dto;
 
+import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetMovement;
 import org.mapstruct.Mapper;
 
@@ -14,6 +15,12 @@ public interface FleetMovementMapper {
     default List<ShipQuantity> shipsToList(Map<String, Integer> ships) {
         return ships.entrySet().stream()
                 .map(e -> new ShipQuantity(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    default List<ResourceQuantity> cargoToList(Map<ResourceKey, Long> cargo) {
+        return cargo.entrySet().stream()
+                .map(e -> new ResourceQuantity(e.getKey(), e.getValue()))
                 .toList();
     }
 }

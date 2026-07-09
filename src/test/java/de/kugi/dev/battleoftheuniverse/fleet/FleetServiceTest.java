@@ -3,11 +3,13 @@ package de.kugi.dev.battleoftheuniverse.fleet;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
+import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementMapperImpl;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ResourceQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
@@ -34,7 +36,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -72,13 +76,13 @@ class FleetServiceTest {
 
     private final Planet origin = new Planet("Origin", OWNER_ID, 1, 1, 1, PlanetClass.TEMPERATE);
     private final ShipDefinition colonyShip = new ShipDefinition(
-            "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500,
+            "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, 6,
             new ResourceCost(10000, 20000, 10000), 3600);
     private final ShipDefinition cruiser = new ShipDefinition(
-            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50,
+            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4,
             new ResourceCost(20000, 7000, 2000), 1800);
     private final ShipDefinition lightFighter = new ShipDefinition(
-            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50,
+            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, 1,
             new ResourceCost(3000, 1000, 0), 60);
 
     @BeforeEach
@@ -476,5 +480,136 @@ class FleetServiceTest {
         long cruiserOnlyEta = service.listDriveOptions(OWNER_ID, cruiserOnlyRequest).getFirst().etaSeconds();
 
         assertThat(mixedEta).isGreaterThan(cruiserOnlyEta);
+    }
+
+    @Test
+    void dispatchDebitsHydrogenFuelBasedOnDistanceAndDrive() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 5)));
+        when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.of(1.0));
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(movementRepository.save(any(FleetMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 3)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+        service.dispatch(OWNER_ID, request);
+
+        // distance = POSITION_STEP (100) for a same-system 1-position hop; hops = 100/1000 = 0.1;
+        // consumptionRate = cruiser.hydrogenConsumption(4) * 3 = 12; fuel = ceil(12 * 0.1 / 1.0) = 2.
+        verify(resourceService).debit(ORIGIN_ID, ResourceKey.HYDROGEN, 2L);
+    }
+
+    @Test
+    void dispatchFailsCleanlyWhenHydrogenIsInsufficient() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 5)));
+        when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.of(1.0));
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "Not enough Hydrogen"))
+                .when(resourceService).debit(eq(ORIGIN_ID), eq(ResourceKey.HYDROGEN), anyLong());
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 3)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Hydrogen");
+        verify(shipRepository, never()).save(any());
+    }
+
+    @Test
+    void dispatchRejectsTransportToAPlanetOwnedBySomeoneElse() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet foreignPlanet = new Planet("Not mine", OTHER_OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(foreignPlanet));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.TRANSPORT, 1, 1, 2, DRIVE_KEY, List.of());
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("own planets");
+    }
+
+    @Test
+    void dispatchRejectsTransportingEnergy() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.TRANSPORT, 1, 1, 2, DRIVE_KEY,
+                List.of(new ResourceQuantity(ResourceKey.ENERGY, 10)));
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Energy");
+    }
+
+    @Test
+    void dispatchRejectsTransportCargoExceedingFleetCapacity() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+
+        // cruiser cargoCapacity is 50; requesting 100 metal exceeds a single cruiser's capacity.
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.TRANSPORT, 1, 1, 2, DRIVE_KEY,
+                List.of(new ResourceQuantity(ResourceKey.METAL, 100)));
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("capacity");
+    }
+
+    @Test
+    void dispatchDebitsTransportCargoAtTheOrigin() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 5)));
+        when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.of(1.0));
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(movementRepository.save(any(FleetMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.TRANSPORT, 1, 1, 2, DRIVE_KEY,
+                List.of(new ResourceQuantity(ResourceKey.METAL, 30), new ResourceQuantity(ResourceKey.CRYSTAL, 10)));
+        service.dispatch(OWNER_ID, request);
+
+        verify(resourceService).debit(ORIGIN_ID, ResourceKey.METAL, 30L);
+        verify(resourceService).debit(ORIGIN_ID, ResourceKey.CRYSTAL, 10L);
+    }
+
+    @Test
+    void completeDueMissionsDeliversCargoAndStationsShipsForADueTransportMovement() {
+        Planet target = new Planet("Target", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
+        target.setId(20L);
+        Map<ResourceKey, Long> cargo = Map.of(ResourceKey.METAL, 30L, ResourceKey.CRYSTAL, 10L);
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 1), cargo, FleetMissionType.TRANSPORT,
+                2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
+        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        when(planetService.findAtPosition(2, 5, 9)).thenReturn(Optional.of(target));
+        when(shipRepository.findByPlanetIdAndShipKey(20L, "cruiser")).thenReturn(Optional.empty());
+
+        service.completeDueMissions();
+
+        var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
+        verify(shipRepository).save(shipCaptor.capture());
+        assertThat(shipCaptor.getValue().getPlanetId()).isEqualTo(20L);
+        assertThat(shipCaptor.getValue().getShipKey()).isEqualTo("cruiser");
+        assertThat(shipCaptor.getValue().getQuantity()).isEqualTo(1);
+
+        verify(resourceService).credit(20L, ResourceKey.METAL, 30L);
+        verify(resourceService).credit(20L, ResourceKey.CRYSTAL, 10L);
+        verify(movementRepository).delete(movement);
     }
 }

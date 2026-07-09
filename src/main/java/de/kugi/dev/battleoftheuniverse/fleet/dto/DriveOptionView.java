@@ -9,6 +9,7 @@ public record DriveOptionView(
         DriveScope driveScope,
         int level,
         double speedMultiplier,
-        long etaSeconds
+        long etaSeconds,
+        long fuelCost
 ) {
 }

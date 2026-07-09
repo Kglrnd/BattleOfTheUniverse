@@ -27,6 +27,7 @@ public class ResourceService {
         repository.save(new PlanetResource(planetId, ResourceKey.METAL, 500));
         repository.save(new PlanetResource(planetId, ResourceKey.CRYSTAL, 300));
         repository.save(new PlanetResource(planetId, ResourceKey.DEUTERIUM, 100));
+        repository.save(new PlanetResource(planetId, ResourceKey.HYDROGEN, 50));
         repository.save(new PlanetResource(planetId, ResourceKey.ENERGY, 0));
     }
 
@@ -94,6 +95,23 @@ public class ResourceService {
         repository.save(metal);
         repository.save(crystal);
         repository.save(deuterium);
+    }
+
+    @Transactional
+    public void debit(Long planetId, ResourceKey key, long amount) {
+        PlanetResource resource = require(planetId, key);
+        if (resource.getAmount() < amount) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough " + key.getDisplayName());
+        }
+        resource.setAmount(resource.getAmount() - amount);
+        repository.save(resource);
+    }
+
+    @Transactional
+    public void credit(Long planetId, ResourceKey key, long amount) {
+        PlanetResource resource = require(planetId, key);
+        resource.setAmount(resource.getAmount() + amount);
+        repository.save(resource);
     }
 
     private PlanetResource require(Long planetId, ResourceKey key) {

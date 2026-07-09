@@ -3,6 +3,7 @@ package de.kugi.dev.battleoftheuniverse.fleet;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
+import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
@@ -10,6 +11,7 @@ import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementMapper;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ResourceQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
@@ -87,6 +89,8 @@ public class FleetService {
                             definition.name(),
                             definition.description(),
                             owned,
+                            definition.cargoCapacity(),
+                            definition.hydrogenConsumption(),
                             definition.baseCost(),
                             definition.baseBuildTimeSeconds(),
                             isBeingBuilt,
@@ -173,8 +177,8 @@ public class FleetService {
                 .map(m -> {
                     Planet target = myPlanetsByCoordinates.get(coordinateKey(m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition()));
                     return new IncomingMovementView(
-                            m.getId(), fleetMovementMapper.shipsToList(m.getShips()), m.getMissionType(),
-                            m.getOriginPlanetId(), usernamesBySenderId.getOrDefault(m.getOwnerId(), "unknown"),
+                            m.getId(), fleetMovementMapper.shipsToList(m.getShips()), fleetMovementMapper.cargoToList(m.getCargo()),
+                            m.getMissionType(), m.getOriginPlanetId(), usernamesBySenderId.getOrDefault(m.getOwnerId(), "unknown"),
                             target.getId(), target.getName(), m.getDepartedAt(), m.getArrivesAt()
                     );
                 })
@@ -210,22 +214,42 @@ public class FleetService {
                             "Not enough " + entry.shipKey() + " stationed on this planet"));
             shipsByKey.put(entry.shipKey(), ship);
         }
+
+        int slowestSpeed = slowestShipSpeed(request.ships());
+        DriveScope requiredScope = requiredScope(origin, request.targetGalaxy(), request.targetSystem());
+        double driveMultiplier = researchService.speedMultiplierForDrive(ownerId, request.driveKey(), requiredScope)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Chosen drive is not researched or not capable of a " + requiredScope + " mission"));
+        long distance = distanceBetween(origin, request.targetGalaxy(), request.targetSystem(), request.targetPosition());
+        long travelSeconds = travelTimeSeconds(distance, slowestSpeed, driveMultiplier);
+
+        // Fuel and (for TRANSPORT) cargo are debited before any ship quantity is mutated,
+        // preserving the same "fails cleanly, nothing partially departs" guarantee as the
+        // ship-stock check above.
+        long fuelNeeded = fuelCost(request.ships(), distance, driveMultiplier);
+        resourceService.debit(origin.getId(), ResourceKey.HYDROGEN, fuelNeeded);
+
+        Map<ResourceKey, Long> cargoManifest = Map.of();
+        if (request.missionType() == FleetMissionType.TRANSPORT) {
+            cargoManifest = request.cargo().stream()
+                    .collect(Collectors.toMap(ResourceQuantity::resourceKey, ResourceQuantity::amount));
+            for (var entry : cargoManifest.entrySet()) {
+                resourceService.debit(origin.getId(), entry.getKey(), entry.getValue());
+            }
+        }
+
         for (ShipQuantity entry : request.ships()) {
             Ship ship = shipsByKey.get(entry.shipKey());
             ship.setQuantity(ship.getQuantity() - entry.quantity());
             shipRepository.save(ship);
         }
 
-        int slowestSpeed = slowestShipSpeed(request.ships());
-        long travelSeconds = travelSecondsForDrive(ownerId, origin, request.driveKey(), slowestSpeed,
-                request.targetGalaxy(), request.targetSystem(), request.targetPosition());
-
         Instant departedAt = Instant.now();
         Instant arrivesAt = departedAt.plusSeconds(travelSeconds);
         Map<String, Integer> shipManifest = request.ships().stream()
                 .collect(Collectors.toMap(ShipQuantity::shipKey, ShipQuantity::quantity));
         FleetMovement movement = movementRepository.save(new FleetMovement(
-                origin.getId(), ownerId, shipManifest, request.missionType(),
+                origin.getId(), ownerId, shipManifest, cargoManifest, request.missionType(),
                 request.targetGalaxy(), request.targetSystem(), request.targetPosition(), departedAt, arrivesAt
         ));
 
@@ -257,6 +281,10 @@ public class FleetService {
                 case STATION -> stationShips(movement);
                 case ATTACK -> handleAttackArrival(movement);
                 case ESPIONAGE -> resolveEspionage(movement);
+                case TRANSPORT -> {
+                    stationShips(movement);
+                    deliverCargo(movement);
+                }
             }
             movementRepository.delete(movement);
         }
@@ -290,27 +318,17 @@ public class FleetService {
         Planet origin = planetService.getOwned(request.originPlanetId(), ownerId);
         DriveScope requiredScope = requiredScope(origin, request.targetGalaxy(), request.targetSystem());
         int slowestSpeed = slowestShipSpeed(request.ships());
+        long distance = distanceBetween(origin, request.targetGalaxy(), request.targetSystem(), request.targetPosition());
 
         return researchService.listAvailableDrives(ownerId, requiredScope).stream()
-                .map(drive -> toDriveOptionView(drive, origin, slowestSpeed, request.targetGalaxy(), request.targetSystem(), request.targetPosition()))
+                .map(drive -> toDriveOptionView(drive, request.ships(), distance, slowestSpeed))
                 .toList();
     }
 
-    private DriveOptionView toDriveOptionView(DriveOption drive, Planet origin, int shipSpeed,
-                                               int targetGalaxy, int targetSystem, int targetPosition) {
-        long etaSeconds = travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition,
-                shipSpeed, drive.speedMultiplier());
-        return new DriveOptionView(drive.key(), drive.name(), drive.driveScope(), drive.level(), drive.speedMultiplier(), etaSeconds);
-    }
-
-    private long travelSecondsForDrive(Long ownerId, Planet origin, String driveKey, int shipSpeed,
-                                        int targetGalaxy, int targetSystem, int targetPosition) {
-        DriveScope requiredScope = requiredScope(origin, targetGalaxy, targetSystem);
-        double driveMultiplier = researchService.speedMultiplierForDrive(ownerId, driveKey, requiredScope)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Chosen drive is not researched or not capable of a " + requiredScope + " mission"));
-
-        return travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition, shipSpeed, driveMultiplier);
+    private DriveOptionView toDriveOptionView(DriveOption drive, List<ShipQuantity> ships, long distance, int shipSpeed) {
+        long etaSeconds = travelTimeSeconds(distance, shipSpeed, drive.speedMultiplier());
+        long fuelCost = fuelCost(ships, distance, drive.speedMultiplier());
+        return new DriveOptionView(drive.key(), drive.name(), drive.driveScope(), drive.level(), drive.speedMultiplier(), etaSeconds, fuelCost);
     }
 
     private void validateMissionTarget(Long ownerId, DispatchRequest request) {
@@ -351,6 +369,25 @@ public class FleetService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot spy on your own planet");
                 }
             }
+            case TRANSPORT -> {
+                Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                if (!target.getOwnerId().equals(ownerId)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Can only transport resources to your own planets");
+                }
+                for (ResourceQuantity cargo : request.cargo()) {
+                    if (cargo.resourceKey() == ResourceKey.ENERGY || cargo.resourceKey() == ResourceKey.NONE) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot transport " + cargo.resourceKey().getDisplayName());
+                    }
+                }
+                long requestedCargo = request.cargo().stream().mapToLong(ResourceQuantity::amount).sum();
+                long cargoCapacity = request.ships().stream()
+                        .mapToLong(s -> (long) catalogService.ship(s.shipKey()).cargoCapacity() * s.quantity())
+                        .sum();
+                if (requestedCargo > cargoCapacity) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fleet cargo capacity exceeded");
+                }
+            }
         }
     }
 
@@ -358,6 +395,13 @@ public class FleetService {
         Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
                 .orElseThrow(() -> new IllegalStateException("Station target planet no longer exists"));
         movement.getShips().forEach((shipKey, quantity) -> creditShips(target.getId(), shipKey, quantity));
+    }
+
+    /** Credits a TRANSPORT movement's cargo onto the target planet on arrival. */
+    private void deliverCargo(FleetMovement movement) {
+        Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
+                .orElseThrow(() -> new IllegalStateException("Transport target planet no longer exists"));
+        movement.getCargo().forEach((key, amount) -> resourceService.credit(target.getId(), key, amount));
     }
 
     /** The espionage probe(s) always return to the origin planet, win or lose. */
@@ -461,15 +505,33 @@ public class FleetService {
         return DriveScope.SYSTEM;
     }
 
-    private long travelTimeSeconds(Planet origin, int targetGalaxy, int targetSystem, int targetPosition,
-                                    int shipSpeed, double driveMultiplier) {
+    private long distanceBetween(Planet origin, int targetGalaxy, int targetSystem, int targetPosition) {
         long distance = Math.abs(origin.getGalaxy() - targetGalaxy) * GALAXY_STEP
                 + Math.abs(origin.getSystem() - targetSystem) * SYSTEM_STEP
                 + Math.abs(origin.getPosition() - targetPosition) * POSITION_STEP;
-        distance = Math.max(distance, POSITION_STEP);
+        return Math.max(distance, POSITION_STEP);
+    }
 
+    private long travelTimeSeconds(long distance, int shipSpeed, double driveMultiplier) {
         double effectiveSpeed = shipSpeed * driveMultiplier;
         return Math.max(5, Math.round(distance / effectiveSpeed * 10));
+    }
+
+    /**
+     * Total hydrogen a fleet burns for a one-way trip: each ship type's per-unit consumption
+     * stat, summed across the fleet, scaled by distance (in {@link #SYSTEM_STEP}-sized "hops")
+     * and made cheaper by a faster/more efficient drive - mirrors the same distance/drive
+     * inputs {@link #travelTimeSeconds} already uses for ETA.
+     */
+    private long fuelCost(List<ShipQuantity> ships, long distance, double driveMultiplier) {
+        long consumptionRate = ships.stream()
+                .mapToLong(s -> (long) catalogService.ship(s.shipKey()).hydrogenConsumption() * s.quantity())
+                .sum();
+        if (consumptionRate <= 0) {
+            return 0;
+        }
+        double hops = (double) distance / SYSTEM_STEP;
+        return Math.max(1, Math.round(Math.ceil(consumptionRate * hops / driveMultiplier)));
     }
 
     private int ownedQuantity(Long planetId, String shipKey) {
