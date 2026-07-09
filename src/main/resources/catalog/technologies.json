@@ -17,7 +17,7 @@
     {
       "key": "laser_technology",
       "name": "Laser Technology",
-      "description": "Improves weapon damage output.",
+      "description": "Improves ship weapon damage output in combat.",
       "baseCost": { "metal": 200, "crystal": 100, "deuterium": 0 },
       "costGrowthFactor": 2.0,
       "baseResearchTimeSeconds": 600,
@@ -30,9 +30,9 @@
       ]
     },
     {
-      "key": "armor_technology",
-      "name": "Armor Technology",
-      "description": "Strengthens hull plating on all ships.",
+      "key": "shielding_technology",
+      "name": "Shielding Technology",
+      "description": "Improves defensive shields on stationed ships and defense towers.",
       "baseCost": { "metal": 1000, "crystal": 0, "deuterium": 0 },
       "costGrowthFactor": 2.0,
       "baseResearchTimeSeconds": 600,

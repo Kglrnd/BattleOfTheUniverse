@@ -3,10 +3,14 @@ package de.kugi.dev.battleoftheuniverse.combat;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DefenseDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
+import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.defense.DefenseService;
 import de.kugi.dev.battleoftheuniverse.fleet.AttackArrived;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetService;
+import de.kugi.dev.battleoftheuniverse.research.ResearchService;
+import de.kugi.dev.battleoftheuniverse.resource.PlanetResource;
+import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +45,10 @@ class CombatServiceTest {
     @Mock
     private CatalogService catalogService;
     @Mock
+    private ResearchService researchService;
+    @Mock
+    private ResourceService resourceService;
+    @Mock
     private ApplicationEventPublisher events;
 
     private CombatService service;
@@ -54,10 +62,12 @@ class CombatServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CombatService(fleetService, defenseService, catalogService, events);
+        service = new CombatService(fleetService, defenseService, catalogService, researchService, resourceService, events);
         lenient().when(catalogService.ship("cruiser")).thenReturn(cruiser);
         lenient().when(catalogService.ship("light_fighter")).thenReturn(lightFighter);
         lenient().when(catalogService.defense("light_defense_tower")).thenReturn(lightTower);
+        lenient().when(researchService.levelOf(any(), any())).thenReturn(0);
+        lenient().when(resourceService.raw(any())).thenReturn(List.of());
     }
 
     @Test
@@ -144,5 +154,74 @@ class CombatServiceTest {
         ArgumentCaptor<Map<String, Integer>> survivorsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(fleetService).creditShips(eq(ORIGIN_ID), survivorsCaptor.capture());
         assertThat(survivorsCaptor.getValue()).containsExactlyEntriesOf(Map.of("colony_ship", 1));
+    }
+
+    @Test
+    void weaponsResearchBoostsAttackPowerAndInflictsMoreTowerLosses() {
+        // Same shape as defenderMuchStrongerInflictsHeavyLossesOnTheAttacker (towers=20, base attackPower=400,
+        // unboosted losses would be 8) but the attacker has laser_technology level 5 -> x1.5 attack power = 600.
+        when(researchService.levelOf(ATTACKER_ID, "laser_technology")).thenReturn(5);
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 20));
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+
+        service.on(new AttackArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target", Map.of("cruiser", 1)));
+
+        // attackPower = round(400*1.5) = 600; powerTraded = min(600,1000) = 600; fraction = 0.6 -> floor(20*0.6) = 12
+        verify(defenseService).applyLosses(TARGET_PLANET_ID, Map.of("light_defense_tower", 12));
+    }
+
+    @Test
+    void shieldsResearchBoostsDefensePowerAndReducesTowerLosses() {
+        // Same shape as attackerMuchStrongerWipesTheDefenderWhileTakingProportionalLosses (attackPower=400,
+        // towers=10, base towerPower=500) but the defender has shielding_technology level 5 -> x1.5 = 750.
+        when(researchService.levelOf(DEFENDER_ID, "shielding_technology")).thenReturn(5);
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 10));
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+
+        service.on(new AttackArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target", Map.of("cruiser", 1)));
+
+        // towerPower = round(500*1.5) = 750; powerTraded = min(400,750) = 400; fraction = 400/750 -> floor(10*0.5333) = 5
+        verify(defenseService).applyLosses(TARGET_PLANET_ID, Map.of("light_defense_tower", 5));
+    }
+
+    @Test
+    void aDecisiveWinLootsResourcesCappedByCargoCapacity() {
+        // 10 cruisers (attackPower=4000, cargoCapacity=10*50=500) vs 5 towers (towerPower=250) - a decisive win.
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 5));
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+        when(resourceService.raw(TARGET_PLANET_ID)).thenReturn(List.of(
+                new PlanetResource(TARGET_PLANET_ID, ResourceKey.METAL, 1000),
+                new PlanetResource(TARGET_PLANET_ID, ResourceKey.CRYSTAL, 0),
+                new PlanetResource(TARGET_PLANET_ID, ResourceKey.DEUTERIUM, 0)));
+
+        service.on(new AttackArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target", Map.of("cruiser", 10)));
+
+        // 50% of 1000 metal = 500, which exactly fits the 500 cargo capacity - not scaled down.
+        ResourceCost expectedLoot = new ResourceCost(500, 0, 0);
+        verify(resourceService).debit(TARGET_PLANET_ID, expectedLoot);
+        verify(resourceService).credit(ORIGIN_ID, expectedLoot);
+
+        ArgumentCaptor<BattleReport> reportCaptor = ArgumentCaptor.forClass(BattleReport.class);
+        verify(events).publishEvent(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().resourcesLooted()).isEqualTo(expectedLoot);
+    }
+
+    @Test
+    void noLootingWhenTheAttackerDoesNotComeOutAhead() {
+        // towerPower(500) >= attackPower(400) - not a decisive win, so nothing should be looted even though
+        // the defender has resources on hand.
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 10));
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+        lenient().when(resourceService.raw(TARGET_PLANET_ID)).thenReturn(List.of(
+                new PlanetResource(TARGET_PLANET_ID, ResourceKey.METAL, 1000)));
+
+        service.on(new AttackArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target", Map.of("cruiser", 1)));
+
+        verify(resourceService, never()).debit(any(), any());
+        verify(resourceService, never()).credit(any(), any());
+
+        ArgumentCaptor<BattleReport> reportCaptor = ArgumentCaptor.forClass(BattleReport.class);
+        verify(events).publishEvent(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().resourcesLooted()).isEqualTo(ResourceCost.ZERO);
     }
 }

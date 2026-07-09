@@ -82,6 +82,20 @@ public class ResourceService {
         repository.save(deuterium);
     }
 
+    @Transactional
+    public void credit(Long planetId, ResourceCost amount) {
+        PlanetResource metal = require(planetId, ResourceKey.METAL);
+        PlanetResource crystal = require(planetId, ResourceKey.CRYSTAL);
+        PlanetResource deuterium = require(planetId, ResourceKey.DEUTERIUM);
+
+        metal.setAmount(metal.getAmount() + amount.metal());
+        crystal.setAmount(crystal.getAmount() + amount.crystal());
+        deuterium.setAmount(deuterium.getAmount() + amount.deuterium());
+        repository.save(metal);
+        repository.save(crystal);
+        repository.save(deuterium);
+    }
+
     private PlanetResource require(Long planetId, ResourceKey key) {
         return repository.findByPlanetIdAndResourceKey(planetId, key)
                 .orElseThrow(() -> new IllegalStateException("Planet %d has no %s ledger row".formatted(planetId, key)));

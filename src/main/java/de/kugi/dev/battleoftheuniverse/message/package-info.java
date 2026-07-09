@@ -1,5 +1,5 @@
 @org.springframework.modulith.ApplicationModule(
         displayName = "Message",
-        allowedDependencies = {"user", "fleet", "fleet::dto", "resource::dto", "combat"}
+        allowedDependencies = {"user", "fleet", "fleet::dto", "resource::dto", "combat", "catalog"}
 )
 package de.kugi.dev.battleoftheuniverse.message;
