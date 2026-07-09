@@ -137,6 +137,7 @@ public class FleetService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<FleetMovementView> listMovements(Long ownerId) {
         return movementRepository.findByOwnerId(ownerId).stream()
                 .map(FleetService::toView)
@@ -155,6 +156,7 @@ public class FleetService {
     }
 
     /** Every in-flight movement (sent by anyone) currently headed for one of this player's own planets. */
+    @Transactional(readOnly = true)
     public List<IncomingMovementView> listIncoming(Long ownerId) {
         Map<String, Planet> myPlanetsByCoordinates = planetService.listMine(ownerId).stream()
                 .collect(Collectors.toMap(FleetService::coordinateKey, Function.identity()));
