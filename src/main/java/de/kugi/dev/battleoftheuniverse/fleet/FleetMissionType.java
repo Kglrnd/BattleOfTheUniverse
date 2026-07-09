@@ -9,5 +9,11 @@ public enum FleetMissionType {
      * Sent at another player's planet. There's no combat resolution yet, so on arrival the
      * fleet simply turns around and its ships are credited back to the origin planet.
      */
-    ATTACK
+    ATTACK,
+    /**
+     * Sends espionage probes at another player's planet to gather intel on its stationed
+     * fleet and resources. Success depends on the sender's espionage research level; on
+     * failure the target is notified. Ships always return to the origin planet either way.
+     */
+    ESPIONAGE
 }

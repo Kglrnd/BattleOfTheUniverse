@@ -8,6 +8,8 @@ export function missionLabel(type: FleetMissionType): string {
       return 'Stationing';
     case 'ATTACK':
       return 'Attacking';
+    case 'ESPIONAGE':
+      return 'Spying';
   }
 }
 

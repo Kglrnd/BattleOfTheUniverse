@@ -48,6 +48,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/fleet/fleet.component').then((m) => m.FleetComponent)
   },
   {
+    path: 'espionage',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/espionage/espionage-page.component').then((m) => m.EspionagePageComponent)
+  },
+  {
     path: 'research',
     canActivate: [authGuard],
     loadComponent: () => import('./features/research/research.component').then((m) => m.ResearchComponent)

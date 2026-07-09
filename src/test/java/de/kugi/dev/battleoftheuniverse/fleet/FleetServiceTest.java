@@ -15,6 +15,7 @@ import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import de.kugi.dev.battleoftheuniverse.resource.dto.ResourceMapperImpl;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -82,7 +84,8 @@ class FleetServiceTest {
     @BeforeEach
     void setUp() {
         service = new FleetService(shipRepository, jobRepository, movementRepository, catalogService,
-                resourceService, planetService, researchService, userRepository, events, new FleetMovementMapperImpl());
+                resourceService, planetService, researchService, userRepository, events, new FleetMovementMapperImpl(),
+                new ResourceMapperImpl());
         origin.setId(ORIGIN_ID);
     }
 
@@ -267,6 +270,65 @@ class FleetServiceTest {
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("No planet");
+    }
+
+    @Test
+    void dispatchRejectsEspionageWithoutAProbe() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.ESPIONAGE, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("espionage probe");
+        verify(shipRepository, never()).save(any());
+    }
+
+    @Test
+    void dispatchRejectsSpyingOnYourOwnPlanet() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet ownPlanet = new Planet("Also mine", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(ownPlanet));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("espionage_probe", 1)),
+                FleetMissionType.ESPIONAGE, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("own planet");
+    }
+
+    @Test
+    void completeDueMissionsPublishesEspionageResolvedAndReturnsTheProbeToOrigin() {
+        Planet target = new Planet("Target", OTHER_OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
+        target.setId(20L);
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("espionage_probe", 1), FleetMissionType.ESPIONAGE,
+                2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
+        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        when(planetService.findAtPosition(2, 5, 9)).thenReturn(Optional.of(target));
+        when(researchService.levelOf(OWNER_ID, "espionage_technology")).thenReturn(0);
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "espionage_probe")).thenReturn(Optional.of(new Ship(ORIGIN_ID, "espionage_probe", 4)));
+        // Only consulted on a successful roll - stubbed leniently since the outcome is random.
+        lenient().when(shipRepository.findByPlanetId(20L)).thenReturn(List.of());
+        lenient().when(resourceService.raw(20L)).thenReturn(List.of());
+
+        service.completeDueMissions();
+
+        var eventCaptor = org.mockito.ArgumentCaptor.forClass(EspionageResolved.class);
+        verify(events).publishEvent(eventCaptor.capture());
+        EspionageResolved published = eventCaptor.getValue();
+        assertThat(published.attackerId()).isEqualTo(OWNER_ID);
+        assertThat(published.defenderId()).isEqualTo(OTHER_OWNER_ID);
+        assertThat(published.targetPlanetId()).isEqualTo(20L);
+        assertThat(published.targetPlanetName()).isEqualTo("Target");
+
+        var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
+        verify(shipRepository).save(shipCaptor.capture());
+        assertThat(shipCaptor.getValue().getPlanetId()).isEqualTo(ORIGIN_ID);
+        assertThat(shipCaptor.getValue().getShipKey()).isEqualTo("espionage_probe");
+        assertThat(shipCaptor.getValue().getQuantity()).isEqualTo(5);
+        verify(movementRepository).delete(movement);
     }
 
     @Test

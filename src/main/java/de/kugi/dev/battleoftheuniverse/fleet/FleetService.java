@@ -18,6 +18,8 @@ import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import de.kugi.dev.battleoftheuniverse.resource.dto.ResourceMapper;
+import de.kugi.dev.battleoftheuniverse.resource.dto.ResourceView;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,6 +55,14 @@ public class FleetService {
     /** Only this ship can found a colony - matches the "colony_ship" entry in the ship catalog. */
     private static final String COLONY_SHIP_KEY = "colony_ship";
 
+    /** Only this ship can run an espionage mission - matches the "espionage_probe" catalog entry. */
+    private static final String PROBE_SHIP_KEY = "espionage_probe";
+
+    /** Espionage success chance at technology level 0, before any per-level bonus. */
+    private static final double ESPIONAGE_BASE_CHANCE = 0.5;
+    private static final double ESPIONAGE_CHANCE_PER_LEVEL = 0.05;
+    private static final double ESPIONAGE_MAX_CHANCE = 0.95;
+
     private final ShipRepository shipRepository;
     private final ShipyardJobRepository jobRepository;
     private final FleetMovementRepository movementRepository;
@@ -62,6 +73,7 @@ public class FleetService {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher events;
     private final FleetMovementMapper fleetMovementMapper;
+    private final ResourceMapper resourceMapper;
 
     public List<ShipyardView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
@@ -236,6 +248,7 @@ public class FleetService {
                 case COLONIZE -> foundColony(movement);
                 case STATION -> stationShips(movement);
                 case ATTACK -> returnFleetToOrigin(movement);
+                case ESPIONAGE -> resolveEspionage(movement);
             }
             movementRepository.delete(movement);
         }
@@ -318,6 +331,18 @@ public class FleetService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot attack your own planet");
                 }
             }
+            case ESPIONAGE -> {
+                boolean hasProbe = request.ships().stream()
+                        .anyMatch(s -> PROBE_SHIP_KEY.equals(s.shipKey()));
+                if (!hasProbe) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An espionage mission needs at least one espionage probe in the fleet");
+                }
+                Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                if (target.getOwnerId().equals(ownerId)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot spy on your own planet");
+                }
+            }
         }
     }
 
@@ -330,6 +355,37 @@ public class FleetService {
     /** No combat resolution exists yet, so an attack fleet just turns around empty-handed. */
     private void returnFleetToOrigin(FleetMovement movement) {
         movement.getShips().forEach((shipKey, quantity) -> creditShips(movement.getOriginPlanetId(), shipKey, quantity));
+    }
+
+    /**
+     * Rolls the espionage attempt and publishes the outcome for {@code message} to notify the
+     * attacker (and, on failure, the defender) — see {@link EspionageResolved}. The probe(s)
+     * always return to the origin planet, win or lose; there's no combat resolution yet to
+     * model a probe being destroyed.
+     */
+    private void resolveEspionage(FleetMovement movement) {
+        Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
+                .orElseThrow(() -> new IllegalStateException("Espionage target planet no longer exists"));
+
+        int espionageLevel = researchService.levelOf(movement.getOwnerId(), "espionage_technology");
+        double chance = Math.min(ESPIONAGE_MAX_CHANCE, ESPIONAGE_BASE_CHANCE + ESPIONAGE_CHANCE_PER_LEVEL * espionageLevel);
+        boolean success = ThreadLocalRandom.current().nextDouble() < chance;
+
+        List<ShipQuantity> stationedShips = List.of();
+        List<ResourceView> resources = List.of();
+        if (success) {
+            stationedShips = shipRepository.findByPlanetId(target.getId()).stream()
+                    .map(ship -> new ShipQuantity(ship.getShipKey(), ship.getQuantity()))
+                    .toList();
+            resources = resourceService.raw(target.getId()).stream()
+                    .map(resourceMapper::toView)
+                    .toList();
+        }
+
+        events.publishEvent(new EspionageResolved(movement.getOwnerId(), target.getOwnerId(), target.getId(), target.getName(),
+                success, stationedShips, resources));
+
+        returnFleetToOrigin(movement);
     }
 
     private void creditShips(Long planetId, String shipKey, int quantity) {

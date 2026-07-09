@@ -119,7 +119,7 @@ export interface ResearchStartResponse {
   endsAt: string;
 }
 
-export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK';
+export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK' | 'ESPIONAGE';
 
 export interface ShipQuantity {
   shipKey: string;

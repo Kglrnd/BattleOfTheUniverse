@@ -40,7 +40,7 @@ public class ResearchService {
 
         return catalogService.technologies().stream()
                 .map(definition -> {
-                    int level = currentLevel(userId, definition.key());
+                    int level = levelOf(userId, definition.key());
                     int targetLevel = level + 1;
                     boolean isBeingResearched = activeJob.isPresent()
                             && activeJob.get().getTechnologyKey().equals(definition.key());
@@ -73,7 +73,7 @@ public class ResearchService {
         if (!missingRequirements(userId, definition.requirements()).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requirements not met for technology: " + technologyKey);
         }
-        int targetLevel = currentLevel(userId, technologyKey) + 1;
+        int targetLevel = levelOf(userId, technologyKey) + 1;
 
         ResourceCost cost = catalogService.costFor(definition, targetLevel);
         resourceService.debit(planetId, cost);
@@ -115,7 +115,7 @@ public class ResearchService {
      * too — see {@link DriveScope}.
      */
     public Optional<Double> speedMultiplierForDrive(Long userId, String driveKey, DriveScope requiredScope) {
-        int level = currentLevel(userId, driveKey);
+        int level = levelOf(userId, driveKey);
         if (level <= 0) {
             return Optional.empty();
         }
@@ -147,7 +147,7 @@ public class ResearchService {
         return options;
     }
 
-    private int currentLevel(Long userId, String technologyKey) {
+    public int levelOf(Long userId, String technologyKey) {
         return technologyRepository.findByUserIdAndTechnologyKey(userId, technologyKey)
                 .map(Technology::getLevel)
                 .orElse(0);
@@ -157,7 +157,7 @@ public class ResearchService {
         List<LockedRequirement> missing = new ArrayList<>();
         for (Requirement requirement : requirements) {
             int currentLevel = switch (requirement.type()) {
-                case TECHNOLOGY -> currentLevel(userId, requirement.key());
+                case TECHNOLOGY -> levelOf(userId, requirement.key());
                 case BUILDING -> highestBuildingLevel(userId, requirement.key());
             };
             if (currentLevel < requirement.level()) {

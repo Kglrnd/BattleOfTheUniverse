@@ -44,6 +44,20 @@
       ]
     },
     {
+      "key": "espionage_technology",
+      "name": "Espionage Technology",
+      "description": "Improves probe sensor calibration, increasing the chance that an espionage mission successfully gathers intelligence before being detected.",
+      "baseCost": { "metal": 200, "crystal": 1000, "deuterium": 500 },
+      "costGrowthFactor": 2.0,
+      "baseResearchTimeSeconds": 900,
+      "driveScope": "NONE",
+      "baseSpeedMultiplier": 1.0,
+      "driveSpeedBonusPerLevel": 0.0,
+      "requirements": [
+        { "type": "BUILDING", "key": "research_lab", "level": 1 }
+      ]
+    },
+    {
       "key": "chemical_drive",
       "name": "Chemical Drive",
       "description": "Basic thruster technology. Enables travel between positions within a system. Cheap and improves steadily - overtakes the Ion Drive at high levels.",

@@ -43,6 +43,17 @@
       "cargoCapacity": 7500,
       "baseCost": { "metal": 10000, "crystal": 20000, "deuterium": 10000 },
       "baseBuildTimeSeconds": 3600
+    },
+    {
+      "key": "espionage_probe",
+      "name": "Espionage Probe",
+      "description": "Unarmed reconnaissance ship built to slip past enemy sensors and report back on a planet's fleet and resources.",
+      "attack": 0,
+      "defense": 1,
+      "speed": 20000,
+      "cargoCapacity": 0,
+      "baseCost": { "metal": 1000, "crystal": 500, "deuterium": 0 },
+      "baseBuildTimeSeconds": 120
     }
   ]
 }
