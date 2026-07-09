@@ -137,6 +137,14 @@ public class FleetService {
         }
     }
 
+    /** Admin-triggered game reset: clears every stationed ship, shipyard order, and in-flight movement, game-wide. */
+    @Transactional
+    public void wipeAll() {
+        movementRepository.deleteAll();
+        jobRepository.deleteAll();
+        shipRepository.deleteAll();
+    }
+
     @Transactional(readOnly = true)
     public List<FleetMovementView> listMovements(Long ownerId) {
         return movementRepository.findByOwnerId(ownerId).stream()

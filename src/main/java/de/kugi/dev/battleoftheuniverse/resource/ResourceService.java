@@ -34,6 +34,12 @@ public class ResourceService {
         return repository.findByPlanetId(planetId);
     }
 
+    /** Admin-triggered game reset: clears every resource ledger, game-wide. */
+    @Transactional
+    public void wipeAll() {
+        repository.deleteAll();
+    }
+
     /**
      * Credits whatever whole units of production have accrued since the resource's
      * {@code lastUpdate}, then advances {@code lastUpdate} only by the time that was

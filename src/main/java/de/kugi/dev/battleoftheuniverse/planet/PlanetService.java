@@ -63,6 +63,11 @@ public class PlanetService {
     }
 
     private Planet createPlanet(Long ownerId, String name, boolean homeworld) {
+        int[] pos = randomFreePosition();
+        return place(ownerId, name, pos[0], pos[1], pos[2], homeworld);
+    }
+
+    private int[] randomFreePosition() {
         int galaxy;
         int system;
         int position;
@@ -73,7 +78,7 @@ public class PlanetService {
             position = usable.get(random.nextInt(usable.size()));
         } while (planetRepository.existsByGalaxyAndSystemAndPosition(galaxy, system, position));
 
-        return place(ownerId, name, galaxy, system, position, homeworld);
+        return new int[]{galaxy, system, position};
     }
 
     private Planet place(Long ownerId, String name, int galaxy, int system, int position, boolean homeworld) {
@@ -87,6 +92,27 @@ public class PlanetService {
 
     public List<Planet> listMine(Long ownerId) {
         return planetRepository.findByOwnerId(ownerId);
+    }
+
+    /**
+     * Admin-triggered game reset: deletes every colony, leaving only homeworlds, and moves
+     * each surviving homeworld to a fresh random position. Returns the repositioned
+     * homeworlds so the caller can reseed their starter building/resource state.
+     */
+    @Transactional
+    public List<Planet> resetAllToHomeworldsOnly() {
+        List<Planet> all = planetRepository.findAll();
+        planetRepository.deleteAll(all.stream().filter(p -> !p.isHomeworld()).toList());
+
+        List<Planet> updated = new ArrayList<>();
+        for (Planet homeworld : all.stream().filter(Planet::isHomeworld).toList()) {
+            int[] pos = randomFreePosition();
+            homeworld.setGalaxy(pos[0]);
+            homeworld.setSystem(pos[1]);
+            homeworld.setPosition(pos[2]);
+            updated.add(planetRepository.save(homeworld));
+        }
+        return updated;
     }
 
     /** Every planet's ID in the game - used by other modules for one-off backfills. */

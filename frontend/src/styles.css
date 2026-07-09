@@ -75,6 +75,16 @@ a {
   filter: brightness(1.08);
 }
 
+.btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-accent-contrast);
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
 /* Form fields */
 .field {
   display: flex;

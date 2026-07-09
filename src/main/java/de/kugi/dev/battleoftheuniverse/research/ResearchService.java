@@ -108,6 +108,13 @@ public class ResearchService {
         }
     }
 
+    /** Admin-triggered game reset: clears every researched technology and in-progress research, game-wide. */
+    @Transactional
+    public void wipeAll() {
+        jobRepository.deleteAll();
+        technologyRepository.deleteAll();
+    }
+
     /**
      * The travel-speed multiplier a specific researched drive grants, or empty if the user
      * hasn't researched it or its scope doesn't reach far enough. A drive's scope also covers

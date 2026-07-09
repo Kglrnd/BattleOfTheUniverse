@@ -45,6 +45,12 @@ public class MessageService {
         messageRepository.save(new Message(null, recipientUserId, subject, body, MessageType.SYSTEM, Instant.now()));
     }
 
+    /** Admin-triggered game reset: clears every message, game-wide. */
+    @Transactional
+    public void wipeAll() {
+        messageRepository.deleteAll();
+    }
+
     public List<MessageView> inbox(Long userId, String username) {
         List<Message> messages = messageRepository.findByRecipientUserIdOrderBySentAtDesc(userId);
         Map<Long, String> usernamesById = resolveUsernames(messages, Message::getSenderUserId);

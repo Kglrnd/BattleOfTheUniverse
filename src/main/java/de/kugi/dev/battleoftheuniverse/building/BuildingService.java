@@ -135,6 +135,13 @@ public class BuildingService {
         return missing;
     }
 
+    /** Admin-triggered game reset: clears every building and in-progress construction, game-wide. */
+    @Transactional
+    public void wipeAll() {
+        jobRepository.deleteAll();
+        buildingRepository.deleteAll();
+    }
+
     /** Backfills a level-1 command center on any planet that predates the main-building requirement system. */
     @Transactional
     public void backfillMainBuilding() {
