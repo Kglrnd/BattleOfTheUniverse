@@ -1,8 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { DispatchRequest, DriveOptionView, FleetMovementView, IncomingMovementView } from '../../core/models';
+import { DispatchRequest, DriveOptionsRequest, DriveOptionView, FleetMovementView, IncomingMovementView } from '../../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class FleetApiService {
@@ -20,19 +20,7 @@ export class FleetApiService {
     return this.http.get<IncomingMovementView[]>('/api/fleet/movements/incoming');
   }
 
-  driveOptions(
-    originPlanetId: number,
-    shipKey: string,
-    targetGalaxy: number,
-    targetSystem: number,
-    targetPosition: number
-  ): Observable<DriveOptionView[]> {
-    const params = new HttpParams()
-      .set('originPlanetId', originPlanetId)
-      .set('shipKey', shipKey)
-      .set('targetGalaxy', targetGalaxy)
-      .set('targetSystem', targetSystem)
-      .set('targetPosition', targetPosition);
-    return this.http.get<DriveOptionView[]>('/api/fleet/drive-options', { params });
+  driveOptions(request: DriveOptionsRequest): Observable<DriveOptionView[]> {
+    return this.http.post<DriveOptionView[]>('/api/fleet/drive-options', request);
   }
 }

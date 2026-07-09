@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatCountdown } from '../../core/countdown';
-import { isAttackMission, missionLabel } from '../../core/fleet-mission';
+import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
 import { BuildingView, FleetMovementView, IncomingMovementView, PlanetView, ResourceView } from '../../core/models';
 import { FleetApiService } from '../fleet/fleet-api.service';
 import { UniverseApiService } from './universe-api.service';
@@ -39,6 +39,7 @@ export class PlanetDetailComponent {
 
   protected readonly missionLabel = missionLabel;
   protected readonly isAttackMission = isAttackMission;
+  protected readonly formatShipManifest = formatShipManifest;
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {

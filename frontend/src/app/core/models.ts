@@ -111,10 +111,14 @@ export interface ResearchStartResponse {
 
 export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK';
 
-export interface DispatchRequest {
-  originPlanetId: number;
+export interface ShipQuantity {
   shipKey: string;
   quantity: number;
+}
+
+export interface DispatchRequest {
+  originPlanetId: number;
+  ships: ShipQuantity[];
   missionType: FleetMissionType;
   targetGalaxy: number;
   targetSystem: number;
@@ -125,14 +129,21 @@ export interface DispatchRequest {
 export interface FleetMovementView {
   id: number;
   originPlanetId: number;
-  shipKey: string;
-  quantity: number;
+  ships: ShipQuantity[];
   missionType: FleetMissionType;
   targetGalaxy: number;
   targetSystem: number;
   targetPosition: number;
   departedAt: string;
   arrivesAt: string;
+}
+
+export interface DriveOptionsRequest {
+  originPlanetId: number;
+  ships: ShipQuantity[];
+  targetGalaxy: number;
+  targetSystem: number;
+  targetPosition: number;
 }
 
 export interface DriveOptionView {
@@ -146,8 +157,7 @@ export interface DriveOptionView {
 
 export interface IncomingMovementView {
   id: number;
-  shipKey: string;
-  quantity: number;
+  ships: ShipQuantity[];
   missionType: FleetMissionType;
   originPlanetId: number;
   originOwnerUsername: string;

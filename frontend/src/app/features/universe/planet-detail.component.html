@@ -26,7 +26,7 @@
     @for (movement of incomingMovements(); track movement.id) {
       <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
         <div class="card-header">
-          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
           <div class="card-subtitle">{{ missionLabel(movement.missionType) }} · {{ movement.originOwnerUsername }}</div>
         </div>
         <div class="card-content">
@@ -44,7 +44,7 @@
     @for (movement of outgoingMovements(); track movement.id) {
       <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
         <div class="card-header">
-          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
           <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
         </div>
         <div class="card-content">

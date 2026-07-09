@@ -6,8 +6,10 @@ import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
@@ -23,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -131,10 +135,18 @@ public class FleetService {
 
     public List<FleetMovementView> listMovements(Long ownerId) {
         return movementRepository.findByOwnerId(ownerId).stream()
-                .map(m -> new FleetMovementView(
-                        m.getId(), m.getOriginPlanetId(), m.getShipKey(), m.getQuantity(), m.getMissionType(),
-                        m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition(), m.getDepartedAt(), m.getArrivesAt()
-                ))
+                .map(FleetService::toView)
+                .toList();
+    }
+
+    private static FleetMovementView toView(FleetMovement m) {
+        return new FleetMovementView(m.getId(), m.getOriginPlanetId(), toShipList(m.getShips()), m.getMissionType(),
+                m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition(), m.getDepartedAt(), m.getArrivesAt());
+    }
+
+    private static List<ShipQuantity> toShipList(Map<String, Integer> ships) {
+        return ships.entrySet().stream()
+                .map(e -> new ShipQuantity(e.getKey(), e.getValue()))
                 .toList();
     }
 
@@ -158,7 +170,7 @@ public class FleetService {
                 .map(m -> {
                     Planet target = myPlanetsByCoordinates.get(coordinateKey(m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition()));
                     return new IncomingMovementView(
-                            m.getId(), m.getShipKey(), m.getQuantity(), m.getMissionType(),
+                            m.getId(), toShipList(m.getShips()), m.getMissionType(),
                             m.getOriginPlanetId(), usernamesBySenderId.getOrDefault(m.getOwnerId(), "unknown"),
                             target.getId(), target.getName(), m.getDepartedAt(), m.getArrivesAt()
                     );
@@ -183,37 +195,62 @@ public class FleetService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target must differ from the origin planet");
         }
         validateMissionTarget(ownerId, request);
+        validateNoDuplicateShipKeys(request.ships());
 
-        Ship ship = shipRepository.findByPlanetIdAndShipKey(origin.getId(), request.shipKey())
-                .filter(s -> s.getQuantity() >= request.quantity())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Not enough ships stationed on this planet"));
+        // Validate every ship type has enough stock before debiting any of them, so a fleet
+        // with one under-stocked ship class fails cleanly instead of partially departing.
+        Map<String, Ship> shipsByKey = new HashMap<>();
+        for (ShipQuantity entry : request.ships()) {
+            Ship ship = shipRepository.findByPlanetIdAndShipKey(origin.getId(), entry.shipKey())
+                    .filter(s -> s.getQuantity() >= entry.quantity())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                            "Not enough " + entry.shipKey() + " stationed on this planet"));
+            shipsByKey.put(entry.shipKey(), ship);
+        }
+        for (ShipQuantity entry : request.ships()) {
+            Ship ship = shipsByKey.get(entry.shipKey());
+            ship.setQuantity(ship.getQuantity() - entry.quantity());
+            shipRepository.save(ship);
+        }
 
-        long travelSeconds = travelSecondsForDrive(ownerId, origin, request.driveKey(), request.shipKey(),
+        int slowestSpeed = slowestShipSpeed(request.ships());
+        long travelSeconds = travelSecondsForDrive(ownerId, origin, request.driveKey(), slowestSpeed,
                 request.targetGalaxy(), request.targetSystem(), request.targetPosition());
-
-        ship.setQuantity(ship.getQuantity() - request.quantity());
-        shipRepository.save(ship);
 
         Instant departedAt = Instant.now();
         Instant arrivesAt = departedAt.plusSeconds(travelSeconds);
+        Map<String, Integer> shipManifest = request.ships().stream()
+                .collect(Collectors.toMap(ShipQuantity::shipKey, ShipQuantity::quantity));
         FleetMovement movement = movementRepository.save(new FleetMovement(
-                origin.getId(), ownerId, request.shipKey(), request.quantity(), request.missionType(),
+                origin.getId(), ownerId, shipManifest, request.missionType(),
                 request.targetGalaxy(), request.targetSystem(), request.targetPosition(), departedAt, arrivesAt
         ));
 
-        return new FleetMovementView(movement.getId(), movement.getOriginPlanetId(), movement.getShipKey(),
-                movement.getQuantity(), movement.getMissionType(), movement.getTargetGalaxy(), movement.getTargetSystem(),
-                movement.getTargetPosition(), movement.getDepartedAt(), movement.getArrivesAt());
+        return toView(movement);
+    }
+
+    private void validateNoDuplicateShipKeys(List<ShipQuantity> ships) {
+        Set<String> seen = new HashSet<>();
+        for (ShipQuantity entry : ships) {
+            if (!seen.add(entry.shipKey())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Duplicate ship type in fleet: " + entry.shipKey());
+            }
+        }
+    }
+
+    /** A fleet travels at the speed of its slowest ship. */
+    private int slowestShipSpeed(List<ShipQuantity> ships) {
+        return ships.stream()
+                .mapToInt(s -> catalogService.ship(s.shipKey()).speed())
+                .min()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one ship is required"));
     }
 
     @Transactional
     public void completeDueMissions() {
         for (FleetMovement movement : movementRepository.findByArrivesAtBefore(Instant.now())) {
             switch (movement.getMissionType()) {
-                case COLONIZE -> planetService.createColonyPlanetAt(
-                        movement.getOwnerId(),
-                        "Colony [%d:%d:%d]".formatted(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition()),
-                        movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition());
+                case COLONIZE -> foundColony(movement);
                 case STATION -> stationShips(movement);
                 case ATTACK -> returnFleetToOrigin(movement);
             }
@@ -222,44 +259,62 @@ public class FleetService {
     }
 
     /**
-     * Every drive the player could pick for a hypothetical dispatch, each with the ETA it
-     * would produce for the given ship - lets the player compare before committing to one via
-     * {@link #dispatch}, without actually sending anything.
+     * Founds the colony (consuming the colony ship(s)) and stations every other ship class
+     * that rode along in the same fleet directly on the new colony - lets a mixed fleet
+     * colonize and garrison in a single dispatch.
      */
-    public List<DriveOptionView> listDriveOptions(Long ownerId, Long originPlanetId, String shipKey,
-                                                    int targetGalaxy, int targetSystem, int targetPosition) {
-        Planet origin = planetService.getOwned(originPlanetId, ownerId);
-        DriveScope requiredScope = requiredScope(origin, targetGalaxy, targetSystem);
-        ShipDefinition shipDefinition = catalogService.ship(shipKey);
+    private void foundColony(FleetMovement movement) {
+        Planet colony = planetService.createColonyPlanetAt(
+                movement.getOwnerId(),
+                "Colony [%d:%d:%d]".formatted(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition()),
+                movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition());
+        movement.getShips().forEach((shipKey, quantity) -> {
+            if (!COLONY_SHIP_KEY.equals(shipKey)) {
+                creditShips(colony.getId(), shipKey, quantity);
+            }
+        });
+    }
+
+    /**
+     * Every drive the player could pick for a hypothetical dispatch, each with the ETA it
+     * would produce for the given fleet - lets the player compare before committing to one via
+     * {@link #dispatch}, without actually sending anything. A mixed fleet travels at the speed
+     * of its slowest ship.
+     */
+    public List<DriveOptionView> listDriveOptions(Long ownerId, DriveOptionsRequest request) {
+        Planet origin = planetService.getOwned(request.originPlanetId(), ownerId);
+        DriveScope requiredScope = requiredScope(origin, request.targetGalaxy(), request.targetSystem());
+        int slowestSpeed = slowestShipSpeed(request.ships());
 
         return researchService.listAvailableDrives(ownerId, requiredScope).stream()
-                .map(drive -> toDriveOptionView(drive, origin, shipDefinition, targetGalaxy, targetSystem, targetPosition))
+                .map(drive -> toDriveOptionView(drive, origin, slowestSpeed, request.targetGalaxy(), request.targetSystem(), request.targetPosition()))
                 .toList();
     }
 
-    private DriveOptionView toDriveOptionView(DriveOption drive, Planet origin, ShipDefinition shipDefinition,
+    private DriveOptionView toDriveOptionView(DriveOption drive, Planet origin, int shipSpeed,
                                                int targetGalaxy, int targetSystem, int targetPosition) {
         long etaSeconds = travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition,
-                shipDefinition.speed(), drive.speedMultiplier());
+                shipSpeed, drive.speedMultiplier());
         return new DriveOptionView(drive.key(), drive.name(), drive.driveScope(), drive.level(), drive.speedMultiplier(), etaSeconds);
     }
 
-    private long travelSecondsForDrive(Long ownerId, Planet origin, String driveKey, String shipKey,
+    private long travelSecondsForDrive(Long ownerId, Planet origin, String driveKey, int shipSpeed,
                                         int targetGalaxy, int targetSystem, int targetPosition) {
         DriveScope requiredScope = requiredScope(origin, targetGalaxy, targetSystem);
         double driveMultiplier = researchService.speedMultiplierForDrive(ownerId, driveKey, requiredScope)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
                         "Chosen drive is not researched or not capable of a " + requiredScope + " mission"));
 
-        ShipDefinition shipDefinition = catalogService.ship(shipKey);
-        return travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition, shipDefinition.speed(), driveMultiplier);
+        return travelTimeSeconds(origin, targetGalaxy, targetSystem, targetPosition, shipSpeed, driveMultiplier);
     }
 
     private void validateMissionTarget(Long ownerId, DispatchRequest request) {
         switch (request.missionType()) {
             case COLONIZE -> {
-                if (!COLONY_SHIP_KEY.equals(request.shipKey())) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only colony ships can found a colony");
+                boolean hasColonyShip = request.ships().stream()
+                        .anyMatch(s -> COLONY_SHIP_KEY.equals(s.shipKey()));
+                if (!hasColonyShip) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A colonize mission needs at least one colony ship in the fleet");
                 }
                 if (!planetService.isColonizable(request.targetGalaxy(), request.targetSystem(), request.targetPosition())) {
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "Target position cannot be colonized");
@@ -285,12 +340,12 @@ public class FleetService {
     private void stationShips(FleetMovement movement) {
         Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
                 .orElseThrow(() -> new IllegalStateException("Station target planet no longer exists"));
-        creditShips(target.getId(), movement.getShipKey(), movement.getQuantity());
+        movement.getShips().forEach((shipKey, quantity) -> creditShips(target.getId(), shipKey, quantity));
     }
 
     /** No combat resolution exists yet, so an attack fleet just turns around empty-handed. */
     private void returnFleetToOrigin(FleetMovement movement) {
-        creditShips(movement.getOriginPlanetId(), movement.getShipKey(), movement.getQuantity());
+        movement.getShips().forEach((shipKey, quantity) -> creditShips(movement.getOriginPlanetId(), shipKey, quantity));
     }
 
     private void creditShips(Long planetId, String shipKey, int quantity) {

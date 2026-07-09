@@ -4,8 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatCountdown } from '../../core/countdown';
-import { isAttackMission, missionLabel } from '../../core/fleet-mission';
-import { DriveOptionView, FleetMissionType, FleetMovementView, PlanetView, ShipyardView } from '../../core/models';
+import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
+import {
+  DriveOptionView,
+  FleetMissionType,
+  FleetMovementView,
+  PlanetView,
+  ShipQuantity,
+  ShipyardView
+} from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 import { FleetApiService } from './fleet-api.service';
 
@@ -26,6 +33,8 @@ export class FleetComponent {
   protected readonly ships = signal<ShipyardView[]>([]);
   protected readonly movements = signal<FleetMovementView[]>([]);
   protected readonly missionType = signal<FleetMissionType>('COLONIZE');
+  /** Ship key -> quantity picked for the fleet currently being assembled. */
+  protected readonly manifestQuantities = signal<Record<string, number>>({});
   protected readonly queuingShip = signal<string | null>(null);
   protected readonly dispatching = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -38,6 +47,7 @@ export class FleetComponent {
 
   protected readonly missionLabel = missionLabel;
   protected readonly isAttackMission = isAttackMission;
+  protected readonly formatShipManifest = formatShipManifest;
 
   constructor() {
     this.api.listPlanets().subscribe((planets) => {
@@ -75,6 +85,8 @@ export class FleetComponent {
       : (this.originPlanetId() ?? planets.find((p) => p.homeworld)?.id ?? planets[0]?.id ?? null);
     if (next !== this.originPlanetId()) {
       this.originPlanetId.set(next);
+      this.manifestQuantities.set({});
+      this.resetDriveOptions();
       this.loadShips();
     }
   }
@@ -85,6 +97,7 @@ export class FleetComponent {
 
   onOriginChange(id: number): void {
     this.originPlanetId.set(id);
+    this.manifestQuantities.set({});
     this.resetDriveOptions();
     this.loadShips();
   }
@@ -98,8 +111,7 @@ export class FleetComponent {
     event: Event,
     galaxyInput: HTMLInputElement,
     systemInput: HTMLInputElement,
-    positionInput: HTMLInputElement,
-    shipKey: string
+    positionInput: HTMLInputElement
   ): void {
     const targetId = Number((event.target as HTMLSelectElement).value);
     const target = this.planets().find((p) => p.id === targetId);
@@ -109,39 +121,61 @@ export class FleetComponent {
     galaxyInput.value = String(target.galaxy);
     systemInput.value = String(target.system);
     positionInput.value = String(target.position);
-    this.refreshDriveOptions(shipKey, target.galaxy, target.system, target.position);
+    this.refreshDriveOptions(target.galaxy, target.system, target.position);
   }
 
-  refreshDriveOptions(shipKey: string, galaxy: number, system: number, position: number): void {
+  updateManifestQuantity(shipKey: string, event: Event, galaxy: number, system: number, position: number): void {
+    const requested = (event.target as HTMLInputElement).valueAsNumber || 0;
+    const quantity = Math.max(0, Math.min(requested, this.shipsAvailable(shipKey)));
+    const next = { ...this.manifestQuantities() };
+    if (quantity > 0) {
+      next[shipKey] = quantity;
+    } else {
+      delete next[shipKey];
+    }
+    this.manifestQuantities.set(next);
+    this.refreshDriveOptions(galaxy, system, position);
+  }
+
+  protected currentManifest(): ShipQuantity[] {
+    return Object.entries(this.manifestQuantities())
+      .filter(([, quantity]) => quantity > 0)
+      .map(([shipKey, quantity]) => ({ shipKey, quantity }));
+  }
+
+  refreshDriveOptions(galaxy: number, system: number, position: number): void {
     const originId = this.originPlanetId();
-    if (!originId || !shipKey || !galaxy || !system || !position) {
+    const ships = this.currentManifest();
+    if (!originId || ships.length === 0 || !galaxy || !system || !position) {
       this.resetDriveOptions();
       return;
     }
     this.driveOptionsLoading.set(true);
     this.driveOptionsError.set(null);
-    this.fleetApi.driveOptions(originId, shipKey, galaxy, system, position).subscribe({
-      next: (options) => {
-        this.driveOptionsLoading.set(false);
-        this.driveOptions.set(options);
-        if (options.length === 0) {
+    this.fleetApi
+      .driveOptions({ originPlanetId: originId, ships, targetGalaxy: galaxy, targetSystem: system, targetPosition: position })
+      .subscribe({
+        next: (options) => {
+          this.driveOptionsLoading.set(false);
+          this.driveOptions.set(options);
+          if (options.length === 0) {
+            this.selectedDriveKey.set(null);
+            this.driveOptionsError.set('No researched drive is capable of this mission.');
+            return;
+          }
+          const stillOffered = options.some((o) => o.key === this.selectedDriveKey());
+          if (!stillOffered) {
+            const fastest = options.reduce((best, o) => (o.etaSeconds < best.etaSeconds ? o : best));
+            this.selectedDriveKey.set(fastest.key);
+          }
+        },
+        error: (err) => {
+          this.driveOptionsLoading.set(false);
+          this.driveOptions.set([]);
           this.selectedDriveKey.set(null);
-          this.driveOptionsError.set('No researched drive is capable of this mission.');
-          return;
+          this.driveOptionsError.set(err.error?.message ?? 'Could not compute drive options.');
         }
-        const stillOffered = options.some((o) => o.key === this.selectedDriveKey());
-        if (!stillOffered) {
-          const fastest = options.reduce((best, o) => (o.etaSeconds < best.etaSeconds ? o : best));
-          this.selectedDriveKey.set(fastest.key);
-        }
-      },
-      error: (err) => {
-        this.driveOptionsLoading.set(false);
-        this.driveOptions.set([]);
-        this.selectedDriveKey.set(null);
-        this.driveOptionsError.set(err.error?.message ?? 'Could not compute drive options.');
-      }
-    });
+      });
   }
 
   selectDrive(key: string): void {
@@ -185,20 +219,11 @@ export class FleetComponent {
     return this.ships().find((s) => s.key === shipKey)?.owned ?? 0;
   }
 
-  dispatch(shipKey: string, quantity: number, galaxy: number, system: number, position: number): void {
+  dispatch(galaxy: number, system: number, position: number): void {
     const originId = this.originPlanetId();
     const driveKey = this.selectedDriveKey();
-    if (
-      this.dispatching() ||
-      !originId ||
-      !shipKey ||
-      !quantity ||
-      quantity < 1 ||
-      !galaxy ||
-      !system ||
-      !position ||
-      !driveKey
-    ) {
+    const ships = this.currentManifest();
+    if (this.dispatching() || !originId || ships.length === 0 || !galaxy || !system || !position || !driveKey) {
       return;
     }
     this.errorMessage.set(null);
@@ -206,8 +231,7 @@ export class FleetComponent {
     this.fleetApi
       .dispatch({
         originPlanetId: originId,
-        shipKey,
-        quantity,
+        ships,
         missionType: this.missionType(),
         targetGalaxy: galaxy,
         targetSystem: system,
@@ -217,6 +241,7 @@ export class FleetComponent {
       .subscribe({
         next: () => {
           this.dispatching.set(false);
+          this.manifestQuantities.set({});
           this.resetDriveOptions();
           this.loadShips();
           this.refreshMovements();

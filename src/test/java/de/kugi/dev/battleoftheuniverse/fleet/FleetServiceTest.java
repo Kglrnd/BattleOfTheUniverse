@@ -6,6 +6,8 @@ import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +71,9 @@ class FleetServiceTest {
     private final ShipDefinition cruiser = new ShipDefinition(
             "cruiser", "Cruiser", "desc", 400, 200, 15000, 50,
             new ResourceCost(20000, 7000, 2000), 1800);
+    private final ShipDefinition lightFighter = new ShipDefinition(
+            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50,
+            new ResourceCost(3000, 1000, 0), 60);
 
     @BeforeEach
     void setUp() {
@@ -76,10 +83,11 @@ class FleetServiceTest {
     }
 
     @Test
-    void dispatchRejectsColonizeWithANonColonyShip() {
+    void dispatchRejectsColonizeWithoutAColonyShip() {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -92,7 +100,8 @@ class FleetServiceTest {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
         when(planetService.isColonizable(1, 1, 2)).thenReturn(false);
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("colony_ship", 1)),
+                FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -109,12 +118,80 @@ class FleetServiceTest {
         when(catalogService.ship("colony_ship")).thenReturn(colonyShip);
         when(movementRepository.save(any(FleetMovement.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("colony_ship", 1)),
+                FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
         service.dispatch(OWNER_ID, request);
 
         var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
         verify(shipRepository).save(shipCaptor.capture());
         assertThat(shipCaptor.getValue().getQuantity()).isZero();
+    }
+
+    @Test
+    void dispatchAcceptsAMixedFleetAndDebitsEveryShipType() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        target.setId(20L);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 5)));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "light_fighter"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "light_fighter", 10)));
+        when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.of(1.0));
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(catalogService.ship("light_fighter")).thenReturn(lightFighter);
+        when(movementRepository.save(any(FleetMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("cruiser", 3), new ShipQuantity("light_fighter", 4)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+        var view = service.dispatch(OWNER_ID, request);
+
+        assertThat(view.ships()).containsExactlyInAnyOrder(
+                new ShipQuantity("cruiser", 3), new ShipQuantity("light_fighter", 4));
+        var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
+        verify(shipRepository, times(2)).save(shipCaptor.capture());
+        assertThat(shipCaptor.getAllValues())
+                .extracting(Ship::getShipKey, Ship::getQuantity)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("cruiser", 2),
+                        org.assertj.core.groups.Tuple.tuple("light_fighter", 6));
+    }
+
+    @Test
+    void dispatchRejectsDuplicateShipKeysInTheManifest() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("cruiser", 3), new ShipQuantity("cruiser", 2)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Duplicate ship type");
+        verify(shipRepository, never()).save(any());
+    }
+
+    @Test
+    void dispatchFailsCleanlyWhenOneShipTypeIsUnderStocked() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 5)));
+        when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "light_fighter"))
+                .thenReturn(Optional.of(new Ship(ORIGIN_ID, "light_fighter", 1)));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("cruiser", 3), new ShipQuantity("light_fighter", 4)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("light_fighter");
+        verify(shipRepository, never()).save(any());
     }
 
     @Test
@@ -124,13 +201,14 @@ class FleetServiceTest {
         when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "colony_ship"))
                 .thenReturn(Optional.of(new Ship(ORIGIN_ID, "colony_ship", 1)));
         when(researchService.speedMultiplierForDrive(any(), any(), any())).thenReturn(Optional.empty());
+        when(catalogService.ship("colony_ship")).thenReturn(colonyShip);
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "colony_ship", 1, FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("colony_ship", 1)),
+                FleetMissionType.COLONIZE, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Chosen drive");
-        verify(shipRepository, never()).save(any());
     }
 
     @Test
@@ -138,7 +216,8 @@ class FleetServiceTest {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.empty());
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -151,7 +230,8 @@ class FleetServiceTest {
         Planet foreignPlanet = new Planet("Not mine", OTHER_OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(foreignPlanet));
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.STATION, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -164,7 +244,8 @@ class FleetServiceTest {
         Planet ownPlanet = new Planet("Also mine", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(ownPlanet));
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.ATTACK, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -176,7 +257,8 @@ class FleetServiceTest {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
         when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.empty());
 
-        DispatchRequest request = new DispatchRequest(ORIGIN_ID, "cruiser", 1, FleetMissionType.ATTACK, 1, 1, 2, DRIVE_KEY);
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 1)),
+                FleetMissionType.ATTACK, 1, 1, 2, DRIVE_KEY);
 
         assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -185,9 +267,12 @@ class FleetServiceTest {
 
     @Test
     void completeDueMissionsFoundsAColonyForADueColonizeMovement() {
-        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, "colony_ship", 1, FleetMissionType.COLONIZE,
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("colony_ship", 1), FleetMissionType.COLONIZE,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
         when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        Planet colony = new Planet("Colony", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
+        colony.setId(30L);
+        when(planetService.createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9))).thenReturn(colony);
 
         service.completeDueMissions();
 
@@ -196,10 +281,31 @@ class FleetServiceTest {
     }
 
     @Test
+    void completeDueMissionsStationsEscortShipsAtTheNewColonyAndConsumesOnlyTheColonyShip() {
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID,
+                Map.of("colony_ship", 1, "cruiser", 4), FleetMissionType.COLONIZE,
+                2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
+        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        Planet colony = new Planet("Colony", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
+        colony.setId(30L);
+        when(planetService.createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9))).thenReturn(colony);
+        when(shipRepository.findByPlanetIdAndShipKey(30L, "cruiser")).thenReturn(Optional.empty());
+
+        service.completeDueMissions();
+
+        var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
+        verify(shipRepository).save(shipCaptor.capture());
+        assertThat(shipCaptor.getValue().getPlanetId()).isEqualTo(30L);
+        assertThat(shipCaptor.getValue().getShipKey()).isEqualTo("cruiser");
+        assertThat(shipCaptor.getValue().getQuantity()).isEqualTo(4);
+        verify(movementRepository).delete(movement);
+    }
+
+    @Test
     void completeDueMissionsCreditsShipsToTheTargetPlanetForADueStationMovement() {
         Planet target = new Planet("Target", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
         target.setId(20L);
-        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, "cruiser", 3, FleetMissionType.STATION,
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 3), FleetMissionType.STATION,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
         when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
         when(planetService.findAtPosition(2, 5, 9)).thenReturn(Optional.of(target));
@@ -215,7 +321,7 @@ class FleetServiceTest {
 
     @Test
     void completeDueMissionsReturnsShipsToTheOriginForADueAttackMovement() {
-        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, "cruiser", 5, FleetMissionType.ATTACK,
+        FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 5), FleetMissionType.ATTACK,
                 9, 9, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
         when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
         when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "cruiser")).thenReturn(Optional.of(new Ship(ORIGIN_ID, "cruiser", 10)));
@@ -235,9 +341,9 @@ class FleetServiceTest {
         myPlanet.setId(50L);
         when(planetService.listMine(OWNER_ID)).thenReturn(List.of(myPlanet));
 
-        FleetMovement attackOnMe = new FleetMovement(99L, OTHER_OWNER_ID, "cruiser", 5, FleetMissionType.ATTACK,
+        FleetMovement attackOnMe = new FleetMovement(99L, OTHER_OWNER_ID, Map.of("cruiser", 5), FleetMissionType.ATTACK,
                 3, 7, 4, Instant.now(), Instant.now().plusSeconds(60));
-        FleetMovement unrelatedMovement = new FleetMovement(77L, OTHER_OWNER_ID, "cruiser", 2, FleetMissionType.STATION,
+        FleetMovement unrelatedMovement = new FleetMovement(77L, OTHER_OWNER_ID, Map.of("cruiser", 2), FleetMissionType.STATION,
                 1, 1, 1, Instant.now(), Instant.now().plusSeconds(60));
         when(movementRepository.findAll()).thenReturn(List.of(attackOnMe, unrelatedMovement));
 
@@ -249,6 +355,7 @@ class FleetServiceTest {
 
         assertThat(incoming).hasSize(1);
         assertThat(incoming.getFirst().missionType()).isEqualTo(FleetMissionType.ATTACK);
+        assertThat(incoming.getFirst().ships()).containsExactly(new ShipQuantity("cruiser", 5));
         assertThat(incoming.getFirst().targetPlanetId()).isEqualTo(50L);
         assertThat(incoming.getFirst().targetPlanetName()).isEqualTo("My Homeworld");
         assertThat(incoming.getFirst().originOwnerUsername()).isEqualTo("raider");
@@ -263,12 +370,35 @@ class FleetServiceTest {
                 new DriveOption("ion_drive", "Ion Drive", DriveScope.SYSTEM, 20, 1.9)
         ));
 
-        List<DriveOptionView> options = service.listDriveOptions(OWNER_ID, ORIGIN_ID, "cruiser", 1, 1, 3001);
+        DriveOptionsRequest request = new DriveOptionsRequest(ORIGIN_ID, List.of(new ShipQuantity("cruiser", 5)), 1, 1, 3001);
+        List<DriveOptionView> options = service.listDriveOptions(OWNER_ID, request);
 
         assertThat(options).hasSize(2);
         assertThat(options).extracting(DriveOptionView::key).containsExactly("chemical_drive", "ion_drive");
         DriveOptionView chemical = options.getFirst();
         assertThat(chemical.speedMultiplier()).isEqualTo(2.0);
         assertThat(chemical.etaSeconds()).isLessThan(options.get(1).etaSeconds());
+    }
+
+    @Test
+    void listDriveOptionsUsesTheSlowestShipInAMixedFleet() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(catalogService.ship("colony_ship")).thenReturn(colonyShip);
+        when(researchService.listAvailableDrives(OWNER_ID, DriveScope.SYSTEM)).thenReturn(List.of(
+                new DriveOption("chemical_drive", "Chemical Drive", DriveScope.SYSTEM, 20, 2.0)
+        ));
+
+        // cruiser is much faster (15000) than colony_ship (2500) - the fleet must travel at
+        // the colony ship's pace.
+        DriveOptionsRequest mixedRequest = new DriveOptionsRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("cruiser", 5), new ShipQuantity("colony_ship", 1)), 1, 1, 3001);
+        DriveOptionsRequest cruiserOnlyRequest = new DriveOptionsRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("cruiser", 5)), 1, 1, 3001);
+
+        long mixedEta = service.listDriveOptions(OWNER_ID, mixedRequest).getFirst().etaSeconds();
+        long cruiserOnlyEta = service.listDriveOptions(OWNER_ID, cruiserOnlyRequest).getFirst().etaSeconds();
+
+        assertThat(mixedEta).isGreaterThan(cruiserOnlyEta);
     }
 }

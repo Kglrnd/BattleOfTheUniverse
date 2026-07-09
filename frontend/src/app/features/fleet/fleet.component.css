@@ -49,6 +49,32 @@
   min-width: 0;
 }
 
+.fleet-manifest {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.manifest-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.manifest-ship-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.manifest-ship-owned {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.manifest-qty-input {
+  width: 4.5rem;
+}
+
 .drive-options {
   display: flex;
   flex-direction: column;

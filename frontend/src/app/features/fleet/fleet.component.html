@@ -89,22 +89,37 @@
     </div>
 
     <div class="field">
-      <label for="dispatch-ship">Ship</label>
-      <select
-        id="dispatch-ship"
-        class="select"
-        #shipSelect
-        (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
-      >
-        @for (ship of ships(); track ship.key) {
-          <option [value]="ship.key" [disabled]="ship.owned === 0">{{ ship.name }} (owned: {{ ship.owned }})</option>
-        }
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="dispatch-qty">Quantity</label>
-      <input id="dispatch-qty" #dispatchQty type="number" class="input" min="1" value="1" style="width: 6rem" />
+      <span class="field-label-text">Fleet</span>
+      @if (ships().length === 0) {
+        <p class="field-hint">No ships available on this planet yet.</p>
+      } @else {
+        <div class="fleet-manifest">
+          @for (ship of ships(); track ship.key) {
+            <div class="manifest-row">
+              <span class="manifest-ship-name">{{ ship.name }}</span>
+              <span class="manifest-ship-owned">owned: {{ ship.owned }}</span>
+              <input
+                [id]="'manifest-qty-' + ship.key"
+                type="number"
+                class="input manifest-qty-input"
+                min="0"
+                [max]="ship.owned"
+                [value]="manifestQuantities()[ship.key] ?? 0"
+                [disabled]="ship.owned === 0"
+                (change)="
+                  updateManifestQuantity(
+                    ship.key,
+                    $event,
+                    targetGalaxy.valueAsNumber,
+                    targetSystem.valueAsNumber,
+                    targetPosition.valueAsNumber
+                  )
+                "
+              />
+            </div>
+          }
+        </div>
+      }
     </div>
 
     @if (missionType() === 'STATION') {
@@ -113,7 +128,7 @@
         <select
           id="dispatch-target-planet"
           class="select"
-          (change)="onTargetPlanetChange($event, targetGalaxy, targetSystem, targetPosition, shipSelect.value)"
+          (change)="onTargetPlanetChange($event, targetGalaxy, targetSystem, targetPosition)"
         >
           <option value="" disabled selected>Choose one of your planets…</option>
           @for (p of otherPlanets(); track p.id) {
@@ -136,7 +151,7 @@
             min="1"
             placeholder="Galaxy"
             [readOnly]="missionType() === 'STATION'"
-            (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
         <div class="coordinate-field">
@@ -149,7 +164,7 @@
             min="1"
             placeholder="System"
             [readOnly]="missionType() === 'STATION'"
-            (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
         <div class="coordinate-field">
@@ -162,12 +177,15 @@
             min="1"
             placeholder="Position"
             [readOnly]="missionType() === 'STATION'"
-            (change)="refreshDriveOptions(shipSelect.value, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
       </div>
       @if (missionType() === 'COLONIZE') {
-        <p class="field-hint">Only colony ships can found a colony. Find a free slot in <a routerLink="/universe/system">System view</a>.</p>
+        <p class="field-hint">
+          Needs at least one colony ship in the fleet. Any other ships sent along are stationed at the new colony once it's founded.
+          Find a free slot in <a routerLink="/universe/system">System view</a>.
+        </p>
       } @else if (missionType() === 'ATTACK') {
         <p class="field-hint">Enter the coordinates of another player's planet. There's no combat yet - the fleet returns home on arrival.</p>
       }
@@ -206,16 +224,8 @@
     <button
       type="button"
       class="btn btn-primary"
-      [disabled]="dispatching() || shipsAvailable(shipSelect.value) === 0 || !selectedDriveKey()"
-      (click)="
-        dispatch(
-          shipSelect.value,
-          dispatchQty.valueAsNumber,
-          targetGalaxy.valueAsNumber,
-          targetSystem.valueAsNumber,
-          targetPosition.valueAsNumber
-        )
-      "
+      [disabled]="dispatching() || currentManifest().length === 0 || !selectedDriveKey()"
+      (click)="dispatch(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
     >
       Dispatch
     </button>
@@ -230,7 +240,7 @@
     @for (movement of movements(); track movement.id) {
       <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
         <div class="card-header">
-          <div class="card-title">{{ movement.quantity }}× {{ movement.shipKey }}</div>
+          <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
           <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
         </div>
         <div class="card-content">

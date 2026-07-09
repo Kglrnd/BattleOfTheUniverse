@@ -2,6 +2,7 @@ package de.kugi.dev.battleoftheuniverse.fleet;
 
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -42,12 +42,9 @@ public class FleetMissionController {
         return fleetService.listIncoming(principal.getId());
     }
 
-    @GetMapping("/drive-options")
-    public List<DriveOptionView> driveOptions(@RequestParam Long originPlanetId, @RequestParam String shipKey,
-                                               @RequestParam int targetGalaxy, @RequestParam int targetSystem,
-                                               @RequestParam int targetPosition,
+    @PostMapping("/drive-options")
+    public List<DriveOptionView> driveOptions(@Valid @RequestBody DriveOptionsRequest request,
                                                @AuthenticationPrincipal AppUserPrincipal principal) {
-        return fleetService.listDriveOptions(principal.getId(), originPlanetId, shipKey,
-                targetGalaxy, targetSystem, targetPosition);
+        return fleetService.listDriveOptions(principal.getId(), request);
     }
 }
