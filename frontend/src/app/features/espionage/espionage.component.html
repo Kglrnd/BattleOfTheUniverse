@@ -1,0 +1,118 @@
+<div class="card espionage-card">
+  <div class="card-header">
+    <div class="card-title">Send an espionage probe</div>
+    <div class="card-subtitle">Probes owned: {{ probesOwned() }}</div>
+  </div>
+  <div class="card-content">
+    @if (probesOwned() === 0) {
+      <p class="field-hint">
+        No espionage probes stationed here. Build some in the Fleet page's shipyard, then send them from here.
+      </p>
+    }
+
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+    @if (sentConfirmation()) {
+      <p class="cost">
+        Probe dispatched. Check <a routerLink="/messages">Messages</a> once it arrives for the report or failure notice.
+      </p>
+    }
+
+    <div class="field">
+      <label for="probe-quantity">Probes to send</label>
+      <input
+        id="probe-quantity"
+        type="number"
+        class="input"
+        min="1"
+        [max]="probesOwned()"
+        [value]="quantity()"
+        [disabled]="probesOwned() === 0"
+        (change)="updateQuantity($event, targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+      />
+    </div>
+
+    <div class="field">
+      <span class="field-label-text">Target coordinates [galaxy:system:position]</span>
+      <div class="coordinate-inputs">
+        <div class="coordinate-field">
+          <label class="coordinate-label" for="espionage-target-galaxy">Galaxy</label>
+          <input
+            id="espionage-target-galaxy"
+            #targetGalaxy
+            type="number"
+            class="input"
+            min="1"
+            placeholder="Galaxy"
+            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+          />
+        </div>
+        <div class="coordinate-field">
+          <label class="coordinate-label" for="espionage-target-system">System</label>
+          <input
+            id="espionage-target-system"
+            #targetSystem
+            type="number"
+            class="input"
+            min="1"
+            placeholder="System"
+            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+          />
+        </div>
+        <div class="coordinate-field">
+          <label class="coordinate-label" for="espionage-target-position">Position</label>
+          <input
+            id="espionage-target-position"
+            #targetPosition
+            type="number"
+            class="input"
+            min="1"
+            placeholder="Position"
+            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+          />
+        </div>
+      </div>
+      <p class="field-hint">Enter the coordinates of another player's planet. Find one in <a routerLink="/universe/system">System view</a>.</p>
+    </div>
+
+    @if (driveOptionsLoading()) {
+      <p class="field-hint">Calculating drive options…</p>
+    } @else if (driveOptionsError()) {
+      <p class="field-error">{{ driveOptionsError() }}</p>
+    } @else if (driveOptions().length > 0) {
+      <div class="field">
+        <span class="field-label-text">Drive</span>
+        <div class="drive-options">
+          @for (option of driveOptions(); track option.key) {
+            <button
+              type="button"
+              class="drive-option"
+              [class.drive-option-selected]="selectedDriveKey() === option.key"
+              (click)="selectDrive(option.key)"
+            >
+              <span class="drive-option-row">
+                <span class="drive-option-name">{{ option.name }}</span>
+                <span class="class-badge">{{ option.driveScope }}</span>
+              </span>
+              <span class="drive-option-row">
+                <span class="drive-option-detail">Level {{ option.level }} · x{{ option.speedMultiplier.toFixed(2) }} speed</span>
+                <span class="drive-option-eta">ETA {{ formatEta(option.etaSeconds) }}</span>
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+  <div class="card-actions">
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="sending() || quantity() === 0 || !selectedDriveKey()"
+      (click)="send(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+    >
+      Send probe
+    </button>
+  </div>
+</div>
