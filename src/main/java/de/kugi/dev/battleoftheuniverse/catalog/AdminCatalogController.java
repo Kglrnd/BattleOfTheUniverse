@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.catalog;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,13 +18,10 @@ import tools.jackson.databind.JsonNode;
 @RestController
 @RequestMapping("/api/admin/catalog")
 @PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
 public class AdminCatalogController {
 
     private final CatalogService catalogService;
-
-    public AdminCatalogController(CatalogService catalogService) {
-        this.catalogService = catalogService;
-    }
 
     @GetMapping("/{type}")
     public JsonNode data(@PathVariable String type) {

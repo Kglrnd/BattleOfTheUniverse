@@ -7,6 +7,7 @@ import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,13 +19,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/fleet")
+@RequiredArgsConstructor
 public class FleetMissionController {
 
     private final FleetService fleetService;
-
-    public FleetMissionController(FleetService fleetService) {
-        this.fleetService = fleetService;
-    }
 
     @PostMapping("/dispatch")
     public FleetMovementView dispatch(@Valid @RequestBody DispatchRequest request,

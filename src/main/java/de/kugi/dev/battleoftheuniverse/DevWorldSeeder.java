@@ -9,6 +9,7 @@ import de.kugi.dev.battleoftheuniverse.user.DevAccountsProperties;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import de.kugi.dev.battleoftheuniverse.user.UserService;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -34,6 +35,7 @@ import java.util.List;
 @Profile("dev")
 @ConditionalOnProperty(prefix = "game.dev", name = "seed-accounts", havingValue = "true", matchIfMissing = true)
 @Order(2)
+@RequiredArgsConstructor
 public class DevWorldSeeder implements ApplicationRunner {
 
     private static final int MAX_LEVEL = 20;
@@ -54,18 +56,6 @@ public class DevWorldSeeder implements ApplicationRunner {
     private final ResearchService researchService;
     private final FleetService fleetService;
     private final DevAccountsProperties properties;
-
-    public DevWorldSeeder(UserRepository userRepository, UserService userService, PlanetService planetService,
-                           BuildingService buildingService, ResearchService researchService, FleetService fleetService,
-                           DevAccountsProperties properties) {
-        this.userRepository = userRepository;
-        this.userService = userService;
-        this.planetService = planetService;
-        this.buildingService = buildingService;
-        this.researchService = researchService;
-        this.fleetService = fleetService;
-        this.properties = properties;
-    }
 
     @Override
     public void run(ApplicationArguments args) {

@@ -4,6 +4,7 @@ import de.kugi.dev.battleoftheuniverse.building.dto.BuildingView;
 import de.kugi.dev.battleoftheuniverse.building.dto.UpgradeResponse;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,15 +18,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/planets/{planetId}/buildings")
+@RequiredArgsConstructor
 public class BuildingController {
 
     private final BuildingService buildingService;
     private final PlanetService planetService;
-
-    public BuildingController(BuildingService buildingService, PlanetService planetService) {
-        this.buildingService = buildingService;
-        this.planetService = planetService;
-    }
 
     @GetMapping
     public List<BuildingView> list(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {

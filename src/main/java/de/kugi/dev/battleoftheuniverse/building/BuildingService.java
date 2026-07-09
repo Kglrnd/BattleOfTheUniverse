@@ -10,6 +10,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class BuildingService {
 
     private static final Set<String> STARTER_BUILDINGS = Set.of("main_building");
@@ -30,15 +32,6 @@ public class BuildingService {
     private final CatalogService catalogService;
     private final ResourceService resourceService;
     private final PlanetService planetService;
-
-    public BuildingService(PlanetBuildingRepository buildingRepository, ConstructionJobRepository jobRepository,
-                            CatalogService catalogService, ResourceService resourceService, PlanetService planetService) {
-        this.buildingRepository = buildingRepository;
-        this.jobRepository = jobRepository;
-        this.catalogService = catalogService;
-        this.resourceService = resourceService;
-        this.planetService = planetService;
-    }
 
     @Transactional
     public void initializeStarter(Long planetId) {

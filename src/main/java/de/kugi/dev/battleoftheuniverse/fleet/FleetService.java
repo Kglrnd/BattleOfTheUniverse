@@ -7,6 +7,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementMapper;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
@@ -19,6 +20,7 @@ import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class FleetService {
 
     /**
@@ -58,22 +61,7 @@ public class FleetService {
     private final ResearchService researchService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher events;
-
-    public FleetService(ShipRepository shipRepository, ShipyardJobRepository jobRepository,
-                         FleetMovementRepository movementRepository, CatalogService catalogService,
-                         ResourceService resourceService, PlanetService planetService,
-                         ResearchService researchService, UserRepository userRepository,
-                         ApplicationEventPublisher events) {
-        this.shipRepository = shipRepository;
-        this.jobRepository = jobRepository;
-        this.movementRepository = movementRepository;
-        this.catalogService = catalogService;
-        this.resourceService = resourceService;
-        this.planetService = planetService;
-        this.researchService = researchService;
-        this.userRepository = userRepository;
-        this.events = events;
-    }
+    private final FleetMovementMapper fleetMovementMapper;
 
     public List<ShipyardView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
@@ -140,18 +128,7 @@ public class FleetService {
     @Transactional(readOnly = true)
     public List<FleetMovementView> listMovements(Long ownerId) {
         return movementRepository.findByOwnerId(ownerId).stream()
-                .map(FleetService::toView)
-                .toList();
-    }
-
-    private static FleetMovementView toView(FleetMovement m) {
-        return new FleetMovementView(m.getId(), m.getOriginPlanetId(), toShipList(m.getShips()), m.getMissionType(),
-                m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition(), m.getDepartedAt(), m.getArrivesAt());
-    }
-
-    private static List<ShipQuantity> toShipList(Map<String, Integer> ships) {
-        return ships.entrySet().stream()
-                .map(e -> new ShipQuantity(e.getKey(), e.getValue()))
+                .map(fleetMovementMapper::toView)
                 .toList();
     }
 
@@ -176,7 +153,7 @@ public class FleetService {
                 .map(m -> {
                     Planet target = myPlanetsByCoordinates.get(coordinateKey(m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition()));
                     return new IncomingMovementView(
-                            m.getId(), toShipList(m.getShips()), m.getMissionType(),
+                            m.getId(), fleetMovementMapper.shipsToList(m.getShips()), m.getMissionType(),
                             m.getOriginPlanetId(), usernamesBySenderId.getOrDefault(m.getOwnerId(), "unknown"),
                             target.getId(), target.getName(), m.getDepartedAt(), m.getArrivesAt()
                     );
@@ -232,7 +209,7 @@ public class FleetService {
                 request.targetGalaxy(), request.targetSystem(), request.targetPosition(), departedAt, arrivesAt
         ));
 
-        return toView(movement);
+        return fleetMovementMapper.toView(movement);
     }
 
     private void validateNoDuplicateShipKeys(List<ShipQuantity> ships) {

@@ -13,6 +13,7 @@ import de.kugi.dev.battleoftheuniverse.research.dto.LockedRequirement;
 import de.kugi.dev.battleoftheuniverse.research.dto.ResearchStartResponse;
 import de.kugi.dev.battleoftheuniverse.research.dto.TechnologyView;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ResearchService {
 
     private final TechnologyRepository technologyRepository;
@@ -32,17 +34,6 @@ public class ResearchService {
     private final ResourceService resourceService;
     private final PlanetService planetService;
     private final BuildingService buildingService;
-
-    public ResearchService(TechnologyRepository technologyRepository, ResearchJobRepository jobRepository,
-                            CatalogService catalogService, ResourceService resourceService,
-                            PlanetService planetService, BuildingService buildingService) {
-        this.technologyRepository = technologyRepository;
-        this.jobRepository = jobRepository;
-        this.catalogService = catalogService;
-        this.resourceService = resourceService;
-        this.planetService = planetService;
-        this.buildingService = buildingService;
-    }
 
     public List<TechnologyView> listForUser(Long userId) {
         var activeJob = jobRepository.findByUserId(userId);

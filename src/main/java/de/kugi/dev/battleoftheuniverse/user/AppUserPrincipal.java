@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -7,13 +8,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.List;
 
 /** Adapts a {@link User} to Spring Security while still exposing the entity's id/role. */
+@RequiredArgsConstructor
 public class AppUserPrincipal implements UserDetails {
 
     private final User user;
-
-    public AppUserPrincipal(User user) {
-        this.user = user;
-    }
 
     public Long getId() {
         return user.getId();

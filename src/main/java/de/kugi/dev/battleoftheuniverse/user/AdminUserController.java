@@ -3,6 +3,7 @@ package de.kugi.dev.battleoftheuniverse.user;
 import de.kugi.dev.battleoftheuniverse.user.dto.AdminUserView;
 import de.kugi.dev.battleoftheuniverse.user.dto.ChangeRoleRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,13 +20,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
 public class AdminUserController {
 
     private final UserService userService;
-
-    public AdminUserController(UserService userService) {
-        this.userService = userService;
-    }
 
     @GetMapping
     public List<AdminUserView> list() {

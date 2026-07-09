@@ -7,6 +7,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DispatchRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementMapperImpl;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
@@ -81,7 +82,7 @@ class FleetServiceTest {
     @BeforeEach
     void setUp() {
         service = new FleetService(shipRepository, jobRepository, movementRepository, catalogService,
-                resourceService, planetService, researchService, userRepository, events);
+                resourceService, planetService, researchService, userRepository, events, new FleetMovementMapperImpl());
         origin.setId(ORIGIN_ID);
     }
 

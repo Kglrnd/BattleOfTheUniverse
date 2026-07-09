@@ -2,6 +2,7 @@ package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,13 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
-
-    public AuthController(UserService userService) {
-        this.userService = userService;
-    }
+    private final UserMapper userMapper;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -35,6 +34,6 @@ public class AuthController {
 
     @GetMapping("/me")
     public UserView me(@AuthenticationPrincipal AppUserPrincipal principal) {
-        return new UserView(principal.getId(), principal.getUsername(), principal.getEmail(), principal.getRole());
+        return userMapper.toView(principal);
     }
 }

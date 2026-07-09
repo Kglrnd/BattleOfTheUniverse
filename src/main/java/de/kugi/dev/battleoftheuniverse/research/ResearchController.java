@@ -6,6 +6,7 @@ import de.kugi.dev.battleoftheuniverse.research.dto.StartResearchRequest;
 import de.kugi.dev.battleoftheuniverse.research.dto.TechnologyView;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,15 +21,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/research")
+@RequiredArgsConstructor
 public class ResearchController {
 
     private final ResearchService researchService;
     private final PlanetService planetService;
-
-    public ResearchController(ResearchService researchService, PlanetService planetService) {
-        this.researchService = researchService;
-        this.planetService = planetService;
-    }
 
     @GetMapping
     public List<TechnologyView> list(@AuthenticationPrincipal AppUserPrincipal principal) {

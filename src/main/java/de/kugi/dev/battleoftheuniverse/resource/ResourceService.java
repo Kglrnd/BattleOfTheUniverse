@@ -2,6 +2,7 @@ package de.kugi.dev.battleoftheuniverse.resource;
 
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +17,10 @@ import java.util.List;
  * service to credit/debit amounts, which keeps the dependency one-directional.
  */
 @Service
+@RequiredArgsConstructor
 public class ResourceService {
 
     private final PlanetResourceRepository repository;
-
-    public ResourceService(PlanetResourceRepository repository) {
-        this.repository = repository;
-    }
 
     @Transactional
     public void initializeStarter(Long planetId) {

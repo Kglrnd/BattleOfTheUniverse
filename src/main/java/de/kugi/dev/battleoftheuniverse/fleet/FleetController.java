@@ -6,6 +6,7 @@ import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,15 +21,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/planets/{planetId}/ships")
+@RequiredArgsConstructor
 public class FleetController {
 
     private final FleetService fleetService;
     private final PlanetService planetService;
-
-    public FleetController(FleetService fleetService, PlanetService planetService) {
-        this.fleetService = fleetService;
-        this.planetService = planetService;
-    }
 
     @GetMapping
     public List<ShipyardView> list(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {

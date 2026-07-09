@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -22,20 +23,13 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "game.dev", name = "seed-accounts", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(DevAccountsProperties.class)
 @Order(1)
+@RequiredArgsConstructor
 public class DevAccountSeeder implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final DevAccountsProperties properties;
-
-    public DevAccountSeeder(UserRepository userRepository, UserService userService,
-                             PasswordEncoder passwordEncoder, DevAccountsProperties properties) {
-        this.userRepository = userRepository;
-        this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
-        this.properties = properties;
-    }
 
     @Override
     public void run(ApplicationArguments args) {

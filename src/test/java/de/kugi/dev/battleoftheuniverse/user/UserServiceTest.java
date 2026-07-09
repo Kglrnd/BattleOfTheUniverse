@@ -31,7 +31,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new UserService(userRepository, passwordEncoder, events);
+        service = new UserService(userRepository, passwordEncoder, events, new UserMapperImpl());
     }
 
     @Test

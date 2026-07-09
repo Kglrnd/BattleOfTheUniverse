@@ -1,8 +1,10 @@
 package de.kugi.dev.battleoftheuniverse.resource;
 
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
+import de.kugi.dev.battleoftheuniverse.resource.dto.ResourceMapper;
 import de.kugi.dev.battleoftheuniverse.resource.dto.ResourceView;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,20 +17,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/planets/{planetId}/resources")
+@RequiredArgsConstructor
 public class ResourceController {
 
     private final ResourceService resourceService;
     private final PlanetService planetService;
-
-    public ResourceController(ResourceService resourceService, PlanetService planetService) {
-        this.resourceService = resourceService;
-        this.planetService = planetService;
-    }
+    private final ResourceMapper resourceMapper;
 
     @GetMapping
     public List<ResourceView> resources(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {
         requireOwnership(planetId, principal);
-        return resourceService.raw(planetId).stream().map(ResourceView::from).toList();
+        return resourceService.raw(planetId).stream().map(resourceMapper::toView).toList();
     }
 
     private void requireOwnership(Long planetId, AppUserPrincipal principal) {

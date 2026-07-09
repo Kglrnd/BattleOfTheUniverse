@@ -1,10 +1,12 @@
 package de.kugi.dev.battleoftheuniverse.planet;
 
 import de.kugi.dev.battleoftheuniverse.planet.dto.AdminPlanetView;
+import de.kugi.dev.battleoftheuniverse.planet.dto.PlanetMapper;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SystemSlotView;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SystemView;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,18 +23,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class PlanetService {
 
     private final PlanetRepository planetRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher events;
+    private final PlanetMapper planetMapper;
     private final SecureRandom random = new SecureRandom();
-
-    public PlanetService(PlanetRepository planetRepository, UserRepository userRepository, ApplicationEventPublisher events) {
-        this.planetRepository = planetRepository;
-        this.userRepository = userRepository;
-        this.events = events;
-    }
 
     @Transactional
     public Planet createStarterPlanet(Long ownerId, String ownerUsername) {
@@ -104,7 +102,7 @@ public class PlanetService {
                 .collect(Collectors.toMap(User::getId, User::getUsername));
 
         return planets.stream()
-                .map(planet -> AdminPlanetView.from(planet, usernamesByOwnerId.getOrDefault(planet.getOwnerId(), "unknown")))
+                .map(planet -> planetMapper.toAdminView(planet, usernamesByOwnerId.getOrDefault(planet.getOwnerId(), "unknown")))
                 .toList();
     }
 
@@ -138,7 +136,7 @@ public class PlanetService {
             if (planet != null) {
                 // A planet actually sitting here always wins, even if the computed layout
                 // doesn't consider the position usable (e.g. it predates a layout change).
-                slots.add(SystemSlotView.occupied(position, planet));
+                slots.add(SystemSlotView.occupied(position, planetMapper.toView(planet)));
             } else if (!usable.contains(position)) {
                 slots.add(SystemSlotView.voidSlot(position));
             } else {

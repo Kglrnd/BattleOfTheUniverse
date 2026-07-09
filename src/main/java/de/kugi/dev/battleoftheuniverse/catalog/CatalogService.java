@@ -5,6 +5,7 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
  * {@link JsonSchemaService}, and kept in memory for fast lookup by every other module.
  */
 @Service
+@RequiredArgsConstructor
 public class CatalogService {
 
     private final JsonSchemaService jsonSchemaService;
@@ -39,10 +41,6 @@ public class CatalogService {
     private final Map<String, BuildingDefinition> buildingsByKey = new ConcurrentHashMap<>();
     private final Map<String, ShipDefinition> shipsByKey = new ConcurrentHashMap<>();
     private final Map<String, TechnologyDefinition> technologiesByKey = new ConcurrentHashMap<>();
-
-    public CatalogService(JsonSchemaService jsonSchemaService) {
-        this.jsonSchemaService = jsonSchemaService;
-    }
 
     @PostConstruct
     void loadAll() {

@@ -1,9 +1,11 @@
 package de.kugi.dev.battleoftheuniverse.config;
 
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
+import de.kugi.dev.battleoftheuniverse.user.UserMapper;
 import de.kugi.dev.battleoftheuniverse.user.UserView;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -24,8 +26,10 @@ import java.util.Objects;
 
 @Configuration
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final UserMapper userMapper;
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     @Bean
@@ -61,7 +65,7 @@ public class SecurityConfig {
                                  org.springframework.security.core.Authentication authentication) throws IOException {
         AppUserPrincipal principal = (AppUserPrincipal) Objects.requireNonNull(authentication.getPrincipal(),
                 "Authenticated principal must not be null");
-        UserView view = new UserView(principal.getId(), principal.getUsername(), principal.getEmail(), principal.getRole());
+        UserView view = userMapper.toView(principal);
         writeJson(response, HttpStatus.OK, view);
     }
 

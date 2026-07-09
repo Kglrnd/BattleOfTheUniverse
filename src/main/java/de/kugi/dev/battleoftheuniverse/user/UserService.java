@@ -2,6 +2,7 @@ package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.AdminUserView;
 import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,17 +13,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher events;
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, ApplicationEventPublisher events) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.events = events;
-    }
+    private final UserMapper userMapper;
 
     /** Convenience for callers outside this module, which can't see the {@code dto} package. */
     @Transactional
@@ -44,15 +41,11 @@ public class UserService {
 
         events.publishEvent(new UserRegistered(user.getId(), user.getUsername()));
 
-        return toView(user);
-    }
-
-    public UserView toView(User user) {
-        return new UserView(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+        return userMapper.toView(user);
     }
 
     public List<AdminUserView> listAll() {
-        return userRepository.findAll().stream().map(AdminUserView::from).toList();
+        return userRepository.findAll().stream().map(userMapper::toAdminView).toList();
     }
 
     @Transactional
@@ -61,6 +54,6 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         user.setRole(role);
         userRepository.save(user);
-        return AdminUserView.from(user);
+        return userMapper.toAdminView(user);
     }
 }

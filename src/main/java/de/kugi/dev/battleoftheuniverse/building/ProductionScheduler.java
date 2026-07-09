@@ -4,6 +4,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,18 +15,12 @@ import org.springframework.stereotype.Component;
  * of a cycle between the two.
  */
 @Component
+@RequiredArgsConstructor
 public class ProductionScheduler {
 
     private final PlanetBuildingRepository buildingRepository;
     private final CatalogService catalogService;
     private final ResourceService resourceService;
-
-    public ProductionScheduler(PlanetBuildingRepository buildingRepository, CatalogService catalogService,
-                                ResourceService resourceService) {
-        this.buildingRepository = buildingRepository;
-        this.catalogService = catalogService;
-        this.resourceService = resourceService;
-    }
 
     @Scheduled(fixedRate = 10_000)
     public void tick() {

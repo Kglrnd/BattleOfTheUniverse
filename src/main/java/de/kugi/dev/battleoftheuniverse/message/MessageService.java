@@ -5,6 +5,7 @@ import de.kugi.dev.battleoftheuniverse.message.dto.SendMessageRequest;
 import de.kugi.dev.battleoftheuniverse.message.dto.UnreadCountView;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,17 +18,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class MessageService {
 
     private static final String SYSTEM_SENDER_LABEL = "System";
 
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
-
-    public MessageService(MessageRepository messageRepository, UserRepository userRepository) {
-        this.messageRepository = messageRepository;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public MessageView send(Long senderUserId, String senderUsername, SendMessageRequest request) {

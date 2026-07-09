@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.planet;
 
 import de.kugi.dev.battleoftheuniverse.planet.dto.AdminPlanetView;
+import de.kugi.dev.battleoftheuniverse.planet.dto.PlanetMapperImpl;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SlotStatus;
 import de.kugi.dev.battleoftheuniverse.planet.dto.SystemView;
 import de.kugi.dev.battleoftheuniverse.user.User;
@@ -36,7 +37,7 @@ class PlanetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PlanetService(planetRepository, userRepository, events);
+        service = new PlanetService(planetRepository, userRepository, events, new PlanetMapperImpl());
     }
 
     @Test

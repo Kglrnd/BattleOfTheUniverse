@@ -1,7 +1,9 @@
 package de.kugi.dev.battleoftheuniverse.planet;
 
+import de.kugi.dev.battleoftheuniverse.planet.dto.PlanetMapper;
 import de.kugi.dev.battleoftheuniverse.planet.dto.PlanetView;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,26 +14,24 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/planets")
+@RequiredArgsConstructor
 public class PlanetController {
 
     private final PlanetService planetService;
-
-    public PlanetController(PlanetService planetService) {
-        this.planetService = planetService;
-    }
+    private final PlanetMapper planetMapper;
 
     @GetMapping
     public List<PlanetView> mine(@AuthenticationPrincipal AppUserPrincipal principal) {
-        return planetService.listMine(principal.getId()).stream().map(PlanetView::from).toList();
+        return planetService.listMine(principal.getId()).stream().map(planetMapper::toView).toList();
     }
 
     @GetMapping("/home")
     public PlanetView home(@AuthenticationPrincipal AppUserPrincipal principal) {
-        return PlanetView.from(planetService.getHome(principal.getId()));
+        return planetMapper.toView(planetService.getHome(principal.getId()));
     }
 
     @GetMapping("/{id}")
     public PlanetView get(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal principal) {
-        return PlanetView.from(planetService.getOwned(id, principal.getId()));
+        return planetMapper.toView(planetService.getOwned(id, principal.getId()));
     }
 }
