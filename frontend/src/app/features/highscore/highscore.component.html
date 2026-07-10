@@ -21,11 +21,39 @@
         </thead>
         <tbody>
           @for (entry of highscore.top; track entry.rank) {
-            <tr [class.current-user]="entry.username === currentUsername">
+            <tr
+              class="player-row"
+              [class.current-user]="entry.username === currentUsername"
+              [class.selected-row]="selectedUserId() === entry.userId"
+              (click)="selectPlayer(entry)"
+            >
               <td>{{ entry.rank }}</td>
               <td>{{ entry.username }}</td>
               <td>{{ entry.score }}</td>
             </tr>
+            @if (selectedUserId() === entry.userId) {
+              <tr class="planets-row">
+                <td colspan="3">
+                  @if (planetsLoading()) {
+                    <p class="field-hint">Loading planets…</p>
+                  } @else if (selectedPlanets(); as planets) {
+                    @if (planets.length === 0) {
+                      <p class="field-hint">No planets found.</p>
+                    } @else {
+                      <ul class="planet-list">
+                        @for (planet of planets; track planet.id) {
+                          <li>
+                            <a [routerLink]="['/universe/system', planet.galaxy, planet.system]">
+                              {{ planet.name }} · {{ planet.coordinates }} · {{ planet.planetClass }}
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  }
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>

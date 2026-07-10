@@ -250,6 +250,7 @@ export interface SystemView {
 
 export interface HighscoreEntry {
   rank: number;
+  userId: number;
   username: string;
   score: number;
 }

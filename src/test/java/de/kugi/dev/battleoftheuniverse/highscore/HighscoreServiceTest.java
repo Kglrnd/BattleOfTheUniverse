@@ -114,8 +114,10 @@ class HighscoreServiceTest {
         // metal_mine: 5 levels * 8 points = 40; cruiser: 2 * 29 = 58; tower: 4 * 3 = 12 -> 110
         assertThat(result.me().score()).isEqualTo(110L);
         assertThat(result.me().rank()).isEqualTo(1);
+        assertThat(result.me().userId()).isEqualTo(1L);
         assertThat(result.top()).hasSize(1);
         assertThat(result.top().getFirst().username()).isEqualTo("alice");
+        assertThat(result.top().getFirst().userId()).isEqualTo(1L);
     }
 
     @Test

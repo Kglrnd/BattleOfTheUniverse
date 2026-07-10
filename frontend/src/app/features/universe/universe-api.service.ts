@@ -28,6 +28,10 @@ export class UniverseApiService {
     return this.http.get<PlanetView>(`/api/planets/${planetId}`);
   }
 
+  byOwner(ownerId: number): Observable<PlanetView[]> {
+    return this.http.get<PlanetView[]>(`/api/planets/by-owner/${ownerId}`);
+  }
+
   getSystem(galaxy: number, system: number): Observable<SystemView> {
     return this.http.get<SystemView>(`/api/systems/${galaxy}/${system}`);
   }

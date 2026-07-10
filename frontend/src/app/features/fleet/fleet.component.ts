@@ -1,7 +1,7 @@
 import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
@@ -41,6 +41,10 @@ export class FleetComponent {
   protected readonly resources = signal<ResourceView[]>([]);
   protected readonly movements = signal<FleetMovementView[]>([]);
   protected readonly missionType = signal<FleetMissionType>('COLONIZE');
+  /** One-shot prefill for the target coordinate inputs when arriving via a "?mission=..." link. */
+  protected readonly prefillGalaxy = signal<number | null>(null);
+  protected readonly prefillSystem = signal<number | null>(null);
+  protected readonly prefillPosition = signal<number | null>(null);
   /** Ship key -> quantity picked for the fleet currently being assembled. */
   protected readonly manifestQuantities = signal<Record<string, number>>({});
   /** Resource key -> amount picked for a TRANSPORT mission's cargo. */
@@ -76,6 +80,7 @@ export class FleetComponent {
     // than read once from a snapshot.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.applyRequestedOrigin(params.get('origin'));
+      this.applyRequestedTarget(params);
     });
 
     this.refreshMovements();
@@ -107,6 +112,24 @@ export class FleetComponent {
       this.loadShips();
       this.loadResources();
     }
+  }
+
+  private static readonly MISSION_TYPES: FleetMissionType[] = ['COLONIZE', 'STATION', 'ATTACK', 'ESPIONAGE', 'TRANSPORT'];
+
+  /** Prefills mission type + target coordinates when arriving via a system-view "Attack"/"Colonize" link. */
+  private applyRequestedTarget(params: ParamMap): void {
+    const mission = params.get('mission');
+    const galaxy = Number(params.get('targetGalaxy')) || null;
+    const system = Number(params.get('targetSystem')) || null;
+    const position = Number(params.get('targetPosition')) || null;
+    if (!mission || !galaxy || !system || !position || !FleetComponent.MISSION_TYPES.includes(mission as FleetMissionType)) {
+      return;
+    }
+    this.missionType.set(mission as FleetMissionType);
+    this.prefillGalaxy.set(galaxy);
+    this.prefillSystem.set(system);
+    this.prefillPosition.set(position);
+    this.refreshDriveOptions(galaxy, system, position);
   }
 
   protected otherPlanets(): PlanetView[] {

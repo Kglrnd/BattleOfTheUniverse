@@ -34,4 +34,9 @@ public class PlanetController {
     public PlanetView get(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal principal) {
         return planetMapper.toView(planetService.getOwned(id, principal.getId()));
     }
+
+    @GetMapping("/by-owner/{ownerId}")
+    public List<PlanetView> byOwner(@PathVariable Long ownerId) {
+        return planetService.listMine(ownerId).stream().map(planetMapper::toView).toList();
+    }
 }

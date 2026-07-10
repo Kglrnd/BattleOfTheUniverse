@@ -1,7 +1,8 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { SystemView } from '../../core/models';
+import { CurrentPlanetService } from '../../core/current-planet.service';
+import { PlanetView, SystemSlotView, SystemView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
@@ -15,6 +16,9 @@ export class SystemViewComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly currentPlanet = inject(CurrentPlanetService);
+
+  protected readonly openMenuPosition = signal<number | null>(null);
 
   private static readonly MIN_SYSTEM = 1;
   private static readonly MAX_SYSTEM = 100;
@@ -99,6 +103,33 @@ export class SystemViewComponent {
 
   slotClass(status: string): string {
     return 'slot-' + status.toLowerCase();
+  }
+
+  isMine(planet: PlanetView): boolean {
+    return this.currentPlanet.planets().some((p) => p.id === planet.id);
+  }
+
+  onSlotClick(slot: SystemSlotView): void {
+    const actionable = slot.status === 'FREE' || (slot.status === 'OCCUPIED' && !!slot.planet && !this.isMine(slot.planet));
+    if (!actionable) {
+      this.openMenuPosition.set(null);
+      return;
+    }
+    this.openMenuPosition.update((current) => (current === slot.position ? null : slot.position));
+  }
+
+  attack(galaxy: number, system: number, position: number): void {
+    this.openMenuPosition.set(null);
+    this.router.navigate(['/fleet'], {
+      queryParams: { mission: 'ATTACK', targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
+    });
+  }
+
+  colonize(galaxy: number, system: number, position: number): void {
+    this.openMenuPosition.set(null);
+    this.router.navigate(['/fleet'], {
+      queryParams: { mission: 'COLONIZE', targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
+    });
   }
 
   private previousGalaxyNumber(galaxy: number): number {

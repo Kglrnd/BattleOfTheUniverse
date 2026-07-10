@@ -6,3 +6,35 @@
 .rank-hint {
   margin-top: 1rem;
 }
+
+.player-row {
+  cursor: pointer;
+}
+
+.selected-row {
+  background: var(--color-surface-alt);
+}
+
+.planets-row td {
+  padding-top: 0;
+  background: var(--color-surface-alt);
+}
+
+.planet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.planet-list a {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.planet-list a:hover {
+  text-decoration: underline;
+}

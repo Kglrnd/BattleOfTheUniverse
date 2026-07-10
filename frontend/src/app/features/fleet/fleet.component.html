@@ -183,6 +183,7 @@
             class="input"
             min="1"
             placeholder="Galaxy"
+            [value]="prefillGalaxy() ?? ''"
             [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
@@ -196,6 +197,7 @@
             class="input"
             min="1"
             placeholder="System"
+            [value]="prefillSystem() ?? ''"
             [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
@@ -209,6 +211,7 @@
             class="input"
             min="1"
             placeholder="Position"
+            [value]="prefillPosition() ?? ''"
             [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />

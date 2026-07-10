@@ -22,7 +22,7 @@
 
   <div class="slot-grid">
     @for (slot of s.slots; track slot.position) {
-      <div class="slot" [class]="slotClass(slot.status)">
+      <div class="slot" [class]="slotClass(slot.status)" (click)="onSlotClick(slot)">
         <div class="slot-position">{{ slot.position }}</div>
         @if (slot.status === 'FREE') {
           <div class="slot-body">
@@ -36,11 +36,27 @@
             @if (planet.homeworld) {
               <span class="slot-tag">Homeworld</span>
             }
-            <a class="slot-link" [routerLink]="['/universe', planet.id]">View planet</a>
+            @if (isMine(planet)) {
+              <a class="slot-link" [routerLink]="['/universe', planet.id]" (click)="$event.stopPropagation()">View planet</a>
+            }
           </div>
         } @else {
           <div class="slot-body">
             <span class="slot-status-label">—</span>
+          </div>
+        }
+
+        @if (openMenuPosition() === slot.position) {
+          <div class="slot-menu" (click)="$event.stopPropagation()">
+            @if (slot.status === 'FREE') {
+              <button type="button" class="slot-menu-item" (click)="colonize(s.galaxy, s.system, slot.position)">
+                Colonize
+              </button>
+            } @else if (slot.planet) {
+              <button type="button" class="slot-menu-item" (click)="attack(s.galaxy, s.system, slot.position)">
+                Attack
+              </button>
+            }
           </div>
         }
       </div>

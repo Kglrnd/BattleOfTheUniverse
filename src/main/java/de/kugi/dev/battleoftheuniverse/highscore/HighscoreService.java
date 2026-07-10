@@ -40,13 +40,13 @@ public class HighscoreService {
 
         List<HighscoreEntryDto> top = ranked.stream()
                 .limit(TOP_LIMIT)
-                .map(r -> new HighscoreEntryDto(r.rank(), r.username(), r.score()))
+                .map(r -> new HighscoreEntryDto(r.rank(), r.userId(), r.username(), r.score()))
                 .toList();
 
         HighscoreEntryDto me = ranked.stream()
                 .filter(r -> r.userId().equals(currentUserId))
                 .findFirst()
-                .map(r -> new HighscoreEntryDto(r.rank(), r.username(), r.score()))
+                .map(r -> new HighscoreEntryDto(r.rank(), r.userId(), r.username(), r.score()))
                 .orElse(null);
 
         return new HighscoreResponseDto(top, me);
