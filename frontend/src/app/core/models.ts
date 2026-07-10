@@ -247,3 +247,14 @@ export interface SystemView {
   system: number;
   slots: SystemSlotView[];
 }
+
+export interface HighscoreEntry {
+  rank: number;
+  username: string;
+  score: number;
+}
+
+export interface HighscoreResponse {
+  top: HighscoreEntry[];
+  me: HighscoreEntry | null;
+}

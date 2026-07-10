@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, adminGuard } from './core/auth.guard';
+import { authGuard, adminGuard, staffGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'universe' },
@@ -63,18 +63,23 @@ export const routes: Routes = [
     loadComponent: () => import('./features/messages/messages.component').then((m) => m.MessagesComponent)
   },
   {
+    path: 'highscore',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/highscore/highscore.component').then((m) => m.HighscoreComponent)
+  },
+  {
     path: 'admin/catalog/:type',
-    canActivate: [adminGuard],
+    canActivate: [staffGuard],
     loadComponent: () => import('./features/admin/catalog-editor.component').then((m) => m.CatalogEditorComponent)
   },
   {
     path: 'admin/planets',
-    canActivate: [adminGuard],
+    canActivate: [staffGuard],
     loadComponent: () => import('./features/admin/admin-planets.component').then((m) => m.AdminPlanetsComponent)
   },
   {
     path: 'admin/users',
-    canActivate: [adminGuard],
+    canActivate: [staffGuard],
     loadComponent: () => import('./features/admin/admin-users.component').then((m) => m.AdminUsersComponent)
   },
   {

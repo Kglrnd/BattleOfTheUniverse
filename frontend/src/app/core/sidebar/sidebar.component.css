@@ -42,47 +42,6 @@ a.tree-toggle.active {
   color: var(--color-accent);
 }
 
-.chevron {
-  display: inline-block;
-  transition: transform 0.15s ease;
-  color: var(--color-text-muted);
-}
-
-.chevron.expanded {
-  transform: rotate(90deg);
-}
-
-.tree-children {
-  list-style: none;
-  margin: 0;
-  padding: 0.15rem 0 0.35rem 1.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.tree-children a {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.tree-children a:hover {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-}
-
-.tree-children a.active {
-  background: var(--color-surface-alt);
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
 .tree-node-meta {
   color: var(--color-text-muted);
   font-size: 0.75rem;

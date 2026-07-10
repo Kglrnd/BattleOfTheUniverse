@@ -28,6 +28,8 @@
             <td>
               @if (user.id === currentUserId) {
                 <span title="You cannot change your own role">{{ user.role }}</span>
+              } @else if (!isAdmin()) {
+                <span title="Only Admins can change roles">{{ user.role }}</span>
               } @else {
                 <select
                   class="select role-select"

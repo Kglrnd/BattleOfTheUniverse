@@ -45,7 +45,7 @@ class BuildingServiceTest {
     private static final Long PLANET_ID = 1L;
     private static final BuildingDefinition METAL_MINE = new BuildingDefinition(
             "metal_mine", "Metal Mine", "desc",
-            new ResourceCost(60, 15, 0), 1.5, 60, ResourceKey.METAL, 30, List.of());
+            new ResourceCost(60, 15, 0), 1.5, 60, ResourceKey.METAL, 30, 8, List.of());
 
     @BeforeEach
     void setUp() {

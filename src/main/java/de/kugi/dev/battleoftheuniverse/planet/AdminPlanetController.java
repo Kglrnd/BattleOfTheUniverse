@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/planets")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
 @RequiredArgsConstructor
 public class AdminPlanetController {
 

@@ -10,7 +10,8 @@
       "cargoCapacity": 10,
       "hydrogenConsumption": 1,
       "baseCost": { "metal": 3000, "crystal": 1000, "deuterium": 0 },
-      "baseBuildTimeSeconds": 300
+      "baseBuildTimeSeconds": 300,
+      "points": 4
     },
     {
       "key": "cruiser",
@@ -22,7 +23,8 @@
       "cargoCapacity": 50,
       "hydrogenConsumption": 4,
       "baseCost": { "metal": 20000, "crystal": 7000, "deuterium": 2000 },
-      "baseBuildTimeSeconds": 1800
+      "baseBuildTimeSeconds": 1800,
+      "points": 29
     },
     {
       "key": "small_cargo",
@@ -34,7 +36,8 @@
       "cargoCapacity": 25000,
       "hydrogenConsumption": 3,
       "baseCost": { "metal": 2000, "crystal": 2000, "deuterium": 0 },
-      "baseBuildTimeSeconds": 600
+      "baseBuildTimeSeconds": 600,
+      "points": 0
     },
     {
       "key": "colony_ship",
@@ -46,7 +49,8 @@
       "cargoCapacity": 1000,
       "hydrogenConsumption": 6,
       "baseCost": { "metal": 10000, "crystal": 20000, "deuterium": 10000 },
-      "baseBuildTimeSeconds": 3600
+      "baseBuildTimeSeconds": 3600,
+      "points": 0
     },
     {
       "key": "espionage_probe",
@@ -58,7 +62,8 @@
       "cargoCapacity": 0,
       "hydrogenConsumption": 1,
       "baseCost": { "metal": 1000, "crystal": 500, "deuterium": 0 },
-      "baseBuildTimeSeconds": 120
+      "baseBuildTimeSeconds": 120,
+      "points": 2
     }
   ]
 }

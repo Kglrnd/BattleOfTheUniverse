@@ -16,6 +16,7 @@ public record BuildingDefinition(
         int baseBuildTimeSeconds,
         ResourceKey producesResource,
         double baseProductionPerLevel,
+        int points,
         List<Requirement> requirements
 ) {
 }

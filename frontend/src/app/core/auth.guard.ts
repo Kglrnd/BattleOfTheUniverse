@@ -17,3 +17,12 @@ export const adminGuard: CanActivateFn = () => {
   }
   return auth.isAdmin() ? true : router.createUrlTree(['/universe']);
 };
+
+export const staffGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
+  }
+  return auth.canAccessAdmin() ? true : router.createUrlTree(['/universe']);
+};

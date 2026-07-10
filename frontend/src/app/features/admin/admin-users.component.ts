@@ -22,6 +22,7 @@ export class AdminUsersComponent {
   protected readonly savingUserId = signal<number | null>(null);
 
   protected readonly currentUserId = this.auth.currentUser()?.id ?? null;
+  protected readonly isAdmin = this.auth.isAdmin;
 
   constructor() {
     this.api.list().subscribe({

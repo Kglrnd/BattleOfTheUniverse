@@ -10,6 +10,7 @@ public record ShipDefinition(
         int cargoCapacity,
         int hydrogenConsumption,
         ResourceCost baseCost,
-        int baseBuildTimeSeconds
+        int baseBuildTimeSeconds,
+        int points
 ) {
 }

@@ -1,0 +1,40 @@
+<h1>Highscore</h1>
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (data(); as highscore) {
+  @if (highscore.top.length === 0) {
+    <p>No players on the board yet.</p>
+  } @else {
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of highscore.top; track entry.rank) {
+            <tr [class.current-user]="entry.username === currentUsername">
+              <td>{{ entry.rank }}</td>
+              <td>{{ entry.username }}</td>
+              <td>{{ entry.score }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (highscore.me && highscore.me.rank > highscore.top.length) {
+      <p class="rank-hint">
+        Du bist auf Platz {{ highscore.me.rank }}. Häng dich rein, um in die Top 100 aufzusteigen!
+      </p>
+    }
+  }
+}

@@ -7,6 +7,7 @@
       "defense": 50,
       "baseCost": { "metal": 2000, "crystal": 500, "deuterium": 0 },
       "baseBuildTimeSeconds": 300,
+      "points": 3,
       "requirements": [
         { "type": "BUILDING", "key": "defense_facility", "level": 1 }
       ]
@@ -18,6 +19,7 @@
       "defense": 400,
       "baseCost": { "metal": 12000, "crystal": 4000, "deuterium": 1000 },
       "baseBuildTimeSeconds": 1800,
+      "points": 17,
       "requirements": [
         { "type": "BUILDING", "key": "defense_facility", "level": 2 }
       ]

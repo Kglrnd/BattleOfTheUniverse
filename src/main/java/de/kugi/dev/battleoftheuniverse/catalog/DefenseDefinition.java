@@ -15,6 +15,7 @@ public record DefenseDefinition(
         int defense,
         ResourceCost baseCost,
         int baseBuildTimeSeconds,
+        int points,
         List<Requirement> requirements
 ) {
 }

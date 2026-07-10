@@ -21,6 +21,8 @@ export class AuthService {
   readonly initialized = this.initializedState.asReadonly();
   readonly isAuthenticated = computed(() => this.currentUserState() !== null);
   readonly isAdmin = computed(() => this.currentUserState()?.role === 'ADMIN');
+  readonly isModerator = computed(() => this.currentUserState()?.role === 'MODERATOR');
+  readonly canAccessAdmin = computed(() => this.isAdmin() || this.isModerator());
 
   register(request: RegisterRequest): Observable<UserView> {
     return this.http.post<UserView>('/api/auth/register', request);

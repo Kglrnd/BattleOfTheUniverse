@@ -17,7 +17,7 @@ import tools.jackson.databind.JsonNode;
  */
 @RestController
 @RequestMapping("/api/admin/catalog")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
 @RequiredArgsConstructor
 public class AdminCatalogController {
 

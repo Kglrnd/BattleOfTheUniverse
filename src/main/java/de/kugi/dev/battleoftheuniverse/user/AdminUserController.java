@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
 @RequiredArgsConstructor
 public class AdminUserController {
 
@@ -31,6 +31,7 @@ public class AdminUserController {
     }
 
     @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
     public AdminUserView changeRole(@PathVariable Long id, @Valid @RequestBody ChangeRoleRequest request,
                                      @AuthenticationPrincipal AppUserPrincipal principal) {
         if (id.equals(principal.getId())) {

@@ -31,7 +31,7 @@ class DefenseServiceTest {
 
     private static final Long PLANET_ID = 1L;
     private static final DefenseDefinition LIGHT_TOWER = new DefenseDefinition(
-            "light_defense_tower", "Light Defense Tower", "desc", 50, new ResourceCost(2000, 500, 0), 300,
+            "light_defense_tower", "Light Defense Tower", "desc", 50, new ResourceCost(2000, 500, 0), 300, 3,
             List.of(new Requirement(RequirementType.BUILDING, "defense_facility", 1)));
 
     @Mock
@@ -60,7 +60,7 @@ class DefenseServiceTest {
         when(catalogService.building("defense_facility")).thenReturn(
                 new de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition(
                         "defense_facility", "Defense Facility", "desc", new ResourceCost(300, 200, 0), 1.8, 300,
-                        de.kugi.dev.battleoftheuniverse.catalog.ResourceKey.NONE, 0, List.of()));
+                        de.kugi.dev.battleoftheuniverse.catalog.ResourceKey.NONE, 0, 50, List.of()));
 
         assertThatThrownBy(() -> service.queueTower(PLANET_ID, "light_defense_tower", 1))
                 .isInstanceOf(ResponseStatusException.class)

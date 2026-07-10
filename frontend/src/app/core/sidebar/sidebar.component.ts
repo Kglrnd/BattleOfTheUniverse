@@ -1,5 +1,6 @@
-import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs';
 
 import { AuthService } from '../auth.service';
 import { PlanetView } from '../models';
@@ -20,9 +21,12 @@ export class SidebarComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly isAdmin = this.auth.isAdmin;
+  protected readonly canAccessAdmin = this.auth.canAccessAdmin;
   protected readonly planets = signal<PlanetView[]>([]);
   protected readonly unreadCount = signal(0);
-  protected readonly adminExpanded = signal(true);
+
+  private readonly currentUrl = signal(this.router.url);
+  protected readonly isAdminArea = computed(() => this.currentUrl().startsWith('/admin'));
 
   protected readonly catalogTypes = [
     { type: 'buildings', label: 'Buildings' },
@@ -48,14 +52,14 @@ export class SidebarComponent {
       }
     }, 10000);
     this.destroyRef.onDestroy(() => clearInterval(pollHandle));
+
+    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
+      this.currentUrl.set(this.router.url);
+    });
   }
 
   private refreshUnreadCount(): void {
     this.messagesApi.unreadCount().subscribe((result) => this.unreadCount.set(result.count));
-  }
-
-  toggleAdmin(): void {
-    this.adminExpanded.update((v) => !v);
   }
 
   goToPlanet(event: Event): void {

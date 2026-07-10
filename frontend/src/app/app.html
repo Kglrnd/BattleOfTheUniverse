@@ -3,6 +3,13 @@
   <nav>
     @if (auth.isAuthenticated()) {
       <span class="username">{{ auth.currentUser()?.username }}</span>
+      @if (auth.canAccessAdmin()) {
+        @if (isAdminArea()) {
+          <a class="btn" routerLink="/universe">Spieler-Oberfläche</a>
+        } @else {
+          <a class="btn" routerLink="/admin/users">Admin-Oberfläche</a>
+        }
+      }
       <button type="button" class="btn" (click)="logout()">Log out</button>
     } @else {
       <a routerLink="/login" routerLinkActive="active">Log in</a>

@@ -1,0 +1,8 @@
+.current-user {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.rank-hint {
+  margin-top: 1rem;
+}

@@ -1,79 +1,80 @@
 <nav class="sidebar-tree" aria-label="Main menu">
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/universe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      Overview
-    </a>
-  </div>
+  @if (isAdminArea()) {
+    @if (canAccessAdmin()) {
+      <div class="tree-node">
+        <a class="tree-toggle" routerLink="/admin/users" routerLinkActive="active">Users</a>
+      </div>
 
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/buildings" routerLinkActive="active">Buildings</a>
-  </div>
+      <div class="tree-node">
+        <a class="tree-toggle" routerLink="/admin/planets" routerLinkActive="active">Planets</a>
+      </div>
 
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/espionage" routerLinkActive="active">Espionage</a>
-  </div>
-
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/research" routerLinkActive="active">Research</a>
-  </div>
-
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/fleet" routerLinkActive="active">Fleet</a>
-  </div>
-
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/defense" routerLinkActive="active">Defense</a>
-  </div>
-
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/messages" routerLinkActive="active">
-      Messages
-      @if (unreadCount() > 0) {
-        <span class="badge-unread">{{ unreadCount() }}</span>
+      @for (catalog of catalogTypes; track catalog.type) {
+        <div class="tree-node">
+          <a class="tree-toggle" [routerLink]="['/admin/catalog', catalog.type]" routerLinkActive="active">{{ catalog.label }}</a>
+        </div>
       }
-    </a>
-  </div>
+    }
 
-  <div class="tree-node">
-    <a class="tree-toggle" routerLink="/universe/system" routerLinkActive="active">Galaxy</a>
-  </div>
-
-  <div class="tree-node">
-    <div class="tree-select-item">
-      <label class="tree-select-label" for="jump-to-planet-select">Jump to planet</label>
-      <select id="jump-to-planet-select" class="select tree-select" (change)="goToPlanet($event)">
-        <option value="" disabled selected>Jump to planet…</option>
-        @for (planet of planets(); track planet.id) {
-          <option [value]="planet.id">{{ planet.coordinates }}</option>
-        }
-      </select>
-    </div>
-  </div>
-
-  @if (isAdmin()) {
+    @if (isAdmin()) {
+      <div class="tree-node">
+        <a class="tree-toggle" routerLink="/admin/reset" routerLinkActive="active">Reset game</a>
+      </div>
+    }
+  } @else {
     <div class="tree-node">
-      <button type="button" class="tree-toggle" (click)="toggleAdmin()">
-        <span class="chevron" [class.expanded]="adminExpanded()">▸</span>
-        Admin
-      </button>
-      @if (adminExpanded()) {
-        <ul class="tree-children">
-          <li>
-            <a routerLink="/admin/planets" routerLinkActive="active">Planets</a>
-          </li>
-          <li>
-            <a routerLink="/admin/users" routerLinkActive="active">Users</a>
-          </li>
-          <li>
-            <a routerLink="/admin/reset" routerLinkActive="active">Reset game</a>
-          </li>
-          @for (catalog of catalogTypes; track catalog.type) {
-            <li>
-              <a [routerLink]="['/admin/catalog', catalog.type]" routerLinkActive="active">{{ catalog.label }}</a>
-            </li>
+      <a class="tree-toggle" routerLink="/universe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        Overview
+      </a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/buildings" routerLinkActive="active">Buildings</a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/espionage" routerLinkActive="active">Espionage</a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/research" routerLinkActive="active">Research</a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/fleet" routerLinkActive="active">Fleet</a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/defense" routerLinkActive="active">Defense</a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/messages" routerLinkActive="active">
+        Messages
+        @if (unreadCount() > 0) {
+          <span class="badge-unread">{{ unreadCount() }}</span>
+        }
+      </a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/universe/system" routerLinkActive="active">Galaxy</a>
+    </div>
+
+    <div class="tree-node">
+      <a class="tree-toggle" routerLink="/highscore" routerLinkActive="active">Highscore</a>
+    </div>
+
+    <div class="tree-node">
+      <div class="tree-select-item">
+        <label class="tree-select-label" for="jump-to-planet-select">Jump to planet</label>
+        <select id="jump-to-planet-select" class="select tree-select" (change)="goToPlanet($event)">
+          <option value="" disabled selected>Jump to planet…</option>
+          @for (planet of planets(); track planet.id) {
+            <option [value]="planet.id">{{ planet.coordinates }}</option>
           }
-        </ul>
-      }
+        </select>
+      </div>
     </div>
   }
 </nav>

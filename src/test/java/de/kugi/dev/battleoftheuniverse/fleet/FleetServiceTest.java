@@ -77,13 +77,13 @@ class FleetServiceTest {
     private final Planet origin = new Planet("Origin", OWNER_ID, 1, 1, 1, PlanetClass.TEMPERATE);
     private final ShipDefinition colonyShip = new ShipDefinition(
             "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, 6,
-            new ResourceCost(10000, 20000, 10000), 3600);
+            new ResourceCost(10000, 20000, 10000), 3600, 0);
     private final ShipDefinition cruiser = new ShipDefinition(
             "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4,
-            new ResourceCost(20000, 7000, 2000), 1800);
+            new ResourceCost(20000, 7000, 2000), 1800, 29);
     private final ShipDefinition lightFighter = new ShipDefinition(
             "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, 1,
-            new ResourceCost(3000, 1000, 0), 60);
+            new ResourceCost(3000, 1000, 0), 60, 4);
 
     @BeforeEach
     void setUp() {
