@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-planet-buildings-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: planet_buildings
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: planet_id
+                  type: BIGINT
+              - column:
+                  name: building_key
+                  type: VARCHAR(255)
+              - column:
+                  name: level
+                  type: INT
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 004-add-planet-buildings-unique-constraint
+      author: kugi
+      changes:
+        - addUniqueConstraint:
+            tableName: planet_buildings
+            columnNames: planet_id, building_key
+            constraintName: uk_planet_buildings_planet_building
+  - changeSet:
+      id: 004-create-construction-jobs-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: construction_jobs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: planet_id
+                  type: BIGINT
+              - column:
+                  name: building_key
+                  type: VARCHAR(255)
+              - column:
+                  name: target_level
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: ends_at
+                  type: TIMESTAMP WITH TIME ZONE

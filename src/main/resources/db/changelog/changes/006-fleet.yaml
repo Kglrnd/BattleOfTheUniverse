@@ -1,0 +1,169 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-ships-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: ships
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: planet_id
+                  type: BIGINT
+              - column:
+                  name: ship_key
+                  type: VARCHAR(255)
+              - column:
+                  name: quantity
+                  type: INT
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 006-add-ships-unique-constraint
+      author: kugi
+      changes:
+        - addUniqueConstraint:
+            tableName: ships
+            columnNames: planet_id, ship_key
+            constraintName: uk_ships_planet_ship
+  - changeSet:
+      id: 006-create-shipyard-jobs-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: shipyard_jobs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: planet_id
+                  type: BIGINT
+              - column:
+                  name: ship_key
+                  type: VARCHAR(255)
+              - column:
+                  name: quantity
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: ends_at
+                  type: TIMESTAMP WITH TIME ZONE
+  - changeSet:
+      id: 006-create-fleet-movements-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: fleet_movements
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: origin_planet_id
+                  type: BIGINT
+              - column:
+                  name: owner_id
+                  type: BIGINT
+              - column:
+                  name: mission_type
+                  type: VARCHAR(50)
+              - column:
+                  name: target_galaxy
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_system
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_position
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: departed_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: arrives_at
+                  type: TIMESTAMP WITH TIME ZONE
+  - changeSet:
+      id: 006-create-fleet-movement-ships-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: fleet_movement_ships
+            columns:
+              - column:
+                  name: movement_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ship_key
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: INT
+        - addPrimaryKey:
+            tableName: fleet_movement_ships
+            columnNames: movement_id, ship_key
+            constraintName: pk_fleet_movement_ships
+        - addForeignKeyConstraint:
+            baseTableName: fleet_movement_ships
+            baseColumnNames: movement_id
+            referencedTableName: fleet_movements
+            referencedColumnNames: id
+            constraintName: fk_fleet_movement_ships_movement
+  - changeSet:
+      id: 006-create-fleet-movement-cargo-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: fleet_movement_cargo
+            columns:
+              - column:
+                  name: movement_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_key
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: BIGINT
+        - addPrimaryKey:
+            tableName: fleet_movement_cargo
+            columnNames: movement_id, resource_key
+            constraintName: pk_fleet_movement_cargo
+        - addForeignKeyConstraint:
+            baseTableName: fleet_movement_cargo
+            baseColumnNames: movement_id
+            referencedTableName: fleet_movements
+            referencedColumnNames: id
+            constraintName: fk_fleet_movement_cargo_movement

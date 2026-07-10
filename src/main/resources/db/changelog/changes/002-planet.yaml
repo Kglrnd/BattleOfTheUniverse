@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-planets-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: planets
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+              - column:
+                  name: owner_id
+                  type: BIGINT
+              - column:
+                  name: galaxy
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: system
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: planet_class
+                  type: VARCHAR(50)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: homeworld
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 002-add-planets-coordinates-unique-constraint
+      author: kugi
+      changes:
+        - addUniqueConstraint:
+            tableName: planets
+            columnNames: galaxy, system, position
+            constraintName: uk_planets_coordinates

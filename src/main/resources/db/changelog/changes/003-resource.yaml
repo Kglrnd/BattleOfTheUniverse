@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-planet-resources-table
+      author: kugi
+      changes:
+        - createTable:
+            tableName: planet_resources
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: planet_id
+                  type: BIGINT
+              - column:
+                  name: resource_key
+                  type: VARCHAR(50)
+              - column:
+                  name: amount
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_update
+                  type: TIMESTAMP WITH TIME ZONE
+  - changeSet:
+      id: 003-add-planet-resources-unique-constraint
+      author: kugi
+      changes:
+        - addUniqueConstraint:
+            tableName: planet_resources
+            columnNames: planet_id, resource_key
+            constraintName: uk_planet_resources_planet_resource
