@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
+
 @Component
 @RequiredArgsConstructor
 public class ColonyFoundedNotificationListener {
@@ -14,6 +16,7 @@ public class ColonyFoundedNotificationListener {
     @ApplicationModuleListener
     void on(ColonyFounded event) {
         messageService.sendSystemMessage(event.ownerId(), "New colony founded",
-                "Your colony ship has founded a new colony: " + event.planetName() + ".");
+                "Your colony ship has founded a new colony: " + event.planetName() + ".\n\n"
+                        + "Research efficiency: " + String.format(Locale.ROOT, "%.2f%%", event.researchEfficiency()) + ".");
     }
 }

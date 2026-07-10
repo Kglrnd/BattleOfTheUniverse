@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-planet-research-fields
+      author: kugi
+      changes:
+        - addColumn:
+            tableName: planets
+            columns:
+              - column:
+                  name: research_efficiency
+                  type: DOUBLE
+                  defaultValueNumeric: 100.0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: research_planet
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

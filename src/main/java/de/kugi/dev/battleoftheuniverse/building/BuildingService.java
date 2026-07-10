@@ -8,6 +8,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
 import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
+import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.Set;
 public class BuildingService {
 
     private static final Set<String> STARTER_BUILDINGS = Set.of("main_building");
+    private static final String RESEARCH_LAB_KEY = "research_lab";
 
     private final PlanetBuildingRepository buildingRepository;
     private final ConstructionJobRepository jobRepository;
@@ -53,6 +55,7 @@ public class BuildingService {
 
     public List<BuildingView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
+        Planet planet = planetService.getById(planetId);
 
         return catalogService.buildings().stream()
                 .map(definition -> {
@@ -60,6 +63,7 @@ public class BuildingService {
                     int targetLevel = currentLevel + 1;
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getBuildingKey().equals(definition.key());
                     List<LockedRequirement> missingRequirements = missingRequirements(planetId, definition.requirements());
+                    boolean isResearchLab = definition.key().equals(RESEARCH_LAB_KEY);
                     return new BuildingView(
                             definition.key(),
                             definition.name(),
@@ -70,7 +74,8 @@ public class BuildingService {
                             isBeingBuilt,
                             isBeingBuilt ? activeJob.get().getEndsAt() : null,
                             missingRequirements.isEmpty(),
-                            missingRequirements
+                            missingRequirements,
+                            isResearchLab ? planet.getResearchEfficiency() : null
                     );
                 })
                 .toList();

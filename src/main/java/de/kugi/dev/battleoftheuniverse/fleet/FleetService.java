@@ -305,7 +305,7 @@ public class FleetService {
                 creditShips(colony.getId(), shipKey, quantity);
             }
         });
-        events.publishEvent(new ColonyFounded(colony.getOwnerId(), colony.getId(), colony.getName()));
+        events.publishEvent(new ColonyFounded(colony.getOwnerId(), colony.getId(), colony.getName(), colony.getResearchEfficiency()));
     }
 
     /**

@@ -4,8 +4,43 @@
   <p class="error">{{ errorMessage() }}</p>
 }
 
-@if (planets().length === 0) {
-  <p>You need at least one planet to fund research.</p>
+<h2>Active research planet</h2>
+
+@if (researchPlanets().length === 0) {
+  <p>You need at least one planet to research from.</p>
+} @else {
+  <div class="card-grid">
+    @for (planet of researchPlanets(); track planet.planetId) {
+      <div class="card" [class.card-locked]="planet.researchLabLevel === 0">
+        <div class="card-header">
+          <div class="card-title">{{ planet.name }}</div>
+          <div class="card-subtitle">{{ planet.coordinates }}</div>
+        </div>
+        <div class="card-content">
+          <p>Research efficiency: {{ planet.researchEfficiency | number: '1.2-2' }}%</p>
+          @if (planet.researchLabLevel === 0) {
+            <p>No Research Lab built here yet.</p>
+          } @else {
+            <p>Research Lab level {{ planet.researchLabLevel }}</p>
+          }
+        </div>
+        <div class="card-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="planet.active || planet.researchLabLevel === 0 || activating() === planet.planetId"
+            (click)="activate(planet)"
+          >
+            {{ planet.active ? 'Active' : 'Activate' }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (!hasActiveResearchPlanet()) {
+  <p>Select an active research planet above before starting research.</p>
 }
 
 <div class="card-grid">
@@ -39,16 +74,11 @@
         }
       </div>
       <div class="card-actions">
-        <select #planetSelect class="select" [disabled]="planets().length === 0">
-          @for (planet of planets(); track planet.id) {
-            <option [value]="planet.id">{{ planet.name }}</option>
-          }
-        </select>
         <button
           type="button"
           class="btn btn-primary"
-          [disabled]="!tech.unlocked || tech.researchActive || hasActiveResearch() || starting() === tech.key || planets().length === 0"
-          (click)="start(tech, +planetSelect.value)"
+          [disabled]="!tech.unlocked || tech.researchActive || hasActiveResearch() || !hasActiveResearchPlanet() || starting() === tech.key"
+          (click)="start(tech)"
         >
           Research
         </button>

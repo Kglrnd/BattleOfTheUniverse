@@ -17,4 +17,6 @@ public interface PlanetRepository extends JpaRepository<Planet, Long> {
     Optional<Planet> findByIdAndOwnerId(Long id, Long ownerId);
 
     Optional<Planet> findByOwnerIdAndHomeworldTrue(Long ownerId);
+
+    Optional<Planet> findByOwnerIdAndResearchPlanetTrue(Long ownerId);
 }

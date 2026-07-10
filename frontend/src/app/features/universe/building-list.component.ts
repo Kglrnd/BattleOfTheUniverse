@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
 
 import { formatCountdown } from '../../core/countdown';
@@ -6,7 +7,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-building-list',
-  imports: [],
+  imports: [DecimalPipe],
   templateUrl: './building-list.component.html',
   styleUrl: './building-list.component.css'
 })

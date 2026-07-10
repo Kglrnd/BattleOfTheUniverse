@@ -10,6 +10,7 @@ public record PlanetView(
         int position,
         String coordinates,
         PlanetClass planetClass,
-        boolean homeworld
+        boolean homeworld,
+        double researchEfficiency
 ) {
 }

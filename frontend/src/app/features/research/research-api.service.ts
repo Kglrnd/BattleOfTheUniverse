@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { ResearchStartResponse, TechnologyView } from '../../core/models';
+import { ResearchPlanetOption, ResearchStartResponse, TechnologyView } from '../../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class ResearchApiService {
@@ -12,7 +12,15 @@ export class ResearchApiService {
     return this.http.get<TechnologyView[]>('/api/research');
   }
 
-  start(technologyKey: string, planetId: number): Observable<ResearchStartResponse> {
-    return this.http.post<ResearchStartResponse>(`/api/research/${technologyKey}/start`, { planetId });
+  start(technologyKey: string): Observable<ResearchStartResponse> {
+    return this.http.post<ResearchStartResponse>(`/api/research/${technologyKey}/start`, {});
+  }
+
+  listPlanetOptions(): Observable<ResearchPlanetOption[]> {
+    return this.http.get<ResearchPlanetOption[]>('/api/research/planets');
+  }
+
+  activate(planetId: number): Observable<ResearchPlanetOption> {
+    return this.http.post<ResearchPlanetOption>(`/api/research/planets/${planetId}/activate`, {});
   }
 }

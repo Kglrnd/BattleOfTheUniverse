@@ -11,8 +11,10 @@ import lombok.Setter;
 
 /**
  * A researched technology level for a user, built up via {@link ResearchJob}/
- * {@link ResearchService}. Research is account-wide rather than per-planet, matching
- * how a single research lab queue benefits every colony.
+ * {@link ResearchService}. The level itself is account-wide, but every research job is
+ * actually run from the account's single active research planet (see
+ * {@code Planet.researchPlanet}) - that planet's Research Lab gates which technologies
+ * are unlocked and its suitability ({@code Planet.researchEfficiency}) affects speed.
  */
 @Entity
 @Table(name = "technologies")

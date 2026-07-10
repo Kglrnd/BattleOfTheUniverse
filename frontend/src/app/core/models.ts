@@ -25,6 +25,7 @@ export interface PlanetView {
   coordinates: string;
   planetClass: string;
   homeworld: boolean;
+  researchEfficiency: number;
 }
 
 export interface AdminPlanetView {
@@ -72,6 +73,7 @@ export interface BuildingView {
   constructionEndsAt: string | null;
   unlocked: boolean;
   missingRequirements: LockedRequirement[];
+  researchEfficiency: number | null;
 }
 
 export interface UpgradeResponse {
@@ -142,6 +144,15 @@ export interface ResearchStartResponse {
   technologyKey: string;
   targetLevel: number;
   endsAt: string;
+}
+
+export interface ResearchPlanetOption {
+  planetId: number;
+  name: string;
+  coordinates: string;
+  researchEfficiency: number;
+  researchLabLevel: number;
+  active: boolean;
 }
 
 export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK' | 'ESPIONAGE' | 'TRANSPORT';

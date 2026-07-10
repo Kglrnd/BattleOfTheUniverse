@@ -46,6 +46,11 @@ public class Planet {
 
     private boolean homeworld = false;
 
+    /** Fixed at creation, 85.00-109.99; see {@link de.kugi.dev.battleoftheuniverse.research.ResearchService}. */
+    private double researchEfficiency = 100.0;
+
+    private boolean researchPlanet = false;
+
     public Planet(String name, Long ownerId, int galaxy, int system, int position, PlanetClass planetClass) {
         this.name = name;
         this.ownerId = ownerId;

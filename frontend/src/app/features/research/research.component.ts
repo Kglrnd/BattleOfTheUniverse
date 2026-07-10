@@ -1,29 +1,28 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 
-import { PlanetView, TechnologyView } from '../../core/models';
-import { UniverseApiService } from '../universe/universe-api.service';
+import { ResearchPlanetOption, TechnologyView } from '../../core/models';
 import { ResearchApiService } from './research-api.service';
 
 @Component({
   selector: 'app-research',
-  imports: [],
+  imports: [DecimalPipe],
   templateUrl: './research.component.html',
   styleUrl: './research.component.css'
 })
 export class ResearchComponent {
   private readonly api = inject(ResearchApiService);
-  private readonly universeApi = inject(UniverseApiService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly technologies = signal<TechnologyView[]>([]);
-  protected readonly planets = signal<PlanetView[]>([]);
+  protected readonly researchPlanets = signal<ResearchPlanetOption[]>([]);
   protected readonly starting = signal<string | null>(null);
+  protected readonly activating = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   /** Bumped every second purely to force the countdown text to re-render. */
   protected readonly clockTick = signal(0);
 
   constructor() {
-    this.universeApi.listPlanets().subscribe((planets) => this.planets.set(planets));
     this.refresh();
 
     const pollHandle = setInterval(() => this.refresh(), 5000);
@@ -36,19 +35,42 @@ export class ResearchComponent {
 
   private refresh(): void {
     this.api.list().subscribe((technologies) => this.technologies.set(technologies));
+    this.api.listPlanetOptions().subscribe((planets) => this.researchPlanets.set(planets));
   }
 
   hasActiveResearch(): boolean {
     return this.technologies().some((t) => t.researchActive);
   }
 
-  start(tech: TechnologyView, planetId: number): void {
-    if (this.starting() || !planetId) {
+  hasActiveResearchPlanet(): boolean {
+    return this.researchPlanets().some((p) => p.active);
+  }
+
+  activate(planet: ResearchPlanetOption): void {
+    if (this.activating() || planet.active || planet.researchLabLevel === 0) {
+      return;
+    }
+    this.errorMessage.set(null);
+    this.activating.set(planet.planetId);
+    this.api.activate(planet.planetId).subscribe({
+      next: () => {
+        this.activating.set(null);
+        this.refresh();
+      },
+      error: (err) => {
+        this.activating.set(null);
+        this.errorMessage.set(err.error?.message ?? 'Could not activate this research planet.');
+      }
+    });
+  }
+
+  start(tech: TechnologyView): void {
+    if (this.starting() || !this.hasActiveResearchPlanet()) {
       return;
     }
     this.errorMessage.set(null);
     this.starting.set(tech.key);
-    this.api.start(tech.key, planetId).subscribe({
+    this.api.start(tech.key).subscribe({
       next: () => {
         this.starting.set(null);
         this.refresh();

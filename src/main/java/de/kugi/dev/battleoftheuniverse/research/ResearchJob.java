@@ -12,9 +12,10 @@ import lombok.Setter;
 import java.time.Instant;
 
 /**
- * Research is account-wide (one lab queue per user, see {@link Technology}), but
- * paid for out of a specific planet's stockpile — {@code planetId} is kept only so
- * the origin can be shown back to the player, it plays no role once the job is queued.
+ * Research is account-wide (one lab queue per user, see {@link Technology}), but always
+ * runs from the account's active research planet — {@code planetId} is that planet: it
+ * both pays the resource cost and (via its suitability) determined this job's duration
+ * at start time.
  */
 @Entity
 @Table(name = "research_jobs")

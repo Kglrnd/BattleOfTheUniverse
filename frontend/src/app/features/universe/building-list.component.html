@@ -11,6 +11,9 @@
       </div>
       <div class="card-content">
         <p>{{ building.description }}</p>
+        @if (building.researchEfficiency != null) {
+          <p class="research-efficiency">Research efficiency: {{ building.researchEfficiency | number: '1.2-2' }}%</p>
+        }
         @if (!building.unlocked) {
           <ul class="requirement-list">
             @for (requirement of building.missingRequirements; track requirement.label) {

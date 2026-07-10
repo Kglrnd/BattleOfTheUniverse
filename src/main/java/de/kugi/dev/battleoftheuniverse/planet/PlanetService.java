@@ -84,10 +84,17 @@ public class PlanetService {
     private Planet place(Long ownerId, String name, int galaxy, int system, int position, boolean homeworld) {
         Planet planet = new Planet(name, ownerId, galaxy, system, position, PlanetClass.TEMPERATE);
         planet.setHomeworld(homeworld);
+        planet.setResearchEfficiency(rollResearchEfficiency());
         planet = planetRepository.save(planet);
 
         events.publishEvent(new PlanetCreated(planet.getId(), ownerId));
         return planet;
+    }
+
+    /** Uniform roll in [85.00, 109.99], fixed for the planet's lifetime. */
+    private double rollResearchEfficiency() {
+        int hundredths = 8500 + random.nextInt(10999 - 8500 + 1);
+        return hundredths / 100.0;
     }
 
     public List<Planet> listMine(Long ownerId) {
@@ -145,6 +152,32 @@ public class PlanetService {
     /** Used by other modules that only need to verify ownership, not the full entity. */
     public boolean isOwnedBy(Long planetId, Long ownerId) {
         return planetRepository.findByIdAndOwnerId(planetId, ownerId).isPresent();
+    }
+
+    public Optional<Planet> findActiveResearchPlanet(Long ownerId) {
+        return planetRepository.findByOwnerIdAndResearchPlanetTrue(ownerId);
+    }
+
+    /** Switches the account's active research planet, clearing any previous one. */
+    @Transactional
+    public Planet activateResearchPlanet(Long ownerId, Long planetId) {
+        Planet target = getOwned(planetId, ownerId);
+
+        findActiveResearchPlanet(ownerId)
+                .filter(previous -> !previous.getId().equals(target.getId()))
+                .ifPresent(previous -> {
+                    previous.setResearchPlanet(false);
+                    planetRepository.save(previous);
+                });
+
+        target.setResearchPlanet(true);
+        return planetRepository.save(target);
+    }
+
+    /** Unscoped lookup for cross-module callers that have already verified ownership themselves. */
+    public Planet getById(Long planetId) {
+        return planetRepository.findById(planetId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Planet not found"));
     }
 
     public SystemView getSystemView(int galaxy, int system) {

@@ -7,9 +7,11 @@ import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
 import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.TechnologyDefinition;
+import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.dto.DriveOption;
 import de.kugi.dev.battleoftheuniverse.research.dto.LockedRequirement;
+import de.kugi.dev.battleoftheuniverse.research.dto.ResearchPlanetOption;
 import de.kugi.dev.battleoftheuniverse.research.dto.ResearchStartResponse;
 import de.kugi.dev.battleoftheuniverse.research.dto.TechnologyView;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +30,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class ResearchService {
+
+    private static final String RESEARCH_LAB_KEY = "research_lab";
 
     private final TechnologyRepository technologyRepository;
     private final ResearchJobRepository jobRepository;
@@ -37,6 +42,7 @@ public class ResearchService {
 
     public List<TechnologyView> listForUser(Long userId) {
         var activeJob = jobRepository.findByUserId(userId);
+        Optional<Planet> activePlanet = planetService.findActiveResearchPlanet(userId);
 
         return catalogService.technologies().stream()
                 .map(definition -> {
@@ -52,7 +58,7 @@ public class ResearchService {
                             definition.driveScope(),
                             level,
                             catalogService.costFor(definition, targetLevel),
-                            catalogService.researchTimeFor(definition, targetLevel).toSeconds(),
+                            adjustedResearchTime(definition, targetLevel, activePlanet).toSeconds(),
                             isBeingResearched,
                             isBeingResearched ? activeJob.get().getTargetLevel() : null,
                             isBeingResearched ? activeJob.get().getEndsAt() : null,
@@ -64,10 +70,12 @@ public class ResearchService {
     }
 
     @Transactional
-    public ResearchStartResponse startResearch(Long userId, Long planetId, String technologyKey) {
+    public ResearchStartResponse startResearch(Long userId, String technologyKey) {
         if (jobRepository.findByUserId(userId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A research is already in progress for this account");
         }
+        Planet activePlanet = planetService.findActiveResearchPlanet(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "No active research planet selected"));
 
         TechnologyDefinition definition = catalogService.technology(technologyKey);
         if (!missingRequirements(userId, definition.requirements()).isEmpty()) {
@@ -76,13 +84,48 @@ public class ResearchService {
         int targetLevel = levelOf(userId, technologyKey) + 1;
 
         ResourceCost cost = catalogService.costFor(definition, targetLevel);
-        resourceService.debit(planetId, cost);
+        resourceService.debit(activePlanet.getId(), cost);
 
         Instant startedAt = Instant.now();
-        Instant endsAt = startedAt.plus(catalogService.researchTimeFor(definition, targetLevel));
-        jobRepository.save(new ResearchJob(userId, planetId, technologyKey, targetLevel, startedAt, endsAt));
+        Instant endsAt = startedAt.plus(adjustedResearchTime(definition, targetLevel, Optional.of(activePlanet)));
+        jobRepository.save(new ResearchJob(userId, activePlanet.getId(), technologyKey, targetLevel, startedAt, endsAt));
 
         return new ResearchStartResponse(technologyKey, targetLevel, endsAt);
+    }
+
+    /** Every owned planet as a candidate research planet, with its research-lab level and suitability. */
+    public List<ResearchPlanetOption> listResearchPlanetOptions(Long userId) {
+        Optional<Planet> activePlanet = planetService.findActiveResearchPlanet(userId);
+        return planetService.listMine(userId).stream()
+                .map(planet -> new ResearchPlanetOption(
+                        planet.getId(),
+                        planet.getName(),
+                        planet.getCoordinates(),
+                        planet.getResearchEfficiency(),
+                        buildingService.levelOf(planet.getId(), RESEARCH_LAB_KEY),
+                        activePlanet.isPresent() && activePlanet.get().getId().equals(planet.getId())
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public ResearchPlanetOption activateResearchPlanet(Long userId, Long planetId) {
+        if (buildingService.levelOf(planetId, RESEARCH_LAB_KEY) < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This planet needs a Research Lab before it can host research");
+        }
+        Planet planet = planetService.activateResearchPlanet(userId, planetId);
+        return new ResearchPlanetOption(planet.getId(), planet.getName(), planet.getCoordinates(),
+                planet.getResearchEfficiency(), buildingService.levelOf(planet.getId(), RESEARCH_LAB_KEY), true);
+    }
+
+    /** Base research time scaled by the active research planet's suitability (100% = normal, see Planet.researchEfficiency). */
+    private Duration adjustedResearchTime(TechnologyDefinition definition, int targetLevel, Optional<Planet> activePlanet) {
+        Duration base = catalogService.researchTimeFor(definition, targetLevel);
+        if (activePlanet.isEmpty()) {
+            return base;
+        }
+        double multiplier = 2.0 - activePlanet.get().getResearchEfficiency() / 100.0;
+        return Duration.ofSeconds(Math.round(base.toSeconds() * multiplier));
     }
 
     @Transactional
@@ -165,7 +208,7 @@ public class ResearchService {
         for (Requirement requirement : requirements) {
             int currentLevel = switch (requirement.type()) {
                 case TECHNOLOGY -> levelOf(userId, requirement.key());
-                case BUILDING -> highestBuildingLevel(userId, requirement.key());
+                case BUILDING -> activeResearchPlanetBuildingLevel(userId, requirement.key());
             };
             if (currentLevel < requirement.level()) {
                 String label = requirement.type() == RequirementType.TECHNOLOGY
@@ -177,11 +220,10 @@ public class ResearchService {
         return missing;
     }
 
-    /** Research is account-wide, so a building requirement is met if any owned planet qualifies. */
-    private int highestBuildingLevel(Long userId, String buildingKey) {
-        return planetService.listMine(userId).stream()
-                .mapToInt(planet -> buildingService.levelOf(planet.getId(), buildingKey))
-                .max()
+    /** Research only happens from the account's active research planet - 0 if none is set. */
+    private int activeResearchPlanetBuildingLevel(Long userId, String buildingKey) {
+        return planetService.findActiveResearchPlanet(userId)
+                .map(planet -> buildingService.levelOf(planet.getId(), buildingKey))
                 .orElse(0);
     }
 }
