@@ -1,9 +1,12 @@
 package de.kugi.dev.battleoftheuniverse.catalog;
 
 /**
- * How far a researched drive lets a fleet travel. Ordinal order matters: a drive
- * covers its own scope and every narrower one (a GALAXY-capable drive can obviously
- * also cross a single system), so callers compare via {@code ordinal()}.
+ * How far a drive is designed to reach. A mission only offers drives whose scope is
+ * at or below what the trip requires - a GALAXY drive is overkill for a same-system
+ * hop and isn't offered for one. The reverse works, just slowly: a narrower drive
+ * (e.g. SYSTEM) can still be picked for a wider trip, it simply takes a very long
+ * time since travel time is driven by raw distance, not by scope. Ordinal order
+ * matters, so callers compare via {@code ordinal()}.
  */
 public enum DriveScope {
     /** Not a drive — the default for every non-propulsion technology. */

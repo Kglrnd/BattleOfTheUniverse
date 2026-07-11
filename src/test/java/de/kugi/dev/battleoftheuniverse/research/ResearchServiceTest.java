@@ -135,4 +135,45 @@ class ResearchServiceTest {
 
         verify(planetService, never()).activateResearchPlanet(any(), any());
     }
+
+    private TechnologyDefinition driveDefinition(String key, DriveScope scope) {
+        return new TechnologyDefinition(key, key, "desc",
+                new ResourceCost(100, 50, 0), 1.1, 60, scope, 1.0, 0.1, List.of());
+    }
+
+    @Test
+    void speedMultiplierForDriveRejectsADriveTooWideScopedForTheMission() {
+        // A GALAXY-scoped drive is overkill for a same-system hop and shouldn't be offered for one.
+        when(technologyRepository.findByUserIdAndTechnologyKey(USER_ID, "hyperspace_drive"))
+                .thenReturn(Optional.of(new Technology(USER_ID, "hyperspace_drive", 5)));
+        when(catalogService.technology("hyperspace_drive")).thenReturn(driveDefinition("hyperspace_drive", DriveScope.GALAXY));
+
+        assertThat(service.speedMultiplierForDrive(USER_ID, "hyperspace_drive", DriveScope.SYSTEM)).isEmpty();
+    }
+
+    @Test
+    void speedMultiplierForDriveAllowsANarrowerDriveOnAWiderMission() {
+        // A SYSTEM-scoped drive can still make a cross-galaxy trip, just very slowly (see distance-based ETA).
+        when(technologyRepository.findByUserIdAndTechnologyKey(USER_ID, "chemical_drive"))
+                .thenReturn(Optional.of(new Technology(USER_ID, "chemical_drive", 5)));
+        when(catalogService.technology("chemical_drive")).thenReturn(driveDefinition("chemical_drive", DriveScope.SYSTEM));
+
+        assertThat(service.speedMultiplierForDrive(USER_ID, "chemical_drive", DriveScope.GALAXY)).isPresent();
+    }
+
+    @Test
+    void listAvailableDrivesExcludesDrivesTooWideScopedForTheMission() {
+        when(technologyRepository.findByUserId(USER_ID)).thenReturn(List.of(
+                new Technology(USER_ID, "chemical_drive", 5),
+                new Technology(USER_ID, "impulse_drive", 3),
+                new Technology(USER_ID, "hyperspace_drive", 1)
+        ));
+        when(catalogService.technology("chemical_drive")).thenReturn(driveDefinition("chemical_drive", DriveScope.SYSTEM));
+        when(catalogService.technology("impulse_drive")).thenReturn(driveDefinition("impulse_drive", DriveScope.INTER_SYSTEM));
+        when(catalogService.technology("hyperspace_drive")).thenReturn(driveDefinition("hyperspace_drive", DriveScope.GALAXY));
+
+        assertThat(service.listAvailableDrives(USER_ID, DriveScope.SYSTEM))
+                .extracting(option -> option.key())
+                .containsExactly("chemical_drive");
+    }
 }

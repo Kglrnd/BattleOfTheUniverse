@@ -160,9 +160,9 @@ public class ResearchService {
 
     /**
      * The travel-speed multiplier a specific researched drive grants, or empty if the user
-     * hasn't researched it or its scope doesn't reach far enough. A drive's scope also covers
-     * every narrower one, so e.g. a researched GALAXY drive answers for a same-system hop
-     * too — see {@link DriveScope}.
+     * hasn't researched it or its scope is too wide for the mission (overkill drives aren't
+     * offered for a narrower trip). A narrower drive works for a wider trip too, just very
+     * slowly, since travel time is driven by raw distance, not by scope — see {@link DriveScope}.
      */
     public Optional<Double> speedMultiplierForDrive(Long userId, String driveKey, DriveScope requiredScope) {
         int level = levelOf(userId, driveKey);
@@ -170,7 +170,7 @@ public class ResearchService {
             return Optional.empty();
         }
         TechnologyDefinition definition = catalogService.technology(driveKey);
-        if (definition.driveScope() == DriveScope.NONE || definition.driveScope().ordinal() < requiredScope.ordinal()) {
+        if (definition.driveScope() == DriveScope.NONE || definition.driveScope().ordinal() > requiredScope.ordinal()) {
             return Optional.empty();
         }
         return Optional.of(definition.baseSpeedMultiplier() + definition.driveSpeedBonusPerLevel() * level);
@@ -188,7 +188,7 @@ public class ResearchService {
                 continue;
             }
             TechnologyDefinition definition = catalogService.technology(technology.getTechnologyKey());
-            if (definition.driveScope() == DriveScope.NONE || definition.driveScope().ordinal() < requiredScope.ordinal()) {
+            if (definition.driveScope() == DriveScope.NONE || definition.driveScope().ordinal() > requiredScope.ordinal()) {
                 continue;
             }
             double multiplier = definition.baseSpeedMultiplier() + definition.driveSpeedBonusPerLevel() * technology.getLevel();

@@ -219,7 +219,7 @@ public class FleetService {
         DriveScope requiredScope = requiredScope(origin, request.targetGalaxy(), request.targetSystem());
         double driveMultiplier = researchService.speedMultiplierForDrive(ownerId, request.driveKey(), requiredScope)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Chosen drive is not researched or not capable of a " + requiredScope + " mission"));
+                        "Chosen drive is not researched or is too wide-scoped for a " + requiredScope + " mission"));
         long distance = distanceBetween(origin, request.targetGalaxy(), request.targetSystem(), request.targetPosition());
         long travelSeconds = travelTimeSeconds(distance, slowestSpeed, driveMultiplier);
 
