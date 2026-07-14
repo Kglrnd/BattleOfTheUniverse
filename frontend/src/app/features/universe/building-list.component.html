@@ -3,7 +3,7 @@
 }
 
 <div class="card-grid">
-  @for (building of buildings(); track building.key) {
+  @for (building of buildingsResource.value() ?? []; track building.key) {
     <div class="card building-card" [class.card-locked]="!building.unlocked">
       <div class="card-header">
         <div class="card-title">{{ building.name }}</div>

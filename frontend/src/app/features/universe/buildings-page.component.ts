@@ -16,10 +16,6 @@ export class BuildingsPageComponent {
   protected readonly planets = this.currentPlanet.planets;
   protected readonly selectedPlanetId = this.currentPlanet.selectedPlanetId;
 
-  constructor() {
-    this.currentPlanet.refresh();
-  }
-
   onPlanetChange(id: number): void {
     this.currentPlanet.select(id);
   }

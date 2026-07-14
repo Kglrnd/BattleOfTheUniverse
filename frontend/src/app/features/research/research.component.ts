@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 import { ResearchPlanetOption, TechnologyView } from '../../core/models';
 import { ResearchApiService } from './research-api.service';
@@ -14,8 +15,8 @@ export class ResearchComponent {
   private readonly api = inject(ResearchApiService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly technologies = signal<TechnologyView[]>([]);
-  protected readonly researchPlanets = signal<ResearchPlanetOption[]>([]);
+  protected readonly technologiesResource = rxResource({ stream: () => this.api.list() });
+  protected readonly researchPlanetsResource = rxResource({ stream: () => this.api.listPlanetOptions() });
   protected readonly starting = signal<string | null>(null);
   protected readonly activating = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
@@ -23,9 +24,10 @@ export class ResearchComponent {
   protected readonly clockTick = signal(0);
 
   constructor() {
-    this.refresh();
-
-    const pollHandle = setInterval(() => this.refresh(), 5000);
+    const pollHandle = setInterval(() => {
+      this.technologiesResource.reload();
+      this.researchPlanetsResource.reload();
+    }, 5000);
     const clockHandle = setInterval(() => this.clockTick.update((v) => v + 1), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(pollHandle);
@@ -33,17 +35,12 @@ export class ResearchComponent {
     });
   }
 
-  private refresh(): void {
-    this.api.list().subscribe((technologies) => this.technologies.set(technologies));
-    this.api.listPlanetOptions().subscribe((planets) => this.researchPlanets.set(planets));
-  }
-
   hasActiveResearch(): boolean {
-    return this.technologies().some((t) => t.researchActive);
+    return (this.technologiesResource.value() ?? []).some((t) => t.researchActive);
   }
 
   hasActiveResearchPlanet(): boolean {
-    return this.researchPlanets().some((p) => p.active);
+    return (this.researchPlanetsResource.value() ?? []).some((p) => p.active);
   }
 
   activate(planet: ResearchPlanetOption): void {
@@ -55,7 +52,8 @@ export class ResearchComponent {
     this.api.activate(planet.planetId).subscribe({
       next: () => {
         this.activating.set(null);
-        this.refresh();
+        this.technologiesResource.reload();
+        this.researchPlanetsResource.reload();
       },
       error: (err) => {
         this.activating.set(null);
@@ -73,7 +71,8 @@ export class ResearchComponent {
     this.api.start(tech.key).subscribe({
       next: () => {
         this.starting.set(null);
-        this.refresh();
+        this.technologiesResource.reload();
+        this.researchPlanetsResource.reload();
       },
       error: (err) => {
         this.starting.set(null);

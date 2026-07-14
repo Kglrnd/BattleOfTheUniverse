@@ -1,10 +1,10 @@
-import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, map } from 'rxjs';
 
 import { AuthService } from '../auth.service';
-import { PlanetView } from '../models';
-import { UniverseApiService } from '../../features/universe/universe-api.service';
+import { CurrentPlanetService } from '../current-planet.service';
 import { MessagesApiService } from '../../features/messages/messages-api.service';
 
 @Component({
@@ -15,17 +15,28 @@ import { MessagesApiService } from '../../features/messages/messages-api.service
 })
 export class SidebarComponent {
   private readonly auth = inject(AuthService);
-  private readonly api = inject(UniverseApiService);
+  private readonly currentPlanet = inject(CurrentPlanetService);
   private readonly messagesApi = inject(MessagesApiService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly isAdmin = this.auth.isAdmin;
   protected readonly canAccessAdmin = this.auth.canAccessAdmin;
-  protected readonly planets = signal<PlanetView[]>([]);
-  protected readonly unreadCount = signal(0);
+  protected readonly planets = this.currentPlanet.planets;
 
-  private readonly currentUrl = signal(this.router.url);
+  private readonly unreadCountResource = rxResource({
+    params: () => (this.auth.isAuthenticated() ? {} : undefined),
+    stream: () => this.messagesApi.unreadCount()
+  });
+  protected readonly unreadCount = computed(() => this.unreadCountResource.value()?.count ?? 0);
+
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url)
+    ),
+    { initialValue: this.router.url }
+  );
   protected readonly isAdminArea = computed(() => this.currentUrl().startsWith('/admin'));
 
   protected readonly catalogTypes = [
@@ -36,30 +47,8 @@ export class SidebarComponent {
   ];
 
   constructor() {
-    effect(() => {
-      if (this.auth.isAuthenticated()) {
-        this.api.listPlanets().subscribe((planets) => this.planets.set(planets));
-        this.refreshUnreadCount();
-      } else {
-        this.planets.set([]);
-        this.unreadCount.set(0);
-      }
-    });
-
-    const pollHandle = setInterval(() => {
-      if (this.auth.isAuthenticated()) {
-        this.refreshUnreadCount();
-      }
-    }, 10000);
+    const pollHandle = setInterval(() => this.unreadCountResource.reload(), 10000);
     this.destroyRef.onDestroy(() => clearInterval(pollHandle));
-
-    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-      this.currentUrl.set(this.router.url);
-    });
-  }
-
-  private refreshUnreadCount(): void {
-    this.messagesApi.unreadCount().subscribe((result) => this.unreadCount.set(result.count));
   }
 
   goToPlanet(event: Event): void {

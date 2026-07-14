@@ -1,4 +1,5 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Menu, MenuContent, MenuItem, MenuTrigger } from '@angular/aria/menu';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
@@ -7,7 +8,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-system-view',
-  imports: [RouterLink],
+  imports: [RouterLink, Menu, MenuContent, MenuItem, MenuTrigger],
   templateUrl: './system-view.component.html',
   styleUrl: './system-view.component.css'
 })
@@ -17,8 +18,6 @@ export class SystemViewComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly currentPlanet = inject(CurrentPlanetService);
-
-  protected readonly openMenuPosition = signal<number | null>(null);
 
   private static readonly MIN_SYSTEM = 1;
   private static readonly MAX_SYSTEM = 100;
@@ -109,24 +108,25 @@ export class SystemViewComponent {
     return this.currentPlanet.planets().some((p) => p.id === planet.id);
   }
 
-  onSlotClick(slot: SystemSlotView): void {
-    const actionable = slot.status === 'FREE' || (slot.status === 'OCCUPIED' && !!slot.planet && !this.isMine(slot.planet));
-    if (!actionable) {
-      this.openMenuPosition.set(null);
-      return;
+  actionable(slot: SystemSlotView): boolean {
+    return slot.status === 'FREE' || (slot.status === 'OCCUPIED' && !!slot.planet && !this.isMine(slot.planet));
+  }
+
+  onSlotMenuAction(action: string, galaxy: number, system: number, position: number): void {
+    if (action === 'colonize') {
+      this.colonize(galaxy, system, position);
+    } else if (action === 'attack') {
+      this.attack(galaxy, system, position);
     }
-    this.openMenuPosition.update((current) => (current === slot.position ? null : slot.position));
   }
 
   attack(galaxy: number, system: number, position: number): void {
-    this.openMenuPosition.set(null);
     this.router.navigate(['/fleet'], {
       queryParams: { mission: 'ATTACK', targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
     });
   }
 
   colonize(galaxy: number, system: number, position: number): void {
-    this.openMenuPosition.set(null);
     this.router.navigate(['/fleet'], {
       queryParams: { mission: 'COLONIZE', targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
     });

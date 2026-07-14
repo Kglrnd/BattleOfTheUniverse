@@ -1,4 +1,5 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, linkedSignal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 import { AuthService } from './auth.service';
 import { PlanetView } from './models';
@@ -15,40 +16,36 @@ export class CurrentPlanetService {
   private readonly auth = inject(AuthService);
   private readonly api = inject(UniverseApiService);
 
-  private readonly planetsSignal = signal<PlanetView[]>([]);
-  private readonly selectedPlanetIdSignal = signal<number | null>(null);
+  private readonly planetsResource = rxResource({
+    params: () => (this.auth.isAuthenticated() ? {} : undefined),
+    stream: () => this.api.listPlanets()
+  });
 
-  readonly planets = this.planetsSignal.asReadonly();
-  readonly selectedPlanetId = this.selectedPlanetIdSignal.asReadonly();
-  readonly selectedPlanet = computed(
-    () => this.planetsSignal().find((p) => p.id === this.selectedPlanetIdSignal()) ?? null
-  );
+  readonly planets = computed(() => this.planetsResource.value() ?? []);
 
-  constructor() {
-    effect(() => {
-      if (this.auth.isAuthenticated()) {
-        this.refresh();
-      } else {
-        this.planetsSignal.set([]);
-        this.selectedPlanetIdSignal.set(null);
+  // linkedSignal because the default selection must be derived from `planets`
+  // (fall back to the homeworld once the list (re)loads) while still being
+  // independently settable via `select()` - a plain `computed` couldn't do both.
+  readonly selectedPlanetId = linkedSignal<PlanetView[], number | null>({
+    source: this.planets,
+    computation: (planets, previous) => {
+      if (previous && planets.some((p) => p.id === previous.value)) {
+        return previous.value;
       }
-    });
-  }
+      return planets.find((p) => p.homeworld)?.id ?? planets[0]?.id ?? null;
+    }
+  });
 
-  refresh(): void {
-    this.api.listPlanets().subscribe((planets) => {
-      this.planetsSignal.set(planets);
-      const current = this.selectedPlanetIdSignal();
-      if (current === null || !planets.some((p) => p.id === current)) {
-        this.selectedPlanetIdSignal.set(planets.find((p) => p.homeworld)?.id ?? planets[0]?.id ?? null);
-      }
-    });
+  readonly selectedPlanet = computed(() => this.planets().find((p) => p.id === this.selectedPlanetId()) ?? null);
+
+  reload(): void {
+    this.planetsResource.reload();
   }
 
   select(planetId: number): void {
     // Native <select> (ngModelChange) emits string values, so normalize here rather
     // than trust every call site - the strict-equality lookup in `selectedPlanet`
     // above would otherwise silently fail to match a numeric PlanetView.id.
-    this.selectedPlanetIdSignal.set(Number(planetId));
+    this.selectedPlanetId.set(Number(planetId));
   }
 }

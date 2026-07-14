@@ -1,4 +1,5 @@
-import { Component, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -20,7 +21,13 @@ export class EspionageComponent {
 
   readonly planetId = input.required<number>();
 
-  protected readonly probesOwned = signal(0);
+  private readonly shipsResource = rxResource({
+    params: () => ({ planetId: this.planetId() }),
+    stream: ({ params }) => this.api.getShips(params.planetId)
+  });
+  protected readonly probesOwned = computed(
+    () => this.shipsResource.value()?.find((s) => s.key === PROBE_SHIP_KEY)?.owned ?? 0
+  );
   protected readonly quantity = signal(1);
   protected readonly driveOptions = signal<DriveOptionView[]>([]);
   protected readonly selectedDriveKey = signal<string | null>(null);
@@ -36,13 +43,6 @@ export class EspionageComponent {
       this.resetDriveOptions();
       this.sentConfirmation.set(false);
       this.errorMessage.set(null);
-      this.refreshShips();
-    });
-  }
-
-  private refreshShips(): void {
-    this.api.getShips(this.planetId()).subscribe((ships) => {
-      this.probesOwned.set(ships.find((s) => s.key === PROBE_SHIP_KEY)?.owned ?? 0);
     });
   }
 
@@ -124,7 +124,7 @@ export class EspionageComponent {
           this.sending.set(false);
           this.sentConfirmation.set(true);
           this.resetDriveOptions();
-          this.refreshShips();
+          this.shipsResource.reload();
         },
         error: (err) => {
           this.sending.set(false);

@@ -1,7 +1,7 @@
-import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
-import { ResourceView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
@@ -15,28 +15,16 @@ export class ResourceBarComponent {
   protected readonly currentPlanet = inject(CurrentPlanetService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly resources = signal<ResourceView[]>([]);
+  protected readonly resourcesResource = rxResource({
+    params: () => {
+      const planetId = this.currentPlanet.selectedPlanetId();
+      return planetId === null ? undefined : { planetId };
+    },
+    stream: ({ params }) => this.api.getResources(params.planetId)
+  });
 
   constructor() {
-    effect(() => {
-      const planetId = this.currentPlanet.selectedPlanetId();
-      if (planetId === null) {
-        this.resources.set([]);
-        return;
-      }
-      this.refresh(planetId);
-    });
-
-    const pollHandle = setInterval(() => {
-      const planetId = this.currentPlanet.selectedPlanetId();
-      if (planetId !== null) {
-        this.refresh(planetId);
-      }
-    }, 5000);
+    const pollHandle = setInterval(() => this.resourcesResource.reload(), 5000);
     this.destroyRef.onDestroy(() => clearInterval(pollHandle));
-  }
-
-  private refresh(planetId: number): void {
-    this.api.getResources(planetId).subscribe((resources) => this.resources.set(resources));
   }
 }

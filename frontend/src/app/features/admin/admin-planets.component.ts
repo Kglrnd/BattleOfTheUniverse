@@ -1,6 +1,7 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 
-import { AdminPlanetView } from '../../core/models';
 import { AdminPlanetsApiService } from './admin-planets-api.service';
 
 @Component({
@@ -12,9 +13,13 @@ import { AdminPlanetsApiService } from './admin-planets-api.service';
 export class AdminPlanetsComponent {
   private readonly api = inject(AdminPlanetsApiService);
 
-  protected readonly planets = signal<AdminPlanetView[]>([]);
-  protected readonly loading = signal(true);
-  protected readonly errorMessage = signal<string | null>(null);
+  private readonly planetsResource = rxResource({ stream: () => this.api.list() });
+  protected readonly planets = computed(() => this.planetsResource.value() ?? []);
+  protected readonly loading = this.planetsResource.isLoading;
+  protected readonly errorMessage = computed(() => {
+    const error = this.planetsResource.error() as HttpErrorResponse | undefined;
+    return error ? (error.error?.message ?? 'Failed to load planets.') : null;
+  });
 
   protected readonly ownerFilter = signal('');
   protected readonly nameFilter = signal('');
@@ -48,19 +53,6 @@ export class AdminPlanetsComponent {
       return true;
     });
   });
-
-  constructor() {
-    this.api.list().subscribe({
-      next: (planets) => {
-        this.planets.set(planets);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Failed to load planets.');
-      }
-    });
-  }
 
   clearFilters(): void {
     this.ownerFilter.set('');

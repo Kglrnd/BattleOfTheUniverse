@@ -6,11 +6,11 @@
 
 <h2>Active research planet</h2>
 
-@if (researchPlanets().length === 0) {
+@if ((researchPlanetsResource.value() ?? []).length === 0) {
   <p>You need at least one planet to research from.</p>
 } @else {
   <div class="card-grid">
-    @for (planet of researchPlanets(); track planet.planetId) {
+    @for (planet of researchPlanetsResource.value() ?? []; track planet.planetId) {
       <div class="card" [class.card-locked]="planet.researchLabLevel === 0">
         <div class="card-header">
           <div class="card-title">{{ planet.name }}</div>
@@ -44,7 +44,7 @@
 }
 
 <div class="card-grid">
-  @for (tech of technologies(); track tech.key) {
+  @for (tech of technologiesResource.value() ?? []; track tech.key) {
     <div class="card tech-card" [class.card-locked]="!tech.unlocked">
       <div class="card-header">
         <div class="card-title">

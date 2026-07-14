@@ -1,4 +1,5 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { MessageView } from '../../core/models';
@@ -18,8 +19,10 @@ export class MessagesComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly activeTab = signal<Tab>('inbox');
-  protected readonly inbox = signal<MessageView[]>([]);
-  protected readonly sent = signal<MessageView[]>([]);
+  private readonly inboxResource = rxResource({ stream: () => this.api.inbox() });
+  private readonly sentResource = rxResource({ stream: () => this.api.sent() });
+  protected readonly inbox = () => this.inboxResource.value() ?? [];
+  protected readonly sent = () => this.sentResource.value() ?? [];
   protected readonly selected = signal<MessageView | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly sending = signal(false);
@@ -32,14 +35,11 @@ export class MessagesComponent {
   });
 
   constructor() {
-    this.refresh();
-    const pollHandle = setInterval(() => this.refresh(), 10000);
+    const pollHandle = setInterval(() => {
+      this.inboxResource.reload();
+      this.sentResource.reload();
+    }, 10000);
     this.destroyRef.onDestroy(() => clearInterval(pollHandle));
-  }
-
-  private refresh(): void {
-    this.api.inbox().subscribe((messages) => this.inbox.set(messages));
-    this.api.sent().subscribe((messages) => this.sent.set(messages));
   }
 
   setTab(tab: Tab): void {
@@ -58,7 +58,10 @@ export class MessagesComponent {
   select(message: MessageView): void {
     this.selected.set(message);
     if (this.activeTab() === 'inbox' && !message.readAt) {
-      this.api.markRead(message.id).subscribe(() => this.refresh());
+      this.api.markRead(message.id).subscribe(() => {
+        this.inboxResource.reload();
+        this.sentResource.reload();
+      });
     }
   }
 
@@ -78,7 +81,8 @@ export class MessagesComponent {
         this.sending.set(false);
         this.composeForm.reset();
         this.composing.set(false);
-        this.refresh();
+        this.inboxResource.reload();
+        this.sentResource.reload();
       },
       error: (err) => {
         this.sending.set(false);

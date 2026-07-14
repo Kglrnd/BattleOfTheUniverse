@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 
+import { AuthService } from '../../core/auth.service';
 import { FleetMovementView, PlanetView, ShipyardView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 import { FleetApiService } from './fleet-api.service';
@@ -43,6 +44,9 @@ describe('FleetComponent', () => {
       providers: [
         { provide: UniverseApiService, useValue: universeApiStub as unknown as UniverseApiService },
         { provide: FleetApiService, useValue: fleetApiStub as unknown as FleetApiService },
+        // FleetComponent is only ever reachable behind authGuard, so CurrentPlanetService's
+        // auth-gated planets resource needs an authenticated stub here too.
+        { provide: AuthService, useValue: { isAuthenticated: () => true } as unknown as AuthService },
         {
           provide: ActivatedRoute,
           useValue: {

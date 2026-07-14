@@ -22,7 +22,7 @@
 
   <div class="slot-grid">
     @for (slot of s.slots; track slot.position) {
-      <div class="slot" [class]="slotClass(slot.status)" (click)="onSlotClick(slot)">
+      <div class="slot" [class]="slotClass(slot.status)">
         <div class="slot-position">{{ slot.position }}</div>
         @if (slot.status === 'FREE') {
           <div class="slot-body">
@@ -37,7 +37,7 @@
               <span class="slot-tag">Homeworld</span>
             }
             @if (isMine(planet)) {
-              <a class="slot-link" [routerLink]="['/universe', planet.id]" (click)="$event.stopPropagation()">View planet</a>
+              <a class="slot-link" [routerLink]="['/universe', planet.id]">View planet</a>
             }
           </div>
         } @else {
@@ -46,17 +46,21 @@
           </div>
         }
 
-        @if (openMenuPosition() === slot.position) {
-          <div class="slot-menu" (click)="$event.stopPropagation()">
-            @if (slot.status === 'FREE') {
-              <button type="button" class="slot-menu-item" (click)="colonize(s.galaxy, s.system, slot.position)">
-                Colonize
-              </button>
-            } @else if (slot.planet) {
-              <button type="button" class="slot-menu-item" (click)="attack(s.galaxy, s.system, slot.position)">
-                Attack
-              </button>
-            }
+        @if (actionable(slot)) {
+          <button type="button" class="slot-menu-trigger" ngMenuTrigger [menu]="slotMenu">Actions</button>
+          <div
+            ngMenu
+            #slotMenu="ngMenu"
+            class="slot-menu"
+            (itemSelected)="onSlotMenuAction($event, s.galaxy, s.system, slot.position)"
+          >
+            <ng-template ngMenuContent>
+              @if (slot.status === 'FREE') {
+                <div ngMenuItem value="colonize" class="slot-menu-item">Colonize</div>
+              } @else if (slot.planet) {
+                <div ngMenuItem value="attack" class="slot-menu-item">Attack</div>
+              }
+            </ng-template>
           </div>
         }
       </div>

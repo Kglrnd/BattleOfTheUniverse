@@ -1,5 +1,5 @@
-import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
 
@@ -13,7 +13,6 @@ import {
   PlanetView,
   ResourceKey,
   ResourceQuantity,
-  ResourceView,
   ShipQuantity,
   ShipyardView
 } from '../../core/models';
@@ -37,9 +36,28 @@ export class FleetComponent {
 
   protected readonly planets = this.currentPlanet.planets;
   protected readonly originPlanetId = signal<number | null>(null);
-  protected readonly ships = signal<ShipyardView[]>([]);
-  protected readonly resources = signal<ResourceView[]>([]);
-  protected readonly movements = signal<FleetMovementView[]>([]);
+
+  private readonly shipsResource = rxResource({
+    params: () => {
+      const originId = this.originPlanetId();
+      return originId === null ? undefined : { originId };
+    },
+    stream: ({ params }) => this.api.getShips(params.originId)
+  });
+  protected readonly ships = computed(() => this.shipsResource.value() ?? []);
+
+  private readonly resourcesResource = rxResource({
+    params: () => {
+      const originId = this.originPlanetId();
+      return originId === null ? undefined : { originId };
+    },
+    stream: ({ params }) => this.api.getResources(params.originId)
+  });
+  protected readonly resources = computed(() => this.resourcesResource.value() ?? []);
+
+  private readonly movementsResource = rxResource({ stream: () => this.fleetApi.movements() });
+  protected readonly movements = computed(() => this.movementsResource.value() ?? []);
+
   protected readonly missionType = signal<FleetMissionType>('COLONIZE');
   /** One-shot prefill for the target coordinate inputs when arriving via a "?mission=..." link. */
   protected readonly prefillGalaxy = signal<number | null>(null);
@@ -66,8 +84,6 @@ export class FleetComponent {
   protected readonly transportableResources = TRANSPORTABLE_RESOURCES;
 
   constructor() {
-    this.currentPlanet.refresh();
-
     effect(() => {
       if (this.currentPlanet.planets().length > 0) {
         this.applyRequestedOrigin(this.route.snapshot.queryParamMap.get('origin'));
@@ -83,9 +99,7 @@ export class FleetComponent {
       this.applyRequestedTarget(params);
     });
 
-    this.refreshMovements();
-
-    const pollHandle = setInterval(() => this.refreshMovements(), 5000);
+    const pollHandle = setInterval(() => this.movementsResource.reload(), 5000);
     const clockHandle = setInterval(() => this.clockTick.update((v) => v + 1), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(pollHandle);
@@ -109,8 +123,6 @@ export class FleetComponent {
       this.manifestQuantities.set({});
       this.cargoQuantities.set({});
       this.resetDriveOptions();
-      this.loadShips();
-      this.loadResources();
     }
   }
 
@@ -142,8 +154,6 @@ export class FleetComponent {
     this.manifestQuantities.set({});
     this.cargoQuantities.set({});
     this.resetDriveOptions();
-    this.loadShips();
-    this.loadResources();
   }
 
   setMissionType(type: FleetMissionType): void {
@@ -278,7 +288,7 @@ export class FleetComponent {
     this.api.buildShips(originId, ship.key, quantity).subscribe({
       next: () => {
         this.queuingShip.set(null);
-        this.loadShips();
+        this.shipsResource.reload();
       },
       error: (err) => {
         this.queuingShip.set(null);
@@ -325,9 +335,9 @@ export class FleetComponent {
           this.manifestQuantities.set({});
           this.cargoQuantities.set({});
           this.resetDriveOptions();
-          this.loadShips();
-          this.loadResources();
-          this.refreshMovements();
+          this.shipsResource.reload();
+          this.resourcesResource.reload();
+          this.movementsResource.reload();
         },
         error: (err) => {
           this.dispatching.set(false);
@@ -349,28 +359,6 @@ export class FleetComponent {
     this.driveOptions.set([]);
     this.selectedDriveKey.set(null);
     this.driveOptionsError.set(null);
-  }
-
-  private loadShips(): void {
-    const originId = this.originPlanetId();
-    if (!originId) {
-      this.ships.set([]);
-      return;
-    }
-    this.api.getShips(originId).subscribe((ships) => this.ships.set(ships));
-  }
-
-  private loadResources(): void {
-    const originId = this.originPlanetId();
-    if (!originId) {
-      this.resources.set([]);
-      return;
-    }
-    this.api.getResources(originId).subscribe((resources) => this.resources.set(resources));
-  }
-
-  private refreshMovements(): void {
-    this.fleetApi.movements().subscribe((movements) => this.movements.set(movements));
   }
 
   private countdown(endsAt: string | null): string {

@@ -81,7 +81,6 @@
 .slot-free {
   border-style: dashed;
   border-color: var(--color-accent);
-  cursor: pointer;
 }
 
 .slot-void {
@@ -90,6 +89,17 @@
 
 .slot-occupied {
   border-color: var(--color-border);
+}
+
+.slot-menu-trigger {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  font-size: 0.75rem;
   cursor: pointer;
 }
 
@@ -106,6 +116,12 @@
   border-radius: var(--radius-sm);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+}
+
+/* @angular/aria's Menu is headless: it tracks open/closed state via this
+   data attribute but doesn't hide anything itself - that's on the consumer. */
+.slot-menu[data-visible='false'] {
+  display: none;
 }
 
 .slot-menu-item {

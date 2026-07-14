@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { JsonFormsModule } from '@jsonforms/angular';
 import { JsonSchema } from '@jsonforms/core';
+import { map } from 'rxjs';
 
 import { AdminCatalogApiService } from './admin-catalog-api.service';
 import { catalogEditorRenderers } from './renderers';
@@ -18,26 +19,36 @@ export class CatalogEditorComponent {
   private readonly route = inject(ActivatedRoute);
 
   protected readonly renderers = catalogEditorRenderers;
-  protected readonly type = signal('buildings');
-  protected readonly schema = signal<JsonSchema | undefined>(undefined);
+  protected readonly type = toSignal(this.route.paramMap.pipe(map((params) => params.get('type') ?? 'buildings')), {
+    requireSync: true
+  });
+
+  private readonly schemaResource = rxResource({
+    params: () => ({ type: this.type() }),
+    stream: ({ params }) => this.api.getSchema(params.type)
+  });
+  // Gate on isLoading (rather than just .value()) so switching catalog type blanks the
+  // form immediately instead of briefly rendering the previous type's stale schema/data.
+  protected readonly schema = computed(() =>
+    this.schemaResource.isLoading() ? undefined : (this.schemaResource.value() as JsonSchema | undefined)
+  );
+
+  private readonly dataResource = rxResource({
+    params: () => ({ type: this.type() }),
+    stream: ({ params }) => this.api.getData(params.type)
+  });
   protected readonly data = signal<unknown>(undefined);
+
   protected readonly savedMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly saving = signal(false);
 
   constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const type = params.get('type') ?? 'buildings';
-      this.type.set(type);
-      this.load(type);
+    effect(() => {
+      if (!this.dataResource.isLoading()) {
+        this.data.set(this.dataResource.value());
+      }
     });
-  }
-
-  private load(type: string): void {
-    this.schema.set(undefined);
-    this.data.set(undefined);
-    this.api.getSchema(type).subscribe((schema) => this.schema.set(schema as JsonSchema));
-    this.api.getData(type).subscribe((data) => this.data.set(data));
   }
 
   onDataChange(data: unknown): void {

@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 import { formatCountdown } from '../../core/countdown';
 import { BuildingView } from '../../core/models';
@@ -17,7 +18,10 @@ export class BuildingListComponent {
 
   readonly planetId = input.required<number>();
 
-  protected readonly buildings = signal<BuildingView[]>([]);
+  protected readonly buildingsResource = rxResource({
+    params: () => ({ planetId: this.planetId() }),
+    stream: ({ params }) => this.api.getBuildings(params.planetId)
+  });
   protected readonly upgrading = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   /** Bumped every second purely to force the countdown text to re-render. */
@@ -28,19 +32,14 @@ export class BuildingListComponent {
       this.planetId();
       this.upgrading.set(null);
       this.errorMessage.set(null);
-      this.refresh();
     });
 
-    const pollHandle = setInterval(() => this.refresh(), 5000);
+    const pollHandle = setInterval(() => this.buildingsResource.reload(), 5000);
     const clockHandle = setInterval(() => this.clockTick.update((v) => v + 1), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(pollHandle);
       clearInterval(clockHandle);
     });
-  }
-
-  private refresh(): void {
-    this.api.getBuildings(this.planetId()).subscribe((buildings) => this.buildings.set(buildings));
   }
 
   upgrade(building: BuildingView): void {
@@ -52,7 +51,7 @@ export class BuildingListComponent {
     this.api.upgrade(this.planetId(), building.key).subscribe({
       next: () => {
         this.upgrading.set(null);
-        this.refresh();
+        this.buildingsResource.reload();
       },
       error: (err) => {
         this.upgrading.set(null);
@@ -62,7 +61,7 @@ export class BuildingListComponent {
   }
 
   hasActiveConstruction(): boolean {
-    return this.buildings().some((b) => b.constructionActive);
+    return (this.buildingsResource.value() ?? []).some((b) => b.constructionActive);
   }
 
   remainingLabel(building: BuildingView): string {

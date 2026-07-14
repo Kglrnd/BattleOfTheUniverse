@@ -1,4 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
 import { AuthService } from '../../core/auth.service';
@@ -16,8 +18,10 @@ export class AdminUsersComponent {
   private readonly auth = inject(AuthService);
 
   protected readonly roles: Role[] = ['PLAYER', 'MODERATOR', 'ADMIN'];
-  protected readonly users = signal<AdminUserView[]>([]);
-  protected readonly loading = signal(true);
+
+  private readonly usersResource = rxResource({ stream: () => this.api.list() });
+  protected readonly users = computed(() => this.usersResource.value() ?? []);
+  protected readonly loading = this.usersResource.isLoading;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly savingUserId = signal<number | null>(null);
 
@@ -25,14 +29,10 @@ export class AdminUsersComponent {
   protected readonly isAdmin = this.auth.isAdmin;
 
   constructor() {
-    this.api.list().subscribe({
-      next: (users) => {
-        this.users.set(users);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Failed to load users.');
+    effect(() => {
+      const error = this.usersResource.error() as HttpErrorResponse | undefined;
+      if (error) {
+        this.errorMessage.set(error.error?.message ?? 'Failed to load users.');
       }
     });
   }
@@ -46,7 +46,7 @@ export class AdminUsersComponent {
     this.api.changeRole(user.id, role).subscribe({
       next: (updated) => {
         this.savingUserId.set(null);
-        this.users.update((current) => current.map((u) => (u.id === updated.id ? updated : u)));
+        this.usersResource.update((current) => (current ?? []).map((u) => (u.id === updated.id ? updated : u)));
       },
       error: (err) => {
         this.savingUserId.set(null);

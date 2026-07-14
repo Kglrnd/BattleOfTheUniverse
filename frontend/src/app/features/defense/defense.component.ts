@@ -1,4 +1,5 @@
 import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 import { formatCountdown } from '../../core/countdown';
 import { TowerView } from '../../core/models';
@@ -16,7 +17,10 @@ export class DefenseComponent {
 
   readonly planetId = input.required<number>();
 
-  protected readonly towers = signal<TowerView[]>([]);
+  protected readonly towersResource = rxResource({
+    params: () => ({ planetId: this.planetId() }),
+    stream: ({ params }) => this.api.list(params.planetId)
+  });
   protected readonly queuingTower = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   /** Bumped every second purely to force the countdown text to re-render. */
@@ -27,19 +31,14 @@ export class DefenseComponent {
       this.planetId();
       this.queuingTower.set(null);
       this.errorMessage.set(null);
-      this.refresh();
     });
 
-    const pollHandle = setInterval(() => this.refresh(), 5000);
+    const pollHandle = setInterval(() => this.towersResource.reload(), 5000);
     const clockHandle = setInterval(() => this.clockTick.update((v) => v + 1), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(pollHandle);
       clearInterval(clockHandle);
     });
-  }
-
-  private refresh(): void {
-    this.api.list(this.planetId()).subscribe((towers) => this.towers.set(towers));
   }
 
   build(tower: TowerView, quantity: number): void {
@@ -51,7 +50,7 @@ export class DefenseComponent {
     this.api.build(this.planetId(), tower.key, quantity).subscribe({
       next: () => {
         this.queuingTower.set(null);
-        this.refresh();
+        this.towersResource.reload();
       },
       error: (err) => {
         this.queuingTower.set(null);
@@ -61,7 +60,7 @@ export class DefenseComponent {
   }
 
   hasActiveDefenseJob(): boolean {
-    return this.towers().some((t) => t.buildActive);
+    return (this.towersResource.value() ?? []).some((t) => t.buildActive);
   }
 
   remainingLabel(tower: TowerView): string {

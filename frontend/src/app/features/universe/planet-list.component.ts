@@ -1,8 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { isAttackMission } from '../../core/fleet-mission';
-import { FleetMovementView, IncomingMovementView, PlanetView } from '../../core/models';
 import { FleetApiService } from '../fleet/fleet-api.service';
 import { UniverseApiService } from './universe-api.service';
 
@@ -16,18 +16,14 @@ export class PlanetListComponent {
   private readonly api = inject(UniverseApiService);
   private readonly fleetApi = inject(FleetApiService);
 
-  protected readonly planets = signal<PlanetView[]>([]);
-  protected readonly loading = signal(true);
-  protected readonly outgoingMovements = signal<FleetMovementView[]>([]);
-  protected readonly incomingMovements = signal<IncomingMovementView[]>([]);
+  private readonly planetsResource = rxResource({ stream: () => this.api.listPlanets() });
+  protected readonly planets = computed(() => this.planetsResource.value() ?? []);
+  protected readonly loading = this.planetsResource.isLoading;
 
-  constructor() {
-    this.api.listPlanets().subscribe((planets) => {
-      this.planets.set(planets);
-      this.loading.set(false);
-    });
-    this.refreshFleetActivity();
-  }
+  private readonly outgoingMovementsResource = rxResource({ stream: () => this.fleetApi.movements() });
+  private readonly incomingMovementsResource = rxResource({ stream: () => this.fleetApi.incomingMovements() });
+  protected readonly outgoingMovements = computed(() => this.outgoingMovementsResource.value() ?? []);
+  protected readonly incomingMovements = computed(() => this.incomingMovementsResource.value() ?? []);
 
   outgoingCount(planetId: number): number {
     return this.outgoingMovements().filter((m) => m.originPlanetId === planetId).length;
@@ -43,10 +39,5 @@ export class PlanetListComponent {
 
   hasIncomingAttack(planetId: number): boolean {
     return this.incomingAttackCount(planetId) > 0;
-  }
-
-  private refreshFleetActivity(): void {
-    this.fleetApi.movements().subscribe((movements) => this.outgoingMovements.set(movements));
-    this.fleetApi.incomingMovements().subscribe((movements) => this.incomingMovements.set(movements));
   }
 }
