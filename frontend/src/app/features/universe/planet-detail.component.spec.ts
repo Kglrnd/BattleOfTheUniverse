@@ -18,7 +18,8 @@ function planetView(id: number): PlanetView {
     coordinates: `[1:1:${id}]`,
     planetClass: 'TEMPERATE',
     homeworld: false,
-    researchEfficiency: 100
+    researchEfficiency: 100,
+    imageVariant: 0
   };
 }
 

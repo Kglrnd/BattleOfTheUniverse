@@ -47,6 +47,11 @@
   flex: 1;
 }
 
+.slot-body .card-icon {
+  width: 32px;
+  height: 32px;
+}
+
 .slot-status-label {
   font-size: 0.85rem;
   color: var(--color-text-muted);

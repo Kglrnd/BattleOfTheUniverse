@@ -80,6 +80,13 @@ Buildings, ships, and technologies are *not* hardcoded — they're defined in JS
 
 `CatalogService` seeds `config/catalog/*.json` (gitignored, mutable at runtime) from the read-only `classpath:catalog/*.json` defaults (`src/main/resources/catalog/`) on first access, validates on every load and save, and keeps parsed definitions in memory. To change default game balance, edit `src/main/resources/catalog/*.json`; to test live edits, use the admin catalog editor or edit `config/catalog/*.json` directly (existing live files are never overwritten by the classpath defaults).
 
+### Game icons (planets/buildings/ships)
+
+Icon assets are static `.webp` files under `frontend/public/images/<category>/`, resolved via the `gameAsset` pipe (`core/game-asset.pipe.ts`) as `/images/<category>/<idOrKey>.webp`, with `appImgFallback` (`core/img-fallback.directive.ts`) hiding the `<img>` instead of showing a broken-image icon if the file is missing. Recommended size: 256×256 px, square, transparent background (enough headroom for ~64-96px CSS display size at up to 4x pixel density).
+
+- **Planets** get per-instance variance: `PlanetView.imageVariant` (an int in `[0, PlanetMapper.PLANET_IMAGE_VARIANT_COUNT)`) is computed deterministically from the planet's id (`planet/dto/PlanetMapper.java`), so a given planet always shows the same image but different planets are visually varied. Assets present: `frontend/public/images/planets/0.webp` .. `5.webp` (all 6 variants, matching `PLANET_IMAGE_VARIANT_COUNT = 6`).
+- **Buildings and ships** use one fixed icon per catalog `key` (no variance — the type itself is the visual identity, so `key`-based lookup is enough, no backend field needed). Assets present: `frontend/public/images/buildings/<key>.webp` for all 9 building keys. `frontend/public/images/ships/` is still empty — ship icons haven't been generated yet, so ship cards fall back to no icon via `appImgFallback` until `<key>.webp` files are added there for `light_fighter`, `cruiser`, `small_cargo`, `colony_ship`, `espionage_probe`.
+
 ### Auth model
 
 Session-cookie auth via Spring Security form login (not JWT/OAuth): `POST /api/auth/login` and `/api/auth/register` are the only unauthenticated endpoints besides `GET /api/version`, `/actuator/health` and `/h2-console/**`; everything else under `/api/**` requires an authenticated session. CSRF is enabled with a cookie-based token repository (`CsrfCookieFilter` ensures the XSRF cookie is present); the frontend's `credentialsInterceptor` attaches cookies to every `/api` request. Roles are `PLAYER`, `MODERATOR`, `ADMIN` (`Role` enum); admin-only endpoints/routes are gated by `@PreAuthorize`-style method security on the backend and `adminGuard` on the frontend router.

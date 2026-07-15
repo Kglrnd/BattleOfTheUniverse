@@ -21,9 +21,12 @@
     <div class="card-grid">
       @for (ship of ships(); track ship.key) {
         <div class="card building-card">
-          <div class="card-header">
-            <div class="card-title">{{ shipName(ship) }}</div>
-            <div class="card-subtitle">{{ t('owned', { value: ship.owned }) }}</div>
+          <div class="card-icon-row">
+            <img class="card-icon" [src]="ship.key | gameAsset: 'ships'" alt="" appImgFallback />
+            <div class="card-header">
+              <div class="card-title">{{ shipName(ship) }}</div>
+              <div class="card-subtitle">{{ t('owned', { value: ship.owned }) }}</div>
+            </div>
           </div>
           <div class="card-content">
             <p>{{ shipDescription(ship) }}</p>
@@ -112,6 +115,7 @@
           <div class="fleet-manifest">
             @for (ship of ships(); track ship.key) {
               <div class="manifest-row">
+                <img class="card-icon manifest-icon" [src]="ship.key | gameAsset: 'ships'" alt="" appImgFallback />
                 <span class="manifest-ship-name">{{ shipName(ship) }}</span>
                 <span class="manifest-ship-owned">{{
                   t('manifestShipInfo', { owned: ship.owned, cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption })

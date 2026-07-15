@@ -27,6 +27,7 @@ export interface PlanetView {
   planetClass: string;
   homeworld: boolean;
   researchEfficiency: number;
+  imageVariant: number;
 }
 
 export interface AdminPlanetView {

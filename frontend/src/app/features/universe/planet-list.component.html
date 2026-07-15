@@ -9,9 +9,12 @@
     <div class="card-grid">
       @for (planet of planets(); track planet.id) {
         <div class="card planet-card" [class.card-attack]="hasIncomingAttack(planet.id)" [routerLink]="['/universe', planet.id]">
-          <div class="card-header">
-            <div class="card-title">{{ planet.name }}</div>
-            <div class="card-subtitle">{{ planet.coordinates }}</div>
+          <div class="card-icon-row">
+            <img class="card-icon" [src]="planet.imageVariant | gameAsset: 'planets'" alt="" appImgFallback />
+            <div class="card-header">
+              <div class="card-title">{{ planet.name }}</div>
+              <div class="card-subtitle">{{ planet.coordinates }}</div>
+            </div>
           </div>
           <div class="card-content">
             <span class="class-badge">{{ planet.planetClass }}</span>

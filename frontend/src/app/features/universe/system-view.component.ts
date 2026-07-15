@@ -4,12 +4,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
+import { GameAssetPipe } from '../../core/game-asset.pipe';
+import { ImgFallbackDirective } from '../../core/img-fallback.directive';
 import { PlanetView, SystemSlotView, SystemView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-system-view',
-  imports: [RouterLink, Menu, MenuContent, MenuItem, MenuTrigger, TranslocoDirective],
+  imports: [RouterLink, Menu, MenuContent, MenuItem, MenuTrigger, TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
   templateUrl: './system-view.component.html',
   styleUrl: './system-view.component.css'
 })

@@ -4,12 +4,14 @@ import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { isAttackMission } from '../../core/fleet-mission';
+import { GameAssetPipe } from '../../core/game-asset.pipe';
+import { ImgFallbackDirective } from '../../core/img-fallback.directive';
 import { FleetApiService } from '../fleet/fleet-api.service';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-list',
-  imports: [RouterLink, TranslocoDirective],
+  imports: [RouterLink, TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
   templateUrl: './planet-list.component.html',
   styleUrl: './planet-list.component.css'
 })

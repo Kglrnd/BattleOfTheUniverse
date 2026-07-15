@@ -61,6 +61,11 @@
   gap: 0.5rem;
 }
 
+.manifest-icon {
+  width: 24px;
+  height: 24px;
+}
+
 .manifest-ship-name {
   flex: 1;
   min-width: 0;

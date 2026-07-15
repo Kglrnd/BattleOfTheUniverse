@@ -8,6 +8,8 @@ import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
 import { formatCargo, formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
+import { GameAssetPipe } from '../../core/game-asset.pipe';
+import { ImgFallbackDirective } from '../../core/img-fallback.directive';
 import {
   DriveOptionView,
   FleetMissionType,
@@ -25,7 +27,7 @@ const TRANSPORTABLE_RESOURCES: ResourceKey[] = ['METAL', 'CRYSTAL', 'DEUTERIUM',
 
 @Component({
   selector: 'app-fleet',
-  imports: [RouterLink, FormsModule, TranslocoDirective],
+  imports: [RouterLink, FormsModule, TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
   templateUrl: './fleet.component.html',
   styleUrl: './fleet.component.css'
 })

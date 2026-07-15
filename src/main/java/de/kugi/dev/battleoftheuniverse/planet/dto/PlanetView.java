@@ -11,6 +11,7 @@ public record PlanetView(
         String coordinates,
         PlanetClass planetClass,
         boolean homeworld,
-        double researchEfficiency
+        double researchEfficiency,
+        int imageVariant
 ) {
 }
