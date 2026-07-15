@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { TranslocoDirective } from '@jsverse/transloco';
 import { filter, map } from 'rxjs';
 
+import { AppFooterComponent } from './core/app-footer/app-footer.component';
 import { AuthService } from './core/auth.service';
 import { LanguageSwitcherComponent } from './core/language-switcher/language-switcher.component';
 import { SidebarComponent } from './core/sidebar/sidebar.component';
@@ -11,7 +12,16 @@ import { ResourceBarComponent } from './features/universe/resource-bar.component
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, ResourceBarComponent, LanguageSwitcherComponent, TranslocoDirective],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    SidebarComponent,
+    ResourceBarComponent,
+    LanguageSwitcherComponent,
+    AppFooterComponent,
+    TranslocoDirective
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

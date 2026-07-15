@@ -57,6 +57,12 @@ Modules communicate either through direct calls allowed by the graph above, or t
 
 Most modules follow the same internal layout: an entity (JPA), a `*Repository`, a `*Service` holding business logic, a `*Controller` exposing REST endpoints under `/api/...`, and a `dto/` subpackage of request/response records exposed across the module boundary (only `dto` subpackages are ever added to `allowedDependencies`, e.g. `research::dto`).
 
+### Versioning
+
+The application ships as one unit (frontend and backend always deploy together), so there is a single SemVer (`MAJOR.MINOR.PATCH`) version for the whole product rather than independent frontend/backend versions. The backend's `pom.xml` `<version>` is the single source of truth (currently pre-1.0, `-SNAPSHOT` for in-progress builds); bump `frontend/package.json`'s `version` to match in the same commit whenever it changes. Pre-1.0, MINOR bumps may still contain breaking changes since the API isn't yet stable — once at 1.0.0, standard SemVer rules apply.
+
+The version is exposed at runtime rather than duplicated into frontend code: `spring-boot-maven-plugin`'s `build-info` execution (bound in `pom.xml`) generates `META-INF/build-info.properties` at build time, which Spring Boot auto-configures into a `BuildProperties` bean; `config.VersionController` serves it at the public (`permitAll`) `GET /api/version` endpoint. The frontend's `core/version.service.ts` fetches it and `core/app-footer/app-footer.component.ts` renders it fixed bottom-left in `app.html`, visible regardless of auth state; if the call fails, it silently renders nothing rather than showing a stale/guessed version.
+
 ### Async game mechanics: schedulers + due-job pattern
 
 Time-based mechanics (construction, research, production, shipyard queues, fleet missions) are modeled as DB rows with a completion timestamp (`ConstructionJob`, `ResearchJob`, `ShipyardJob`, `FleetMovement`), and a `@Scheduled` poller in the same module sweeps for and completes due rows: `ConstructionScheduler`/`ProductionScheduler` (building), `ResearchScheduler`, `ShipyardScheduler` and `FleetMissionScheduler` (fleet). When adding a new time-delayed mechanic, follow this same "persisted job row + scheduler poll" shape rather than in-memory timers.

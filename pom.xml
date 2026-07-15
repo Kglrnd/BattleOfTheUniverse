@@ -10,7 +10,7 @@
     </parent>
     <groupId>de.kugidev</groupId>
     <artifactId>battleoftheuniverse</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name>Battleoftheuniverse</name>
     <description>WarOfGalaxy-style browser game backend</description>
     <url/>
@@ -173,6 +173,13 @@
                         </exclude>
                     </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
