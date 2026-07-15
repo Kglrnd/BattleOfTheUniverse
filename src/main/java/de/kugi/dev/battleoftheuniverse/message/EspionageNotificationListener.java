@@ -10,6 +10,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Component
@@ -22,25 +23,30 @@ public class EspionageNotificationListener {
     @ApplicationModuleListener
     void on(EspionageResolved event) {
         if (event.success()) {
-            messageService.sendSystemMessage(event.attackerId(), "Espionage report: " + event.targetPlanetName(),
-                    reportBody(event.stationedShips(), event.resources()));
+            Locale locale = messageService.resolveLocale(event.attackerId());
+            messageService.sendSystemMessage(event.attackerId(),
+                    "message.espionage.report.subject", new Object[] { event.targetPlanetName() },
+                    reportBody(locale, event.stationedShips(), event.resources()));
             return;
         }
 
-        messageService.sendSystemMessage(event.attackerId(), "Espionage failed: " + event.targetPlanetName(),
-                "Your probe failed to infiltrate " + event.targetPlanetName() + " and returned without gathering any intelligence.");
+        messageService.sendSystemMessage(event.attackerId(),
+                "message.espionage.failed.subject", new Object[] { event.targetPlanetName() },
+                "message.espionage.failed.body", new Object[] { event.targetPlanetName() });
 
         String attackerUsername = userRepository.findById(event.attackerId()).map(User::getUsername).orElse("unknown");
-        messageService.sendSystemMessage(event.defenderId(), "Espionage attempt detected",
-                "A probe sent by " + attackerUsername + " attempted to spy on your planet " + event.targetPlanetName()
-                        + " but was detected and repelled.");
+        messageService.sendSystemMessage(event.defenderId(),
+                "message.espionage.detected.subject", new Object[0],
+                "message.espionage.detected.body", new Object[] { attackerUsername, event.targetPlanetName() });
     }
 
-    private String reportBody(List<ShipQuantity> stationedShips, List<ResourceView> resources) {
-        String shipsSection = stationedShips.isEmpty() ? "None"
+    private String reportBody(Locale locale, List<ShipQuantity> stationedShips, List<ResourceView> resources) {
+        String none = messageService.translate(locale, "message.common.none");
+        String shipsSection = stationedShips.isEmpty() ? none
                 : stationedShips.stream().map(s -> s.shipKey() + ": " + s.quantity()).collect(Collectors.joining("\n"));
-        String resourcesSection = resources.isEmpty() ? "None"
+        String resourcesSection = resources.isEmpty() ? none
                 : resources.stream().map(r -> r.displayName() + ": " + r.amount()).collect(Collectors.joining("\n"));
-        return "Stationed fleet:\n" + shipsSection + "\n\nResources:\n" + resourcesSection;
+        return messageService.translate(locale, "message.espionage.stationedFleet") + "\n" + shipsSection
+                + "\n\n" + messageService.translate(locale, "message.espionage.resources") + "\n" + resourcesSection;
     }
 }

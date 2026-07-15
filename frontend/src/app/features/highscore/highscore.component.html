@@ -1,68 +1,70 @@
-<h1>Highscore</h1>
+<ng-container *transloco="let t; prefix: 'highscore'">
+  <h1>{{ t('title') }}</h1>
 
-@if (errorMessage()) {
-  <p class="error">{{ errorMessage() }}</p>
-}
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
 
-@if (loading()) {
-  <p>Loading…</p>
-} @else if (data(); as highscore) {
-  @if (highscore.top.length === 0) {
-    <p>No players on the board yet.</p>
-  } @else {
-    <div class="table-wrapper">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (entry of highscore.top; track entry.rank) {
-            <tr
-              class="player-row"
-              [class.current-user]="entry.username === currentUsername"
-              [class.selected-row]="selectedUserId() === entry.userId"
-              (click)="selectPlayer(entry)"
-            >
-              <td>{{ entry.rank }}</td>
-              <td>{{ entry.username }}</td>
-              <td>{{ entry.score }}</td>
+  @if (loading()) {
+    <p>{{ t('loading') }}</p>
+  } @else if (data(); as highscore) {
+    @if (highscore.top.length === 0) {
+      <p>{{ t('noPlayersYet') }}</p>
+    } @else {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{{ t('rank') }}</th>
+              <th>{{ t('player') }}</th>
+              <th>{{ t('score') }}</th>
             </tr>
-            @if (selectedUserId() === entry.userId) {
-              <tr class="planets-row">
-                <td colspan="3">
-                  @if (planetsLoading()) {
-                    <p class="field-hint">Loading planets…</p>
-                  } @else if (selectedPlanets(); as planets) {
-                    @if (planets.length === 0) {
-                      <p class="field-hint">No planets found.</p>
-                    } @else {
-                      <ul class="planet-list">
-                        @for (planet of planets; track planet.id) {
-                          <li>
-                            <a [routerLink]="['/universe/system', planet.galaxy, planet.system]">
-                              {{ planet.name }} · {{ planet.coordinates }} · {{ planet.planetClass }}
-                            </a>
-                          </li>
-                        }
-                      </ul>
-                    }
-                  }
-                </td>
+          </thead>
+          <tbody>
+            @for (entry of highscore.top; track entry.rank) {
+              <tr
+                class="player-row"
+                [class.current-user]="entry.username === currentUsername"
+                [class.selected-row]="selectedUserId() === entry.userId"
+                (click)="selectPlayer(entry)"
+              >
+                <td>{{ entry.rank }}</td>
+                <td>{{ entry.username }}</td>
+                <td>{{ entry.score }}</td>
               </tr>
+              @if (selectedUserId() === entry.userId) {
+                <tr class="planets-row">
+                  <td colspan="3">
+                    @if (planetsLoading()) {
+                      <p class="field-hint">{{ t('loadingPlanets') }}</p>
+                    } @else if (selectedPlanets(); as planets) {
+                      @if (planets.length === 0) {
+                        <p class="field-hint">{{ t('noPlanetsFound') }}</p>
+                      } @else {
+                        <ul class="planet-list">
+                          @for (planet of planets; track planet.id) {
+                            <li>
+                              <a [routerLink]="['/universe/system', planet.galaxy, planet.system]">
+                                {{ planet.name }} · {{ planet.coordinates }} · {{ planet.planetClass }}
+                              </a>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    }
+                  </td>
+                </tr>
+              }
             }
-          }
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
 
-    @if (highscore.me && highscore.me.rank > highscore.top.length) {
-      <p class="rank-hint">
-        Du bist auf Platz {{ highscore.me.rank }}. Häng dich rein, um in die Top 100 aufzusteigen!
-      </p>
+      @if (highscore.me && highscore.me.rank > highscore.top.length) {
+        <p class="rank-hint">
+          {{ t('rankHintPrefix') }} {{ highscore.me.rank }}. {{ t('rankHintSuffix') }}
+        </p>
+      }
     }
   }
-}
+</ng-container>

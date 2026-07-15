@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-add-user-preferred-language
+      author: kugi
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: preferred_language
+                  type: VARCHAR(5)
+                  defaultValue: en
+                  constraints:
+                    nullable: false

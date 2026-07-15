@@ -15,8 +15,9 @@ public class ColonyFoundedNotificationListener {
 
     @ApplicationModuleListener
     void on(ColonyFounded event) {
-        messageService.sendSystemMessage(event.ownerId(), "New colony founded",
-                "Your colony ship has founded a new colony: " + event.planetName() + ".\n\n"
-                        + "Research efficiency: " + String.format(Locale.ROOT, "%.2f%%", event.researchEfficiency()) + ".");
+        String efficiency = String.format(Locale.ROOT, "%.2f%%", event.researchEfficiency());
+        messageService.sendSystemMessage(event.ownerId(),
+                "message.colonyFounded.subject", new Object[0],
+                "message.colonyFounded.body", new Object[] { event.planetName(), efficiency });
     }
 }

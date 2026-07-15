@@ -1,106 +1,108 @@
-<h1>Planets</h1>
+<ng-container *transloco="let t; prefix: 'admin.planets'">
+  <h1>{{ t('title') }}</h1>
 
-@if (errorMessage()) {
-  <p class="error">{{ errorMessage() }}</p>
-}
-
-@if (loading()) {
-  <p>Loading…</p>
-} @else {
-  <div class="filter-bar">
-    <div class="field">
-      <label for="filter-owner">Owner</label>
-      <input
-        id="filter-owner"
-        #ownerInput
-        type="text"
-        class="input"
-        placeholder="Username"
-        [value]="ownerFilter()"
-        (input)="ownerFilter.set(ownerInput.value)"
-      />
-    </div>
-    <div class="field">
-      <label for="filter-name">Planet name</label>
-      <input
-        id="filter-name"
-        #nameInput
-        type="text"
-        class="input"
-        placeholder="Name"
-        [value]="nameFilter()"
-        (input)="nameFilter.set(nameInput.value)"
-      />
-    </div>
-    <div class="field">
-      <label for="filter-galaxy">Galaxy</label>
-      <input
-        id="filter-galaxy"
-        #galaxyInput
-        type="number"
-        class="input"
-        min="1"
-        placeholder="Any"
-        [value]="galaxyFilter() ?? ''"
-        (input)="onGalaxyFilterChange(galaxyInput.value)"
-      />
-    </div>
-    <div class="field">
-      <label for="filter-system">System</label>
-      <input
-        id="filter-system"
-        #systemInput
-        type="number"
-        class="input"
-        min="1"
-        placeholder="Any"
-        [value]="systemFilter() ?? ''"
-        (input)="onSystemFilterChange(systemInput.value)"
-      />
-    </div>
-    <div class="checkbox-field">
-      <input
-        id="filter-homeworld"
-        #homeworldInput
-        type="checkbox"
-        [checked]="homeworldOnly()"
-        (change)="homeworldOnly.set(homeworldInput.checked)"
-      />
-      <label for="filter-homeworld">Homeworlds only</label>
-    </div>
-    <button type="button" class="btn" (click)="clearFilters()">Clear filters</button>
-  </div>
-
-  <p class="result-count">{{ filteredPlanets().length }} of {{ planets().length }} planets</p>
-
-  @if (filteredPlanets().length === 0) {
-    <p>No planets match these filters.</p>
-  } @else {
-    <div class="table-wrapper">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Owner</th>
-            <th>Coordinates</th>
-            <th>Class</th>
-            <th>Homeworld</th>
-            <th>Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (planet of filteredPlanets(); track planet.id) {
-            <tr>
-              <td>{{ planet.name }}</td>
-              <td>{{ planet.ownerUsername }}</td>
-              <td>{{ planet.coordinates }}</td>
-              <td><span class="class-badge">{{ planet.planetClass }}</span></td>
-              <td>{{ planet.homeworld ? 'Yes' : '' }}</td>
-              <td>{{ formatCreatedAt(planet.createdAt) }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
   }
-}
+
+  @if (loading()) {
+    <p>{{ t('loading') }}</p>
+  } @else {
+    <div class="filter-bar">
+      <div class="field">
+        <label for="filter-owner">{{ t('filterOwnerLabel') }}</label>
+        <input
+          id="filter-owner"
+          #ownerInput
+          type="text"
+          class="input"
+          [attr.placeholder]="t('filterOwnerPlaceholder')"
+          [value]="ownerFilter()"
+          (input)="ownerFilter.set(ownerInput.value)"
+        />
+      </div>
+      <div class="field">
+        <label for="filter-name">{{ t('filterNameLabel') }}</label>
+        <input
+          id="filter-name"
+          #nameInput
+          type="text"
+          class="input"
+          [attr.placeholder]="t('filterNamePlaceholder')"
+          [value]="nameFilter()"
+          (input)="nameFilter.set(nameInput.value)"
+        />
+      </div>
+      <div class="field">
+        <label for="filter-galaxy">{{ t('filterGalaxyLabel') }}</label>
+        <input
+          id="filter-galaxy"
+          #galaxyInput
+          type="number"
+          class="input"
+          min="1"
+          [attr.placeholder]="t('filterGalaxyPlaceholder')"
+          [value]="galaxyFilter() ?? ''"
+          (input)="onGalaxyFilterChange(galaxyInput.value)"
+        />
+      </div>
+      <div class="field">
+        <label for="filter-system">{{ t('filterSystemLabel') }}</label>
+        <input
+          id="filter-system"
+          #systemInput
+          type="number"
+          class="input"
+          min="1"
+          [attr.placeholder]="t('filterSystemPlaceholder')"
+          [value]="systemFilter() ?? ''"
+          (input)="onSystemFilterChange(systemInput.value)"
+        />
+      </div>
+      <div class="checkbox-field">
+        <input
+          id="filter-homeworld"
+          #homeworldInput
+          type="checkbox"
+          [checked]="homeworldOnly()"
+          (change)="homeworldOnly.set(homeworldInput.checked)"
+        />
+        <label for="filter-homeworld">{{ t('filterHomeworldLabel') }}</label>
+      </div>
+      <button type="button" class="btn" (click)="clearFilters()">{{ t('clearFilters') }}</button>
+    </div>
+
+    <p class="result-count">{{ t('resultCount', { count: filteredPlanets().length, total: planets().length }) }}</p>
+
+    @if (filteredPlanets().length === 0) {
+      <p>{{ t('noMatch') }}</p>
+    } @else {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{{ t('colName') }}</th>
+              <th>{{ t('colOwner') }}</th>
+              <th>{{ t('colCoordinates') }}</th>
+              <th>{{ t('colClass') }}</th>
+              <th>{{ t('colHomeworld') }}</th>
+              <th>{{ t('colCreated') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (planet of filteredPlanets(); track planet.id) {
+              <tr>
+                <td>{{ planet.name }}</td>
+                <td>{{ planet.ownerUsername }}</td>
+                <td>{{ planet.coordinates }}</td>
+                <td><span class="class-badge">{{ planet.planetClass }}</span></td>
+                <td>{{ planet.homeworld ? t('yes') : '' }}</td>
+                <td>{{ formatCreatedAt(planet.createdAt) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</ng-container>

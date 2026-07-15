@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { DefenseComponent } from './defense.component';
 
 @Component({
   selector: 'app-defense-page',
-  imports: [FormsModule, DefenseComponent],
+  imports: [FormsModule, DefenseComponent, TranslocoDirective],
   templateUrl: './defense-page.component.html',
   styleUrl: './defense-page.component.css'
 })

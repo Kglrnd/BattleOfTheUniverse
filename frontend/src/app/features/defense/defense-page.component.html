@@ -1,10 +1,11 @@
-<h1>Defense</h1>
+<ng-container *transloco="let t; prefix: 'defense.defensePage'">
+<h1>{{ t('title') }}</h1>
 
 @if (planets().length === 0) {
-  <p>You need at least one planet to build defenses.</p>
+  <p>{{ t('noPlanetHint') }}</p>
 } @else {
   <div class="field origin-field">
-    <label for="defense-planet-select">Planet</label>
+    <label for="defense-planet-select">{{ t('planetLabel') }}</label>
     <select
       id="defense-planet-select"
       class="select"
@@ -22,3 +23,4 @@
     <app-defense [planetId]="planetId" />
   }
 }
+</ng-container>

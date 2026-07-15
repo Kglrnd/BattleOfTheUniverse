@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -20,38 +21,46 @@ public class BattleNotificationListener {
 
     @ApplicationModuleListener
     void on(BattleReport report) {
+        Locale attackerLocale = messageService.resolveLocale(report.attackerId());
         String defenderUsername = userRepository.findById(report.defenderId()).map(User::getUsername).orElse("unknown");
-        messageService.sendSystemMessage(report.attackerId(), "Battle report: " + report.defenderPlanetName(),
-                "Your fleet attacked " + defenderUsername + "'s planet " + report.defenderPlanetName() + ".\n\n"
-                        + "Your fleet:\n" + formatLosses(report.attackerShips())
-                        + "\n\nEnemy towers:\n" + formatLosses(report.defenderTowers())
-                        + "\n\nEnemy fleet:\n" + formatLosses(report.defenderShips())
-                        + "\n\nEnemy tower losses:\n" + formatLosses(report.defenderTowerLosses())
-                        + "\n\nEnemy fleet losses:\n" + formatLosses(report.defenderShipLosses())
-                        + "\n\nYour losses:\n" + formatLosses(report.attackerLosses())
-                        + "\n\nResources looted:\n" + formatLoot(report.resourcesLooted()));
+        String attackerBody = messageService.translate(attackerLocale, "message.battle.attacker.intro", defenderUsername, report.defenderPlanetName())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.yourFleet") + "\n" + formatLosses(attackerLocale, report.attackerShips())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.enemyTowers") + "\n" + formatLosses(attackerLocale, report.defenderTowers())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.enemyFleet") + "\n" + formatLosses(attackerLocale, report.defenderShips())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.enemyTowerLosses") + "\n" + formatLosses(attackerLocale, report.defenderTowerLosses())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.enemyFleetLosses") + "\n" + formatLosses(attackerLocale, report.defenderShipLosses())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.yourLosses") + "\n" + formatLosses(attackerLocale, report.attackerLosses())
+                + "\n\n" + messageService.translate(attackerLocale, "message.battle.resourcesLooted") + "\n" + formatLoot(attackerLocale, report.resourcesLooted());
+        messageService.sendSystemMessage(report.attackerId(),
+                "message.battle.attacker.subject", new Object[] { report.defenderPlanetName() },
+                attackerBody);
 
+        Locale defenderLocale = messageService.resolveLocale(report.defenderId());
         String attackerUsername = userRepository.findById(report.attackerId()).map(User::getUsername).orElse("unknown");
-        messageService.sendSystemMessage(report.defenderId(), "Your planet was attacked: " + report.defenderPlanetName(),
-                attackerUsername + " attacked your planet " + report.defenderPlanetName() + ".\n\n"
-                        + "Enemy fleet:\n" + formatLosses(report.attackerShips())
-                        + "\n\nYour towers:\n" + formatLosses(report.defenderTowers())
-                        + "\n\nYour fleet:\n" + formatLosses(report.defenderShips())
-                        + "\n\nYour tower losses:\n" + formatLosses(report.defenderTowerLosses())
-                        + "\n\nYour fleet losses:\n" + formatLosses(report.defenderShipLosses())
-                        + "\n\nEnemy losses:\n" + formatLosses(report.attackerLosses())
-                        + "\n\nResources looted from you:\n" + formatLoot(report.resourcesLooted()));
+        String defenderBody = messageService.translate(defenderLocale, "message.battle.defender.intro", attackerUsername, report.defenderPlanetName())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.enemyFleet") + "\n" + formatLosses(defenderLocale, report.attackerShips())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.yourTowers") + "\n" + formatLosses(defenderLocale, report.defenderTowers())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.yourFleet") + "\n" + formatLosses(defenderLocale, report.defenderShips())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.yourTowerLosses") + "\n" + formatLosses(defenderLocale, report.defenderTowerLosses())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.yourFleetLosses") + "\n" + formatLosses(defenderLocale, report.defenderShipLosses())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.enemyLosses") + "\n" + formatLosses(defenderLocale, report.attackerLosses())
+                + "\n\n" + messageService.translate(defenderLocale, "message.battle.resourcesLootedFromYou") + "\n" + formatLoot(defenderLocale, report.resourcesLooted());
+        messageService.sendSystemMessage(report.defenderId(),
+                "message.battle.defender.subject", new Object[] { report.defenderPlanetName() },
+                defenderBody);
     }
 
-    private String formatLosses(Map<String, Integer> losses) {
-        return losses.isEmpty() ? "None"
+    private String formatLosses(Locale locale, Map<String, Integer> losses) {
+        return losses.isEmpty() ? messageService.translate(locale, "message.common.none")
                 : losses.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining("\n"));
     }
 
-    private String formatLoot(ResourceCost loot) {
+    private String formatLoot(Locale locale, ResourceCost loot) {
         if (loot.metal() <= 0 && loot.crystal() <= 0 && loot.deuterium() <= 0) {
-            return "None";
+            return messageService.translate(locale, "message.common.none");
         }
-        return "Metal: " + loot.metal() + ", Crystal: " + loot.crystal() + ", Deuterium: " + loot.deuterium();
+        return messageService.translate(locale, "message.resource.metal") + ": " + loot.metal()
+                + ", " + messageService.translate(locale, "message.resource.crystal") + ": " + loot.crystal()
+                + ", " + messageService.translate(locale, "message.resource.deuterium") + ": " + loot.deuterium();
     }
 }

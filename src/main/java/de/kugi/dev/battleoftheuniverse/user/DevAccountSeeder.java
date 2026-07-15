@@ -53,6 +53,6 @@ public class DevAccountSeeder implements ApplicationRunner {
         // Goes through UserService so the usual UserRegistered event fires and the
         // player module reacts to it (see planet.UserRegistrationListener), keeping
         // this dev-only seeder from having to cross module boundaries itself.
-        userService.register(new RegisterRequest(account.username(), account.email(), account.password()));
+        userService.register(new RegisterRequest(account.username(), account.email(), account.password(), null));
     }
 }

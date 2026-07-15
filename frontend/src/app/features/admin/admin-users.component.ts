@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { AuthService } from '../../core/auth.service';
 import { AdminUserView, Role } from '../../core/models';
@@ -9,13 +10,14 @@ import { AdminUsersApiService } from './admin-users-api.service';
 
 @Component({
   selector: 'app-admin-users',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslocoDirective],
   templateUrl: './admin-users.component.html',
   styleUrl: './admin-users.component.css'
 })
 export class AdminUsersComponent {
   private readonly api = inject(AdminUsersApiService);
   private readonly auth = inject(AuthService);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly roles: Role[] = ['PLAYER', 'MODERATOR', 'ADMIN'];
 
@@ -32,7 +34,7 @@ export class AdminUsersComponent {
     effect(() => {
       const error = this.usersResource.error() as HttpErrorResponse | undefined;
       if (error) {
-        this.errorMessage.set(error.error?.message ?? 'Failed to load users.');
+        this.errorMessage.set(error.error?.message ?? this.transloco.translate('admin.users.loadError'));
       }
     });
   }
@@ -50,7 +52,7 @@ export class AdminUsersComponent {
       },
       error: (err) => {
         this.savingUserId.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Failed to change role.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('admin.users.changeRoleError'));
       }
     });
   }

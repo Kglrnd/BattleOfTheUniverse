@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { BuildingView, FleetMovementView, IncomingMovementView, PlanetView, ResourceView } from '../../core/models';
@@ -40,7 +41,10 @@ describe('PlanetDetailComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [PlanetDetailComponent],
+      imports: [
+        PlanetDetailComponent,
+        TranslocoTestingModule.forRoot({ langs: { en: {} }, translocoConfig: { availableLangs: ['en'], defaultLang: 'en' } })
+      ],
       providers: [
         { provide: UniverseApiService, useValue: apiStub as unknown as UniverseApiService },
         { provide: FleetApiService, useValue: fleetApiStub as unknown as FleetApiService },

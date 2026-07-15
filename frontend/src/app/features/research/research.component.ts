@@ -1,19 +1,22 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
+import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { ResearchPlanetOption, TechnologyView } from '../../core/models';
 import { ResearchApiService } from './research-api.service';
 
 @Component({
   selector: 'app-research',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, TranslocoDirective],
   templateUrl: './research.component.html',
   styleUrl: './research.component.css'
 })
 export class ResearchComponent {
   private readonly api = inject(ResearchApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly technologiesResource = rxResource({ stream: () => this.api.list() });
   protected readonly researchPlanetsResource = rxResource({ stream: () => this.api.listPlanetOptions() });
@@ -43,6 +46,10 @@ export class ResearchComponent {
     return (this.researchPlanetsResource.value() ?? []).some((p) => p.active);
   }
 
+  protected readonly technologyName = (tech: TechnologyView) => catalogName(this.transloco, 'technologies', tech);
+  protected readonly technologyDescription = (tech: TechnologyView) =>
+    catalogDescription(this.transloco, 'technologies', tech);
+
   activate(planet: ResearchPlanetOption): void {
     if (this.activating() || planet.active || planet.researchLabLevel === 0) {
       return;
@@ -57,7 +64,7 @@ export class ResearchComponent {
       },
       error: (err) => {
         this.activating.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Could not activate this research planet.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('research.activatePlanetError'));
       }
     });
   }
@@ -76,7 +83,7 @@ export class ResearchComponent {
       },
       error: (err) => {
         this.starting.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Research failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('research.startError'));
       }
     });
   }

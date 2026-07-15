@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { map } from 'rxjs';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
@@ -13,7 +14,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-detail',
-  imports: [RouterLink, BuildingListComponent],
+  imports: [RouterLink, BuildingListComponent, TranslocoDirective],
   templateUrl: './planet-detail.component.html',
   styleUrl: './planet-detail.component.css'
 })

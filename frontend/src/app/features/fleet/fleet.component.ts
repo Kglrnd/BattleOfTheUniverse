@@ -2,7 +2,9 @@ import { Component, DestroyRef, computed, effect, inject, signal } from '@angula
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap, RouterLink } from '@angular/router';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
+import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
 import { formatCargo, formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
@@ -23,7 +25,7 @@ const TRANSPORTABLE_RESOURCES: ResourceKey[] = ['METAL', 'CRYSTAL', 'DEUTERIUM',
 
 @Component({
   selector: 'app-fleet',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, TranslocoDirective],
   templateUrl: './fleet.component.html',
   styleUrl: './fleet.component.css'
 })
@@ -33,6 +35,7 @@ export class FleetComponent {
   private readonly currentPlanet = inject(CurrentPlanetService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly planets = this.currentPlanet.planets;
   protected readonly originPlanetId = signal<number | null>(null);
@@ -250,7 +253,7 @@ export class FleetComponent {
           this.driveOptions.set(options);
           if (options.length === 0) {
             this.selectedDriveKey.set(null);
-            this.driveOptionsError.set('No researched drive is capable of this mission.');
+            this.driveOptionsError.set(this.transloco.translate('fleet.noDriveCapable'));
             return;
           }
           const stillOffered = options.some((o) => o.key === this.selectedDriveKey());
@@ -263,7 +266,7 @@ export class FleetComponent {
           this.driveOptionsLoading.set(false);
           this.driveOptions.set([]);
           this.selectedDriveKey.set(null);
-          this.driveOptionsError.set(err.error?.message ?? 'Could not compute drive options.');
+          this.driveOptionsError.set(err.error?.message ?? this.transloco.translate('fleet.driveOptionsFailed'));
         }
       });
   }
@@ -292,7 +295,7 @@ export class FleetComponent {
       },
       error: (err) => {
         this.queuingShip.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Shipyard order failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('fleet.shipyardOrderFailed'));
       }
     });
   }
@@ -300,6 +303,9 @@ export class FleetComponent {
   hasActiveShipyardJob(): boolean {
     return this.ships().some((s) => s.buildActive);
   }
+
+  protected readonly shipName = (ship: ShipyardView) => catalogName(this.transloco, 'ships', ship);
+  protected readonly shipDescription = (ship: ShipyardView) => catalogDescription(this.transloco, 'ships', ship);
 
   remainingShipLabel(ship: ShipyardView): string {
     return this.countdown(ship.buildEndsAt);
@@ -341,7 +347,7 @@ export class FleetComponent {
         },
         error: (err) => {
           this.dispatching.set(false);
-          this.errorMessage.set(err.error?.message ?? 'Dispatch failed.');
+          this.errorMessage.set(err.error?.message ?? this.transloco.translate('fleet.dispatchFailed'));
         }
       });
   }

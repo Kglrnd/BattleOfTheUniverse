@@ -2,13 +2,14 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { AuthService } from '../../core/auth.service';
 import { UniverseApiService } from '../universe/universe-api.service';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslocoDirective],
   templateUrl: './register.component.html',
   styleUrl: './auth-form.css'
 })
@@ -17,6 +18,7 @@ export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly universeApi = inject(UniverseApiService);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
@@ -33,7 +35,7 @@ export class RegisterComponent {
     }
     this.errorMessage.set(null);
     this.submitting.set(true);
-    const request = this.form.getRawValue();
+    const request = { ...this.form.getRawValue(), preferredLanguage: this.transloco.getActiveLang() };
     this.auth.register(request).subscribe({
       next: () => {
         this.auth.login(request.username, request.password).subscribe({
@@ -57,7 +59,7 @@ export class RegisterComponent {
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Registration failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('auth.register.registrationFailed'));
       }
     });
   }

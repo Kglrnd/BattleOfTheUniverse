@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { AuthService } from '../../core/auth.service';
@@ -40,7 +41,10 @@ describe('FleetComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [FleetComponent],
+      imports: [
+        FleetComponent,
+        TranslocoTestingModule.forRoot({ langs: { en: {} }, translocoConfig: { availableLangs: ['en'], defaultLang: 'en' } })
+      ],
       providers: [
         { provide: UniverseApiService, useValue: universeApiStub as unknown as UniverseApiService },
         { provide: FleetApiService, useValue: fleetApiStub as unknown as FleetApiService },

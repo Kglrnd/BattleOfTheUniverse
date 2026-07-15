@@ -70,4 +70,24 @@ class UserServiceTest {
         assertThatThrownBy(() -> service.changeRole(99L, Role.ADMIN))
                 .isInstanceOf(ResponseStatusException.class);
     }
+
+    @Test
+    void updatePreferredLanguageUpdatesAndPersistsTheUsersLanguage() {
+        User user = new User("alice", "alice@example.com", "hash");
+        user.setId(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UserView view = service.updatePreferredLanguage(1L, "de");
+
+        assertThat(view.preferredLanguage()).isEqualTo("de");
+        assertThat(user.getPreferredLanguage()).isEqualTo("de");
+    }
+
+    @Test
+    void updatePreferredLanguageRejectsAnUnknownUserId() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updatePreferredLanguage(99L, "de"))
+                .isInstanceOf(ResponseStatusException.class);
+    }
 }

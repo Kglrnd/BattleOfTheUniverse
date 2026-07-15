@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { MessageView } from '../../core/models';
 import { MessagesApiService } from './messages-api.service';
@@ -9,7 +10,7 @@ type Tab = 'inbox' | 'sent';
 
 @Component({
   selector: 'app-messages',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslocoDirective],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.css'
 })
@@ -17,6 +18,7 @@ export class MessagesComponent {
   private readonly api = inject(MessagesApiService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly activeTab = signal<Tab>('inbox');
   private readonly inboxResource = rxResource({ stream: () => this.api.inbox() });
@@ -86,7 +88,7 @@ export class MessagesComponent {
       },
       error: (err) => {
         this.sending.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Could not send message.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('messages.couldNotSend'));
       }
     });
   }

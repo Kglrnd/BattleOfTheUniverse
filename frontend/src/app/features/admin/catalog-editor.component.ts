@@ -3,6 +3,7 @@ import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { JsonFormsModule } from '@jsonforms/angular';
 import { JsonSchema } from '@jsonforms/core';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { map } from 'rxjs';
 
 import { AdminCatalogApiService } from './admin-catalog-api.service';
@@ -10,13 +11,14 @@ import { catalogEditorRenderers } from './renderers';
 
 @Component({
   selector: 'app-catalog-editor',
-  imports: [RouterLink, RouterLinkActive, JsonFormsModule],
+  imports: [RouterLink, RouterLinkActive, JsonFormsModule, TranslocoDirective],
   templateUrl: './catalog-editor.component.html',
   styleUrl: './catalog-editor.component.css'
 })
 export class CatalogEditorComponent {
   private readonly api = inject(AdminCatalogApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly renderers = catalogEditorRenderers;
   protected readonly type = toSignal(this.route.paramMap.pipe(map((params) => params.get('type') ?? 'buildings')), {
@@ -63,11 +65,11 @@ export class CatalogEditorComponent {
       next: (saved) => {
         this.data.set(saved);
         this.saving.set(false);
-        this.savedMessage.set('Saved.');
+        this.savedMessage.set(this.transloco.translate('admin.catalog.saved'));
       },
       error: (err) => {
         this.saving.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Save failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('admin.catalog.saveFailed'));
       }
     });
   }

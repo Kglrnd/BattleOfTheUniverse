@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { filter, map } from 'rxjs';
 
 import { AuthService } from '../auth.service';
@@ -9,7 +10,7 @@ import { MessagesApiService } from '../../features/messages/messages-api.service
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TranslocoDirective],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
@@ -40,10 +41,10 @@ export class SidebarComponent {
   protected readonly isAdminArea = computed(() => this.currentUrl().startsWith('/admin'));
 
   protected readonly catalogTypes = [
-    { type: 'buildings', label: 'Buildings' },
-    { type: 'ships', label: 'Ships' },
-    { type: 'technologies', label: 'Technologies' },
-    { type: 'defenses', label: 'Defenses' }
+    { type: 'buildings', labelKey: 'catalogBuildings' },
+    { type: 'ships', labelKey: 'catalogShips' },
+    { type: 'technologies', labelKey: 'catalogTechnologies' },
+    { type: 'defenses', labelKey: 'catalogDefenses' }
   ];
 
   constructor() {

@@ -1,12 +1,13 @@
 import { Component, DestroyRef, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-resource-bar',
-  imports: [],
+  imports: [TranslocoDirective],
   templateUrl: './resource-bar.component.html',
   styleUrl: './resource-bar.component.css'
 })

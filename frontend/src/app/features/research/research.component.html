@@ -1,88 +1,90 @@
-<h1>Research</h1>
+<ng-container *transloco="let t; prefix: 'research'">
+  <h1>{{ t('title') }}</h1>
 
-@if (errorMessage()) {
-  <p class="error">{{ errorMessage() }}</p>
-}
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
 
-<h2>Active research planet</h2>
+  <h2>{{ t('activePlanetHeading') }}</h2>
 
-@if ((researchPlanetsResource.value() ?? []).length === 0) {
-  <p>You need at least one planet to research from.</p>
-} @else {
+  @if ((researchPlanetsResource.value() ?? []).length === 0) {
+    <p>{{ t('needPlanet') }}</p>
+  } @else {
+    <div class="card-grid">
+      @for (planet of researchPlanetsResource.value() ?? []; track planet.planetId) {
+        <div class="card" [class.card-locked]="planet.researchLabLevel === 0">
+          <div class="card-header">
+            <div class="card-title">{{ planet.name }}</div>
+            <div class="card-subtitle">{{ planet.coordinates }}</div>
+          </div>
+          <div class="card-content">
+            <p>{{ t('researchEfficiency') }}: {{ planet.researchEfficiency | number: '1.2-2' }}%</p>
+            @if (planet.researchLabLevel === 0) {
+              <p>{{ t('noResearchLab') }}</p>
+            } @else {
+              <p>{{ t('researchLabLevel') }} {{ planet.researchLabLevel }}</p>
+            }
+          </div>
+          <div class="card-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="planet.active || planet.researchLabLevel === 0 || activating() === planet.planetId"
+              (click)="activate(planet)"
+            >
+              {{ planet.active ? t('active') : t('activate') }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (!hasActiveResearchPlanet()) {
+    <p>{{ t('selectActivePlanet') }}</p>
+  }
+
   <div class="card-grid">
-    @for (planet of researchPlanetsResource.value() ?? []; track planet.planetId) {
-      <div class="card" [class.card-locked]="planet.researchLabLevel === 0">
+    @for (tech of technologiesResource.value() ?? []; track tech.key) {
+      <div class="card tech-card" [class.card-locked]="!tech.unlocked">
         <div class="card-header">
-          <div class="card-title">{{ planet.name }}</div>
-          <div class="card-subtitle">{{ planet.coordinates }}</div>
+          <div class="card-title">
+            {{ technologyName(tech) }}
+            @if (tech.driveScope !== 'NONE') {
+              <span class="class-badge">{{ tech.driveScope }}</span>
+            }
+          </div>
+          <div class="card-subtitle">{{ t('level') }} {{ tech.level }}</div>
         </div>
         <div class="card-content">
-          <p>Research efficiency: {{ planet.researchEfficiency | number: '1.2-2' }}%</p>
-          @if (planet.researchLabLevel === 0) {
-            <p>No Research Lab built here yet.</p>
+          <p>{{ technologyDescription(tech) }}</p>
+          @if (!tech.unlocked) {
+            <ul class="requirement-list">
+              @for (requirement of tech.missingRequirements; track requirement.label) {
+                <li>{{ t('requires') }} {{ requirement.label }} {{ t('level') }} {{ requirement.requiredLevel }} ({{ t('currently') }} {{ requirement.currentLevel }})</li>
+              }
+            </ul>
+          } @else if (tech.researchActive) {
+            <div class="progress progress-indeterminate"></div>
+            <p class="countdown">{{ t('researchingLevel') }} {{ tech.researchTargetLevel }} — {{ remainingLabel(tech) }}</p>
           } @else {
-            <p>Research Lab level {{ planet.researchLabLevel }}</p>
+            <p class="cost">
+              {{ t('nextLevel') }}: {{ tech.nextLevelCost.metal }} {{ t('metal') }}, {{ tech.nextLevelCost.crystal }} {{ t('crystal') }},
+              {{ tech.nextLevelCost.deuterium }} {{ t('deuterium') }} ({{ tech.nextLevelResearchTimeSeconds }}s)
+            </p>
           }
         </div>
         <div class="card-actions">
           <button
             type="button"
             class="btn btn-primary"
-            [disabled]="planet.active || planet.researchLabLevel === 0 || activating() === planet.planetId"
-            (click)="activate(planet)"
+            [disabled]="!tech.unlocked || tech.researchActive || hasActiveResearch() || !hasActiveResearchPlanet() || starting() === tech.key"
+            (click)="start(tech)"
           >
-            {{ planet.active ? 'Active' : 'Activate' }}
+            {{ t('researchButton') }}
           </button>
         </div>
       </div>
     }
   </div>
-}
-
-@if (!hasActiveResearchPlanet()) {
-  <p>Select an active research planet above before starting research.</p>
-}
-
-<div class="card-grid">
-  @for (tech of technologiesResource.value() ?? []; track tech.key) {
-    <div class="card tech-card" [class.card-locked]="!tech.unlocked">
-      <div class="card-header">
-        <div class="card-title">
-          {{ tech.name }}
-          @if (tech.driveScope !== 'NONE') {
-            <span class="class-badge">{{ tech.driveScope }}</span>
-          }
-        </div>
-        <div class="card-subtitle">Level {{ tech.level }}</div>
-      </div>
-      <div class="card-content">
-        <p>{{ tech.description }}</p>
-        @if (!tech.unlocked) {
-          <ul class="requirement-list">
-            @for (requirement of tech.missingRequirements; track requirement.label) {
-              <li>Requires {{ requirement.label }} level {{ requirement.requiredLevel }} (currently {{ requirement.currentLevel }})</li>
-            }
-          </ul>
-        } @else if (tech.researchActive) {
-          <div class="progress progress-indeterminate"></div>
-          <p class="countdown">Researching level {{ tech.researchTargetLevel }} — {{ remainingLabel(tech) }}</p>
-        } @else {
-          <p class="cost">
-            Next level: {{ tech.nextLevelCost.metal }} metal, {{ tech.nextLevelCost.crystal }} crystal,
-            {{ tech.nextLevelCost.deuterium }} deuterium ({{ tech.nextLevelResearchTimeSeconds }}s)
-          </p>
-        }
-      </div>
-      <div class="card-actions">
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!tech.unlocked || tech.researchActive || hasActiveResearch() || !hasActiveResearchPlanet() || starting() === tech.key"
-          (click)="start(tech)"
-        >
-          Research
-        </button>
-      </div>
-    </div>
-  }
-</div>
+</ng-container>

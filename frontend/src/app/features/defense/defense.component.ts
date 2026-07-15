@@ -1,19 +1,22 @@
 import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
+import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown } from '../../core/countdown';
 import { TowerView } from '../../core/models';
 import { DefenseApiService } from './defense-api.service';
 
 @Component({
   selector: 'app-defense',
-  imports: [],
+  imports: [TranslocoDirective],
   templateUrl: './defense.component.html',
   styleUrl: './defense.component.css'
 })
 export class DefenseComponent {
   private readonly api = inject(DefenseApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   readonly planetId = input.required<number>();
 
@@ -54,7 +57,7 @@ export class DefenseComponent {
       },
       error: (err) => {
         this.queuingTower.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Build failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('defense.defense.buildFailed'));
       }
     });
   }
@@ -62,6 +65,9 @@ export class DefenseComponent {
   hasActiveDefenseJob(): boolean {
     return (this.towersResource.value() ?? []).some((t) => t.buildActive);
   }
+
+  protected readonly towerName = (tower: TowerView) => catalogName(this.transloco, 'defenses', tower);
+  protected readonly towerDescription = (tower: TowerView) => catalogDescription(this.transloco, 'defenses', tower);
 
   remainingLabel(tower: TowerView): string {
     this.clockTick();

@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { AuthService } from '../../core/auth.service';
 import { HighscoreEntry } from '../../core/models';
@@ -10,7 +11,7 @@ import { HighscoreApiService } from './highscore-api.service';
 
 @Component({
   selector: 'app-highscore',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslocoDirective],
   templateUrl: './highscore.component.html',
   styleUrl: './highscore.component.css'
 })
@@ -18,13 +19,14 @@ export class HighscoreComponent {
   private readonly api = inject(HighscoreApiService);
   private readonly auth = inject(AuthService);
   private readonly universeApi = inject(UniverseApiService);
+  private readonly transloco = inject(TranslocoService);
 
   private readonly highscoreResource = rxResource({ stream: () => this.api.get() });
   protected readonly data = computed(() => this.highscoreResource.value() ?? null);
   protected readonly loading = this.highscoreResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.highscoreResource.error() as HttpErrorResponse | undefined;
-    return error ? (error.error?.message ?? 'Failed to load highscore.') : null;
+    return error ? (error.error?.message ?? this.transloco.translate('highscore.failedToLoad')) : null;
   });
 
   protected readonly currentUsername = this.auth.currentUser()?.username ?? null;

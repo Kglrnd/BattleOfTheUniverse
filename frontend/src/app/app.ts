@@ -1,15 +1,17 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { filter, map } from 'rxjs';
 
 import { AuthService } from './core/auth.service';
+import { LanguageSwitcherComponent } from './core/language-switcher/language-switcher.component';
 import { SidebarComponent } from './core/sidebar/sidebar.component';
 import { ResourceBarComponent } from './features/universe/resource-bar.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, ResourceBarComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, ResourceBarComponent, LanguageSwitcherComponent, TranslocoDirective],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

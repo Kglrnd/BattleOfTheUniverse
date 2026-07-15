@@ -1,3 +1,4 @@
+<ng-container *transloco="let t; prefix: 'defense.defense'">
 @if (errorMessage()) {
   <p class="error">{{ errorMessage() }}</p>
 }
@@ -6,29 +7,28 @@
   @for (tower of towersResource.value() ?? []; track tower.key) {
     <div class="card" [class.card-locked]="!tower.unlocked">
       <div class="card-header">
-        <div class="card-title">{{ tower.name }}</div>
-        <div class="card-subtitle">Owned: {{ tower.owned }} · Defense {{ tower.defense }}</div>
+        <div class="card-title">{{ towerName(tower) }}</div>
+        <div class="card-subtitle">{{ t('owned', { value: tower.owned }) }} · {{ t('defenseValue', { value: tower.defense }) }}</div>
       </div>
       <div class="card-content">
-        <p>{{ tower.description }}</p>
+        <p>{{ towerDescription(tower) }}</p>
         @if (!tower.unlocked) {
           <ul class="requirement-list">
             @for (requirement of tower.missingRequirements; track requirement.label) {
-              <li>Requires {{ requirement.label }} level {{ requirement.requiredLevel }} (currently {{ requirement.currentLevel }})</li>
+              <li>{{ t('requirementText', { label: requirement.label, requiredLevel: requirement.requiredLevel, currentLevel: requirement.currentLevel }) }}</li>
             }
           </ul>
         } @else if (tower.buildActive) {
           <div class="progress progress-indeterminate"></div>
-          <p class="countdown">Building {{ tower.buildingQuantity }} — {{ remainingLabel(tower) }}</p>
+          <p class="countdown">{{ t('buildingProgress', { quantity: tower.buildingQuantity, remaining: remainingLabel(tower) }) }}</p>
         } @else {
           <p class="cost">
-            Per unit: {{ tower.unitCost.metal }} metal, {{ tower.unitCost.crystal }} crystal,
-            {{ tower.unitCost.deuterium }} deuterium ({{ tower.unitBuildTimeSeconds }}s)
+            {{ t('unitCost', { metal: tower.unitCost.metal, crystal: tower.unitCost.crystal, deuterium: tower.unitCost.deuterium, buildTime: tower.unitBuildTimeSeconds }) }}
           </p>
         }
       </div>
       <div class="card-actions">
-        <label class="qty-label" [for]="'tower-qty-' + tower.key">Qty</label>
+        <label class="qty-label" [for]="'tower-qty-' + tower.key">{{ t('qty') }}</label>
         <input [id]="'tower-qty-' + tower.key" #qty type="number" class="input" min="1" value="1" style="width: 4rem" />
         <button
           type="button"
@@ -36,9 +36,10 @@
           [disabled]="!tower.unlocked || tower.buildActive || hasActiveDefenseJob() || queuingTower() === tower.key"
           (click)="build(tower, qty.valueAsNumber)"
         >
-          Build
+          {{ t('build') }}
         </button>
       </div>
     </div>
   }
 </div>
+</ng-container>

@@ -1,15 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { AdminGameApiService } from './admin-game-api.service';
 
 @Component({
   selector: 'app-admin-reset',
-  imports: [],
+  imports: [TranslocoDirective],
   templateUrl: './admin-reset.component.html',
   styleUrl: './admin-reset.component.css'
 })
 export class AdminResetComponent {
   private readonly api = inject(AdminGameApiService);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly sending = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -19,10 +21,7 @@ export class AdminResetComponent {
     if (this.sending()) {
       return;
     }
-    const confirmed = confirm(
-      'This will wipe every player\'s buildings, resources, research, fleet, and messages, delete all colonies, ' +
-        'and move every homeworld to a new random position. This cannot be undone. Continue?'
-    );
+    const confirmed = confirm(this.transloco.translate('admin.reset.confirmMessage'));
     if (!confirmed) {
       return;
     }
@@ -32,11 +31,11 @@ export class AdminResetComponent {
     this.api.reset().subscribe({
       next: () => {
         this.sending.set(false);
-        this.doneMessage.set('The game has been reset. Every player now starts fresh.');
+        this.doneMessage.set(this.transloco.translate('admin.reset.doneMessage'));
       },
       error: (err) => {
         this.sending.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Reset failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('admin.reset.resetError'));
       }
     });
   }

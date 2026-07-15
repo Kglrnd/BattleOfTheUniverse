@@ -1,13 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { AuthService } from '../../core/auth.service';
 import { UniverseApiService } from '../universe/universe-api.service';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslocoDirective],
   templateUrl: './login.component.html',
   styleUrl: './auth-form.css'
 })
@@ -16,6 +17,7 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly universeApi = inject(UniverseApiService);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
@@ -47,7 +49,7 @@ export class LoginComponent {
       },
       error: () => {
         this.submitting.set(false);
-        this.errorMessage.set('Invalid username or password.');
+        this.errorMessage.set(this.transloco.translate('auth.login.invalidCredentials'));
       }
     });
   }

@@ -40,6 +40,9 @@ public class User {
 
     private boolean active = true;
 
+    @Column(nullable = false)
+    private String preferredLanguage = "en";
+
     private Instant createdAt = Instant.now();
 
     public User(String username, String email, String passwordHash) {

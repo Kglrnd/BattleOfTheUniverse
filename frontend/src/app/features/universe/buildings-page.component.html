@@ -1,24 +1,26 @@
-<h1>Buildings</h1>
+<ng-container *transloco="let t; prefix: 'universe.buildingsPage'">
+  <h1>{{ t('title') }}</h1>
 
-@if (planets().length === 0) {
-  <p>You need at least one planet to build.</p>
-} @else {
-  <div class="field origin-field">
-    <label for="buildings-planet-select">Planet</label>
-    <select
-      id="buildings-planet-select"
-      class="select"
-      name="buildings-planet"
-      [ngModel]="selectedPlanetId()"
-      (ngModelChange)="onPlanetChange($event)"
-    >
-      @for (p of planets(); track p.id) {
-        <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
-      }
-    </select>
-  </div>
+  @if (planets().length === 0) {
+    <p>{{ t('noPlanets') }}</p>
+  } @else {
+    <div class="field origin-field">
+      <label for="buildings-planet-select">{{ t('planetLabel') }}</label>
+      <select
+        id="buildings-planet-select"
+        class="select"
+        name="buildings-planet"
+        [ngModel]="selectedPlanetId()"
+        (ngModelChange)="onPlanetChange($event)"
+      >
+        @for (p of planets(); track p.id) {
+          <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+        }
+      </select>
+    </div>
 
-  @if (selectedPlanetId(); as planetId) {
-    <app-building-list [planetId]="planetId" />
+    @if (selectedPlanetId(); as planetId) {
+      <app-building-list [planetId]="planetId" />
+    }
   }
-}
+</ng-container>

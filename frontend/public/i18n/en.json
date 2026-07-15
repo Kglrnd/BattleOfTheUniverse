@@ -1,0 +1,441 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "header": {
+    "brand": "Battle of the Universe",
+    "playerView": "Player view",
+    "adminView": "Admin view",
+    "logout": "Log out",
+    "login": "Log in",
+    "register": "Register"
+  },
+  "nav": {
+    "mainMenu": "Main menu",
+    "users": "Users",
+    "planets": "Planets",
+    "catalogBuildings": "Buildings",
+    "catalogShips": "Ships",
+    "catalogTechnologies": "Technologies",
+    "catalogDefenses": "Defenses",
+    "resetGame": "Reset game",
+    "overview": "Overview",
+    "buildings": "Buildings",
+    "espionage": "Espionage",
+    "research": "Research",
+    "fleet": "Fleet",
+    "defense": "Defense",
+    "messages": "Messages",
+    "galaxy": "Galaxy",
+    "highscore": "Highscore",
+    "jumpToPlanet": "Jump to planet",
+    "jumpToPlanetPlaceholder": "Jump to planet…"
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Log in",
+      "noAccountYet": "No account yet?",
+      "registerLink": "Register",
+      "invalidCredentials": "Invalid username or password."
+    },
+    "register": {
+      "title": "Register",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "alreadyHaveAccount": "Already have an account?",
+      "loginLink": "Log in",
+      "registrationFailed": "Registration failed."
+    }
+  },
+  "admin": {
+    "users": {
+      "title": "Users",
+      "loading": "Loading…",
+      "noUsers": "No users found.",
+      "colUsername": "Username",
+      "colEmail": "Email",
+      "colRole": "Role",
+      "colActive": "Active",
+      "colCreated": "Created",
+      "ownRoleTitle": "You cannot change your own role",
+      "onlyAdminsTitle": "Only Admins can change roles",
+      "yes": "Yes",
+      "no": "No",
+      "loadError": "Failed to load users.",
+      "changeRoleError": "Failed to change role."
+    },
+    "planets": {
+      "title": "Planets",
+      "loading": "Loading…",
+      "loadError": "Failed to load planets.",
+      "filterOwnerLabel": "Owner",
+      "filterOwnerPlaceholder": "Username",
+      "filterNameLabel": "Planet name",
+      "filterNamePlaceholder": "Name",
+      "filterGalaxyLabel": "Galaxy",
+      "filterGalaxyPlaceholder": "Any",
+      "filterSystemLabel": "System",
+      "filterSystemPlaceholder": "Any",
+      "filterHomeworldLabel": "Homeworlds only",
+      "clearFilters": "Clear filters",
+      "resultCount": "{{count}} of {{total}} planets",
+      "noMatch": "No planets match these filters.",
+      "colName": "Name",
+      "colOwner": "Owner",
+      "colCoordinates": "Coordinates",
+      "colClass": "Class",
+      "colHomeworld": "Homeworld",
+      "colCreated": "Created",
+      "yes": "Yes"
+    },
+    "reset": {
+      "title": "Reset game",
+      "dangerZone": "Danger zone",
+      "introText": "Resetting the game will, for every registered user:",
+      "liDeletePlanets": "Delete every colonized planet",
+      "liMoveHomeworld": "Move each homeworld to a new random position",
+      "liResetProgress": "Reset buildings, resources, and research back to a fresh start",
+      "liClearFleet": "Clear every stationed ship and in-flight fleet movement",
+      "liDeleteMessages": "Delete all messages",
+      "fieldHint": "User accounts, usernames, and passwords are not affected — only game progress.",
+      "resetting": "Resetting…",
+      "resetGame": "Reset game",
+      "confirmMessage": "This will wipe every player's buildings, resources, research, fleet, and messages, delete all colonies, and move every homeworld to a new random position. This cannot be undone. Continue?",
+      "doneMessage": "The game has been reset. Every player now starts fresh.",
+      "resetError": "Reset failed."
+    },
+    "catalog": {
+      "title": "Catalog editor",
+      "navBuildings": "Buildings",
+      "navShips": "Ships",
+      "navTechnologies": "Technologies",
+      "loading": "Loading…",
+      "save": "Save",
+      "saved": "Saved.",
+      "saveFailed": "Save failed.",
+      "addItem": "Add",
+      "removeItem": "Remove",
+      "noItems": "No entries yet.",
+      "moveUp": "Up",
+      "moveDown": "Down"
+    }
+  },
+  "defense": {
+    "defensePage": {
+      "title": "Defense",
+      "noPlanetHint": "You need at least one planet to build defenses.",
+      "planetLabel": "Planet"
+    },
+    "defense": {
+      "owned": "Owned: {{value}}",
+      "defenseValue": "Defense {{value}}",
+      "requirementText": "Requires {{label}} level {{requiredLevel}} (currently {{currentLevel}})",
+      "buildingProgress": "Building {{quantity}} — {{remaining}}",
+      "unitCost": "Per unit: {{metal}} metal, {{crystal}} crystal, {{deuterium}} deuterium ({{buildTime}}s)",
+      "qty": "Qty",
+      "build": "Build",
+      "buildFailed": "Build failed."
+    }
+  },
+  "espionage": {
+    "espionagePage": {
+      "title": "Espionage",
+      "noPlanetHint": "You need at least one planet to send espionage probes.",
+      "planetLabel": "Planet"
+    },
+    "espionage": {
+      "cardTitle": "Send an espionage probe",
+      "probesOwned": "Probes owned: {{value}}",
+      "noProbesHint": "No espionage probes stationed here. Build some in the Fleet page's shipyard, then send them from here.",
+      "probesToSendLabel": "Probes to send",
+      "targetCoordinatesLabel": "Target coordinates [galaxy:system:position]",
+      "galaxyLabel": "Galaxy",
+      "systemLabel": "System",
+      "positionLabel": "Position",
+      "coordinatesHintPrefix": "Enter the coordinates of another player's planet. Find one in",
+      "systemViewLink": "System view",
+      "calculatingDriveOptions": "Calculating drive options…",
+      "driveLabel": "Drive",
+      "driveLevelSpeed": "Level {{level}} · x{{speed}} speed",
+      "driveEta": "ETA {{eta}}",
+      "sendProbe": "Send probe",
+      "dispatchedPrefix": "Probe dispatched. Check",
+      "messagesLink": "Messages",
+      "dispatchedSuffix": "once it arrives for the report or failure notice.",
+      "noDriveCapable": "No researched drive is capable of this mission.",
+      "driveOptionsFailed": "Could not compute drive options.",
+      "dispatchFailed": "Dispatch failed."
+    }
+  },
+  "fleet": {
+    "title": "Fleet",
+    "originPlanet": "Origin planet",
+    "shipyard": "Shipyard",
+    "noShipsYet": "No ships available yet.",
+    "owned": "Owned: {{value}}",
+    "buildingProgress": "Building {{quantity}} — {{remaining}}",
+    "unitCost": "Per unit: {{metal}} metal, {{crystal}} crystal, {{deuterium}} deuterium ({{seconds}}s)",
+    "cargoFuel": "Cargo: {{cargo}} · Fuel: {{fuel}} hydrogen/hop",
+    "qty": "Qty",
+    "build": "Build",
+    "dispatchMission": "Dispatch mission",
+    "missionType": "Mission type",
+    "missionColonize": "Colonize",
+    "missionStation": "Station",
+    "missionAttack": "Attack",
+    "missionTransport": "Transport",
+    "noShipsOnPlanet": "No ships available on this planet yet.",
+    "manifestShipInfo": "owned: {{owned}} · cargo: {{cargo}} · fuel: {{fuel}}/hop",
+    "targetPlanet": "Target planet",
+    "choosePlanetPlaceholder": "Choose one of your planets…",
+    "cargoCapacityUsed": "Cargo ({{used}} / {{capacity}} capacity used)",
+    "onHand": "on hand: {{amount}}",
+    "targetCoordinates": "Target coordinates [galaxy:system:position]",
+    "galaxy": "Galaxy",
+    "system": "System",
+    "position": "Position",
+    "colonizeHintPart1": "Needs at least one colony ship in the fleet. Any other ships sent along are stationed at the new colony once it's founded. Find a free slot in ",
+    "systemView": "System view",
+    "attackHint": "Enter the coordinates of another player's planet. On arrival the fleet battles the target's defenses; survivors return home and both sides receive a battle report.",
+    "transportHint": "Delivers the loaded cargo to one of your own planets. Ships are not consumed - they're stationed at the destination.",
+    "calculatingDriveOptions": "Calculating drive options…",
+    "drive": "Drive",
+    "driveLevel": "Level {{level}} · x{{speed}} speed",
+    "driveEta": "ETA {{eta}} · Fuel {{fuel}} hydrogen",
+    "dispatch": "Dispatch",
+    "activeFleetMovements": "Active fleet movements",
+    "noFleetsInFlight": "No fleets currently in flight.",
+    "fromTo": "From {{origin}} to [{{galaxy}}:{{system}}:{{position}}]",
+    "cargoLine": "Cargo: {{cargo}}",
+    "arrivingIn": "Arriving in {{remaining}}",
+    "noDriveCapable": "No researched drive is capable of this mission.",
+    "shipyardOrderFailed": "Shipyard order failed.",
+    "dispatchFailed": "Dispatch failed.",
+    "driveOptionsFailed": "Could not compute drive options."
+  },
+  "messages": {
+    "title": "Messages",
+    "inbox": "Inbox",
+    "sent": "Sent",
+    "compose": "Compose",
+    "cancel": "Cancel",
+    "recipientLabel": "To (username)",
+    "subjectLabel": "Subject",
+    "messageLabel": "Message",
+    "send": "Send",
+    "noMessages": "No messages.",
+    "from": "From",
+    "to": "To",
+    "couldNotSend": "Could not send message."
+  },
+  "highscore": {
+    "title": "Highscore",
+    "loading": "Loading…",
+    "noPlayersYet": "No players on the board yet.",
+    "rank": "Rank",
+    "player": "Player",
+    "score": "Score",
+    "loadingPlanets": "Loading planets…",
+    "noPlanetsFound": "No planets found.",
+    "rankHintPrefix": "You are ranked",
+    "rankHintSuffix": "Keep going to climb into the Top 100!",
+    "failedToLoad": "Failed to load highscore."
+  },
+  "research": {
+    "title": "Research",
+    "activePlanetHeading": "Active research planet",
+    "needPlanet": "You need at least one planet to research from.",
+    "researchEfficiency": "Research efficiency",
+    "noResearchLab": "No Research Lab built here yet.",
+    "researchLabLevel": "Research Lab level",
+    "active": "Active",
+    "activate": "Activate",
+    "selectActivePlanet": "Select an active research planet above before starting research.",
+    "level": "Level",
+    "requires": "Requires",
+    "currently": "currently",
+    "researchingLevel": "Researching level",
+    "nextLevel": "Next level",
+    "metal": "metal",
+    "crystal": "crystal",
+    "deuterium": "deuterium",
+    "researchButton": "Research",
+    "activatePlanetError": "Could not activate this research planet.",
+    "startError": "Research failed."
+  },
+  "universe": {
+    "systemView": {
+      "title": "System view",
+      "loading": "Loading…",
+      "coordinates": "Galaxy {{galaxy}} · System {{system}}",
+      "previousGalaxyTitle": "Previous galaxy",
+      "previousGalaxyLabel": "‹‹ Galaxy",
+      "previousSystemTitle": "Previous system",
+      "previousSystemLabel": "‹ System",
+      "goButton": "Go",
+      "nextSystemTitle": "Next system",
+      "nextSystemLabel": "System ›",
+      "nextGalaxyTitle": "Next galaxy",
+      "nextGalaxyLabel": "Galaxy ››",
+      "free": "Free",
+      "homeworld": "Homeworld",
+      "viewPlanet": "View planet",
+      "actions": "Actions",
+      "colonize": "Colonize",
+      "attack": "Attack",
+      "couldNotDetermineStartingSystem": "Could not determine a starting system.",
+      "systemNotFound": "System not found."
+    },
+    "planetList": {
+      "title": "Your planets",
+      "loading": "Loading…",
+      "noPlanetsYet": "No planets yet.",
+      "attacksIncoming": "⚠ {{count}} attack(s) incoming",
+      "incomingCount": "{{count}} incoming",
+      "outgoingCount": "{{count}} outgoing"
+    },
+    "planetDetail": {
+      "viewSystem": "View system",
+      "manageFleet": "Manage fleet",
+      "incomingFleets": "Incoming fleets",
+      "arrivingIn": "Arriving in {{time}}",
+      "outgoingFleets": "Outgoing fleets",
+      "toCoordinates": "To [{{galaxy}}:{{system}}:{{position}}]",
+      "buildings": "Buildings"
+    },
+    "buildingList": {
+      "level": "Level {{level}}",
+      "researchEfficiency": "Research efficiency: {{value}}%",
+      "requires": "Requires {{label}} level {{requiredLevel}} (currently {{currentLevel}})",
+      "upgradingToLevel": "Upgrading to level {{level}} — {{time}}",
+      "nextLevelCost": "Next level: {{metal}} metal, {{crystal}} crystal, {{deuterium}} deuterium ({{seconds}}s)",
+      "upgrade": "Upgrade",
+      "upgradeFailed": "Upgrade failed."
+    },
+    "resourceBar": {},
+    "buildingsPage": {
+      "title": "Buildings",
+      "noPlanets": "You need at least one planet to build.",
+      "planetLabel": "Planet"
+    }
+  },
+  "catalogData": {
+    "buildings": {
+      "main_building": {
+        "name": "Command Center",
+        "description": "The planet's core facility. Higher levels unlock construction of more advanced buildings."
+      },
+      "metal_mine": {
+        "name": "Metal Mine",
+        "description": "Extracts metal ore from the planet's crust."
+      },
+      "crystal_mine": {
+        "name": "Crystal Mine",
+        "description": "Mines crystal deposits used in advanced electronics."
+      },
+      "deuterium_synthesizer": {
+        "name": "Deuterium Synthesizer",
+        "description": "Extracts deuterium from surface ice for use as fuel."
+      },
+      "refinery": {
+        "name": "Refinery",
+        "description": "Refines raw ice deposits into hydrogen fuel for ship propulsion."
+      },
+      "solar_plant": {
+        "name": "Solar Plant",
+        "description": "Converts sunlight into energy to power other buildings."
+      },
+      "shipyard": {
+        "name": "Shipyard",
+        "description": "Constructs and repairs ships."
+      },
+      "research_lab": {
+        "name": "Research Lab",
+        "description": "Enables research into new technologies."
+      },
+      "defense_facility": {
+        "name": "Defense Facility",
+        "description": "Doesn't defend itself, but unlocks and coordinates ground-based defense towers."
+      }
+    },
+    "ships": {
+      "light_fighter": {
+        "name": "Light Fighter",
+        "description": "Fast, cheap interceptor."
+      },
+      "cruiser": {
+        "name": "Cruiser",
+        "description": "Balanced mid-tier warship."
+      },
+      "small_cargo": {
+        "name": "Transport Ship",
+        "description": "Hauls large quantities of resources between planets."
+      },
+      "colony_ship": {
+        "name": "Colony Ship",
+        "description": "Carries the equipment needed to found a new colony."
+      },
+      "espionage_probe": {
+        "name": "Espionage Probe",
+        "description": "Unarmed reconnaissance ship built to slip past enemy sensors and report back on a planet's fleet and resources."
+      }
+    },
+    "technologies": {
+      "energy_technology": {
+        "name": "Energy Technology",
+        "description": "Foundation for more advanced power generation and weapons."
+      },
+      "laser_technology": {
+        "name": "Laser Technology",
+        "description": "Improves ship weapon damage output in combat."
+      },
+      "shielding_technology": {
+        "name": "Shielding Technology",
+        "description": "Improves defensive shields on stationed ships and defense towers."
+      },
+      "espionage_technology": {
+        "name": "Espionage Technology",
+        "description": "Improves probe sensor calibration, increasing the chance that an espionage mission successfully gathers intelligence before being detected."
+      },
+      "chemical_drive": {
+        "name": "Chemical Drive",
+        "description": "Basic thruster technology. Enables travel between positions within a system. Cheap and improves steadily - overtakes the Ion Drive at high levels. Reaching level 3 unlocks research into the Impulse Drive."
+      },
+      "ion_drive": {
+        "name": "Ion Drive",
+        "description": "Higher-efficiency in-system thruster. Pricier and faster than the Chemical Drive out of the gate, but improves more slowly per level."
+      },
+      "impulse_drive": {
+        "name": "Impulse Drive",
+        "description": "Enables travel between systems within the same galaxy. Cheap and improves steadily - overtakes the Warp Drive at high levels. Requires an in-system drive researched to at least level 3. Reaching level 5 unlocks research into the Hyperspace Drive."
+      },
+      "warp_drive": {
+        "name": "Warp Drive",
+        "description": "Advanced inter-system propulsion. Pricier and faster than the Impulse Drive out of the gate, but improves more slowly per level."
+      },
+      "hyperspace_drive": {
+        "name": "Hyperspace Drive",
+        "description": "Folds space itself, enabling travel between galaxies. Requires an inter-system drive researched to at least level 5."
+      }
+    },
+    "defenses": {
+      "light_defense_tower": {
+        "name": "Light Defense Tower",
+        "description": "A point-defense turret sized to match a light fighter's firepower."
+      },
+      "heavy_defense_tower": {
+        "name": "Heavy Defense Tower",
+        "description": "A hardened emplacement built to stand toe-to-toe with a cruiser."
+      }
+    }
+  }
+}

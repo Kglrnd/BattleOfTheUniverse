@@ -5,6 +5,7 @@ export interface UserView {
   username: string;
   email: string | null;
   role: Role;
+  preferredLanguage: string;
 }
 
 export interface AdminUserView {

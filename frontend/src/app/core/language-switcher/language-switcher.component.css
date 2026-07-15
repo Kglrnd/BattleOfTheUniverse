@@ -1,0 +1,9 @@
+.lang-switcher {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.lang-btn {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+}

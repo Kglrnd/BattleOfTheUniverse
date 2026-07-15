@@ -20,6 +20,7 @@
     "@angular/router": "^22.0.0",
     "@jsonforms/angular": "^3.8.0",
     "@jsonforms/core": "^3.8.0",
+    "@jsverse/transloco": "^8.4.0",
     "dayjs": "^1.11.21",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

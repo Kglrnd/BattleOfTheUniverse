@@ -6,6 +6,7 @@ import de.kugi.dev.battleoftheuniverse.message.dto.UnreadCountView;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final MessageSource messageSource;
 
     @Transactional
     public MessageView send(Long senderUserId, String senderUsername, SendMessageRequest request) {
@@ -40,9 +43,37 @@ public class MessageService {
                 message.getSubject(), message.getBody(), message.getType(), message.getSentAt(), message.getReadAt());
     }
 
+    /**
+     * Renders the subject/body for the recipient's preferred language before persisting -
+     * rendering happens once, at write time, so {@link Message#getSubject()}/{@link Message#getBody()}
+     * stay plain already-localized text (no template/locale concept downstream of this).
+     */
     @Transactional
-    public void sendSystemMessage(Long recipientUserId, String subject, String body) {
-        messageRepository.save(new Message(null, recipientUserId, subject, body, MessageType.SYSTEM, Instant.now()));
+    public void sendSystemMessage(Long recipientUserId, String subjectKey, Object[] subjectArgs, String bodyKey, Object[] bodyArgs) {
+        Locale locale = resolveLocale(recipientUserId);
+        String body = messageSource.getMessage(bodyKey, bodyArgs, locale);
+        sendSystemMessage(recipientUserId, subjectKey, subjectArgs, body);
+    }
+
+    /** For listeners that assemble a multi-section body themselves (via {@link #translate}) rather than a single template key. */
+    @Transactional
+    public void sendSystemMessage(Long recipientUserId, String subjectKey, Object[] subjectArgs, String preRenderedBody) {
+        Locale locale = resolveLocale(recipientUserId);
+        String subject = messageSource.getMessage(subjectKey, subjectArgs, locale);
+        messageRepository.save(new Message(null, recipientUserId, subject, preRenderedBody, MessageType.SYSTEM, Instant.now()));
+    }
+
+    /** Public so listeners that build a multi-section body themselves can resolve it once and reuse it across several {@link #translate} calls. */
+    public Locale resolveLocale(Long userId) {
+        return userRepository.findById(userId)
+                .map(User::getPreferredLanguage)
+                .map(Locale::forLanguageTag)
+                .orElse(Locale.ENGLISH);
+    }
+
+    /** For listeners that need translated fragments (section headers, "None", resource labels) inline in a body they build themselves. */
+    public String translate(Locale locale, String key, Object... args) {
+        return messageSource.getMessage(key, args, locale);
     }
 
     /** Admin-triggered game reset: clears every message, game-wide. */

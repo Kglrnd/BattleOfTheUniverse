@@ -1,30 +1,32 @@
-<h1>Reset game</h1>
+<ng-container *transloco="let t; prefix: 'admin.reset'">
+  <h1>{{ t('title') }}</h1>
 
-<div class="card reset-card">
-  <div class="card-header">
-    <div class="card-title">Danger zone</div>
-  </div>
-  <div class="card-content">
-    <p>Resetting the game will, for every registered user:</p>
-    <ul class="requirement-list">
-      <li>Delete every colonized planet</li>
-      <li>Move each homeworld to a new random position</li>
-      <li>Reset buildings, resources, and research back to a fresh start</li>
-      <li>Clear every stationed ship and in-flight fleet movement</li>
-      <li>Delete all messages</li>
-    </ul>
-    <p class="field-hint">User accounts, usernames, and passwords are not affected — only game progress.</p>
+  <div class="card reset-card">
+    <div class="card-header">
+      <div class="card-title">{{ t('dangerZone') }}</div>
+    </div>
+    <div class="card-content">
+      <p>{{ t('introText') }}</p>
+      <ul class="requirement-list">
+        <li>{{ t('liDeletePlanets') }}</li>
+        <li>{{ t('liMoveHomeworld') }}</li>
+        <li>{{ t('liResetProgress') }}</li>
+        <li>{{ t('liClearFleet') }}</li>
+        <li>{{ t('liDeleteMessages') }}</li>
+      </ul>
+      <p class="field-hint">{{ t('fieldHint') }}</p>
 
-    @if (errorMessage()) {
-      <p class="error">{{ errorMessage() }}</p>
-    }
-    @if (doneMessage()) {
-      <p class="cost">{{ doneMessage() }}</p>
-    }
+      @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+      }
+      @if (doneMessage()) {
+        <p class="cost">{{ doneMessage() }}</p>
+      }
+    </div>
+    <div class="card-actions">
+      <button type="button" class="btn btn-danger" [disabled]="sending()" (click)="reset()">
+        {{ sending() ? t('resetting') : t('resetGame') }}
+      </button>
+    </div>
   </div>
-  <div class="card-actions">
-    <button type="button" class="btn btn-danger" [disabled]="sending()" (click)="reset()">
-      {{ sending() ? 'Resetting…' : 'Reset game' }}
-    </button>
-  </div>
-</div>
+</ng-container>

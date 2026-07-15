@@ -1,30 +1,32 @@
-<h1>Your planets</h1>
+<ng-container *transloco="let t; prefix: 'universe.planetList'">
+  <h1>{{ t('title') }}</h1>
 
-@if (loading()) {
-  <p>Loading…</p>
-} @else if (planets().length === 0) {
-  <p>No planets yet.</p>
-} @else {
-  <div class="card-grid">
-    @for (planet of planets(); track planet.id) {
-      <div class="card planet-card" [class.card-attack]="hasIncomingAttack(planet.id)" [routerLink]="['/universe', planet.id]">
-        <div class="card-header">
-          <div class="card-title">{{ planet.name }}</div>
-          <div class="card-subtitle">{{ planet.coordinates }}</div>
+  @if (loading()) {
+    <p>{{ t('loading') }}</p>
+  } @else if (planets().length === 0) {
+    <p>{{ t('noPlanetsYet') }}</p>
+  } @else {
+    <div class="card-grid">
+      @for (planet of planets(); track planet.id) {
+        <div class="card planet-card" [class.card-attack]="hasIncomingAttack(planet.id)" [routerLink]="['/universe', planet.id]">
+          <div class="card-header">
+            <div class="card-title">{{ planet.name }}</div>
+            <div class="card-subtitle">{{ planet.coordinates }}</div>
+          </div>
+          <div class="card-content">
+            <span class="class-badge">{{ planet.planetClass }}</span>
+            @if (incomingAttackCount(planet.id) > 0) {
+              <span class="badge-attack">{{ t('attacksIncoming', { count: incomingAttackCount(planet.id) }) }}</span>
+            }
+            @if (incomingFriendlyCount(planet.id) > 0) {
+              <span class="class-badge">{{ t('incomingCount', { count: incomingFriendlyCount(planet.id) }) }}</span>
+            }
+            @if (outgoingCount(planet.id) > 0) {
+              <span class="class-badge">{{ t('outgoingCount', { count: outgoingCount(planet.id) }) }}</span>
+            }
+          </div>
         </div>
-        <div class="card-content">
-          <span class="class-badge">{{ planet.planetClass }}</span>
-          @if (incomingAttackCount(planet.id) > 0) {
-            <span class="badge-attack">⚠ {{ incomingAttackCount(planet.id) }} attack(s) incoming</span>
-          }
-          @if (incomingFriendlyCount(planet.id) > 0) {
-            <span class="class-badge">{{ incomingFriendlyCount(planet.id) }} incoming</span>
-          }
-          @if (outgoingCount(planet.id) > 0) {
-            <span class="class-badge">{{ outgoingCount(planet.id) }} outgoing</span>
-          }
-        </div>
-      </div>
-    }
-  </div>
-}
+      }
+    </div>
+  }
+</ng-container>

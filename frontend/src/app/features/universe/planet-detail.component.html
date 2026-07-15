@@ -1,50 +1,52 @@
-@if (planet(); as p) {
-  <h1>{{ p.name }}</h1>
-  <p class="coordinates">
-    {{ p.coordinates }} · {{ p.planetClass }} ·
-    <a [routerLink]="['/universe/system', p.galaxy, p.system]">View system</a> ·
-    <a [routerLink]="['/fleet']" [queryParams]="{ origin: p.id }">Manage fleet</a>
-  </p>
-}
+<ng-container *transloco="let t; prefix: 'universe.planetDetail'">
+  @if (planet(); as p) {
+    <h1>{{ p.name }}</h1>
+    <p class="coordinates">
+      {{ p.coordinates }} · {{ p.planetClass }} ·
+      <a [routerLink]="['/universe/system', p.galaxy, p.system]">{{ t('viewSystem') }}</a> ·
+      <a [routerLink]="['/fleet']" [queryParams]="{ origin: p.id }">{{ t('manageFleet') }}</a>
+    </p>
+  }
 
-@if (incomingMovements().length > 0) {
-  <h2>Incoming fleets</h2>
-  <div class="card-grid">
-    @for (movement of incomingMovements(); track movement.id) {
-      <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
-        <div class="card-header">
-          <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
-          <div class="card-subtitle">{{ missionLabel(movement.missionType) }} · {{ movement.originOwnerUsername }}</div>
+  @if (incomingMovements().length > 0) {
+    <h2>{{ t('incomingFleets') }}</h2>
+    <div class="card-grid">
+      @for (movement of incomingMovements(); track movement.id) {
+        <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
+          <div class="card-header">
+            <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
+            <div class="card-subtitle">{{ missionLabel(movement.missionType) }} · {{ movement.originOwnerUsername }}</div>
+          </div>
+          <div class="card-content">
+            <div class="progress progress-indeterminate"></div>
+            <p class="countdown">{{ t('arrivingIn', { time: remainingMovementLabel(movement) }) }}</p>
+          </div>
         </div>
-        <div class="card-content">
-          <div class="progress progress-indeterminate"></div>
-          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
-        </div>
-      </div>
-    }
-  </div>
-}
+      }
+    </div>
+  }
 
-@if (outgoingMovements().length > 0) {
-  <h2>Outgoing fleets</h2>
-  <div class="card-grid">
-    @for (movement of outgoingMovements(); track movement.id) {
-      <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
-        <div class="card-header">
-          <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
-          <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
+  @if (outgoingMovements().length > 0) {
+    <h2>{{ t('outgoingFleets') }}</h2>
+    <div class="card-grid">
+      @for (movement of outgoingMovements(); track movement.id) {
+        <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
+          <div class="card-header">
+            <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
+            <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
+          </div>
+          <div class="card-content">
+            <p class="cost">
+              {{ t('toCoordinates', { galaxy: movement.targetGalaxy, system: movement.targetSystem, position: movement.targetPosition }) }}
+            </p>
+            <div class="progress progress-indeterminate"></div>
+            <p class="countdown">{{ t('arrivingIn', { time: remainingMovementLabel(movement) }) }}</p>
+          </div>
         </div>
-        <div class="card-content">
-          <p class="cost">
-            To [{{ movement.targetGalaxy }}:{{ movement.targetSystem }}:{{ movement.targetPosition }}]
-          </p>
-          <div class="progress progress-indeterminate"></div>
-          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
-        </div>
-      </div>
-    }
-  </div>
-}
+      }
+    </div>
+  }
 
-<h2>Buildings</h2>
-<app-building-list [planetId]="planetId()" />
+  <h2>{{ t('buildings') }}</h2>
+  <app-building-list [planetId]="planetId()" />
+</ng-container>

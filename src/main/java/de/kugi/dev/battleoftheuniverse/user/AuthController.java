@@ -1,11 +1,13 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
+import de.kugi.dev.battleoftheuniverse.user.dto.UpdateLanguageRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,5 +37,10 @@ public class AuthController {
     @GetMapping("/me")
     public UserView me(@AuthenticationPrincipal AppUserPrincipal principal) {
         return userMapper.toView(principal);
+    }
+
+    @PatchMapping("/me/language")
+    public UserView updateLanguage(@AuthenticationPrincipal AppUserPrincipal principal, @Valid @RequestBody UpdateLanguageRequest request) {
+        return userService.updatePreferredLanguage(principal.getId(), request.language());
     }
 }

@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { isAttackMission } from '../../core/fleet-mission';
 import { FleetApiService } from '../fleet/fleet-api.service';
@@ -8,7 +9,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-list',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslocoDirective],
   templateUrl: './planet-list.component.html',
   styleUrl: './planet-list.component.css'
 })

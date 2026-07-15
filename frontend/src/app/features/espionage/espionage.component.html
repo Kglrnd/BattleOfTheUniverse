@@ -1,12 +1,13 @@
+<ng-container *transloco="let t; prefix: 'espionage.espionage'">
 <div class="card espionage-card">
   <div class="card-header">
-    <div class="card-title">Send an espionage probe</div>
-    <div class="card-subtitle">Probes owned: {{ probesOwned() }}</div>
+    <div class="card-title">{{ t('cardTitle') }}</div>
+    <div class="card-subtitle">{{ t('probesOwned', { value: probesOwned() }) }}</div>
   </div>
   <div class="card-content">
     @if (probesOwned() === 0) {
       <p class="field-hint">
-        No espionage probes stationed here. Build some in the Fleet page's shipyard, then send them from here.
+        {{ t('noProbesHint') }}
       </p>
     }
 
@@ -15,12 +16,12 @@
     }
     @if (sentConfirmation()) {
       <p class="cost">
-        Probe dispatched. Check <a routerLink="/messages">Messages</a> once it arrives for the report or failure notice.
+        {{ t('dispatchedPrefix') }} <a routerLink="/messages">{{ t('messagesLink') }}</a> {{ t('dispatchedSuffix') }}
       </p>
     }
 
     <div class="field">
-      <label for="probe-quantity">Probes to send</label>
+      <label for="probe-quantity">{{ t('probesToSendLabel') }}</label>
       <input
         id="probe-quantity"
         type="number"
@@ -34,55 +35,55 @@
     </div>
 
     <div class="field">
-      <span class="field-label-text">Target coordinates [galaxy:system:position]</span>
+      <span class="field-label-text">{{ t('targetCoordinatesLabel') }}</span>
       <div class="coordinate-inputs">
         <div class="coordinate-field">
-          <label class="coordinate-label" for="espionage-target-galaxy">Galaxy</label>
+          <label class="coordinate-label" for="espionage-target-galaxy">{{ t('galaxyLabel') }}</label>
           <input
             id="espionage-target-galaxy"
             #targetGalaxy
             type="number"
             class="input"
             min="1"
-            placeholder="Galaxy"
+            [attr.placeholder]="t('galaxyLabel')"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
         <div class="coordinate-field">
-          <label class="coordinate-label" for="espionage-target-system">System</label>
+          <label class="coordinate-label" for="espionage-target-system">{{ t('systemLabel') }}</label>
           <input
             id="espionage-target-system"
             #targetSystem
             type="number"
             class="input"
             min="1"
-            placeholder="System"
+            [attr.placeholder]="t('systemLabel')"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
         <div class="coordinate-field">
-          <label class="coordinate-label" for="espionage-target-position">Position</label>
+          <label class="coordinate-label" for="espionage-target-position">{{ t('positionLabel') }}</label>
           <input
             id="espionage-target-position"
             #targetPosition
             type="number"
             class="input"
             min="1"
-            placeholder="Position"
+            [attr.placeholder]="t('positionLabel')"
             (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
           />
         </div>
       </div>
-      <p class="field-hint">Enter the coordinates of another player's planet. Find one in <a routerLink="/universe/system">System view</a>.</p>
+      <p class="field-hint">{{ t('coordinatesHintPrefix') }} <a routerLink="/universe/system">{{ t('systemViewLink') }}</a>.</p>
     </div>
 
     @if (driveOptionsLoading()) {
-      <p class="field-hint">Calculating drive options…</p>
+      <p class="field-hint">{{ t('calculatingDriveOptions') }}</p>
     } @else if (driveOptionsError()) {
       <p class="field-error">{{ driveOptionsError() }}</p>
     } @else if (driveOptions().length > 0) {
       <div class="field">
-        <span class="field-label-text">Drive</span>
+        <span class="field-label-text">{{ t('driveLabel') }}</span>
         <div class="drive-options">
           @for (option of driveOptions(); track option.key) {
             <button
@@ -96,8 +97,8 @@
                 <span class="class-badge">{{ option.driveScope }}</span>
               </span>
               <span class="drive-option-row">
-                <span class="drive-option-detail">Level {{ option.level }} · x{{ option.speedMultiplier.toFixed(2) }} speed</span>
-                <span class="drive-option-eta">ETA {{ formatEta(option.etaSeconds) }}</span>
+                <span class="drive-option-detail">{{ t('driveLevelSpeed', { level: option.level, speed: option.speedMultiplier.toFixed(2) }) }}</span>
+                <span class="drive-option-eta">{{ t('driveEta', { eta: formatEta(option.etaSeconds) }) }}</span>
               </span>
             </button>
           }
@@ -112,7 +113,8 @@
       [disabled]="sending() || quantity() === 0 || !selectedDriveKey()"
       (click)="send(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
     >
-      Send probe
+      {{ t('sendProbe') }}
     </button>
   </div>
 </div>
+</ng-container>

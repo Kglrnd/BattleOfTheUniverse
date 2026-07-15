@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { BuildingListComponent } from './building-list.component';
 
 @Component({
   selector: 'app-buildings-page',
-  imports: [FormsModule, BuildingListComponent],
+  imports: [FormsModule, BuildingListComponent, TranslocoDirective],
   templateUrl: './buildings-page.component.html',
   styleUrl: './buildings-page.component.css'
 })

@@ -2,13 +2,9 @@ import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JsonFormsAbstractControl, JsonFormsModule } from '@jsonforms/angular';
 import {
-  arrayDefaultTranslations,
   ArrayLayoutProps,
-  ArrayTranslations,
   createDefaultValue,
-  defaultJsonFormsI18nState,
   findUISchema,
-  getArrayTranslations,
   isObjectArrayWithNesting,
   JsonFormsState,
   mapDispatchToArrayControlProps,
@@ -23,22 +19,23 @@ import {
   UISchemaTester,
   unsetReadonly,
 } from '@jsonforms/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 @Component({
   selector: 'ArrayLayoutRenderer',
   template: `
-    <div class="array-layout" [style.display]="hidden ? 'none' : ''">
+    <div class="array-layout" [style.display]="hidden ? 'none' : ''" *transloco="let t; prefix: 'admin.catalog'">
       <div class="array-layout-toolbar">
         <h3 class="array-layout-title">{{ label }}</h3>
         @if (error) {
           <span class="field-error">{{ error }}</span>
         }
         <button type="button" class="btn" [disabled]="!isEnabled()" (click)="add()">
-          + {{ translations.addTooltip }}
+          + {{ t('addItem') }}
         </button>
       </div>
       @if (noData) {
-        <p class="field-hint">{{ translations.noDataMessage }}</p>
+        <p class="field-hint">{{ t('noItems') }}</p>
       }
       @for (idx of items(); track idx; let first = $first; let last = $last) {
         <div class="card array-item">
@@ -46,11 +43,11 @@ import {
           @if (isEnabled()) {
             <div class="card-actions">
               @if (uischema?.options?.['showSortButtons']) {
-                <button type="button" class="btn" [disabled]="first" (click)="up(idx)">Up</button>
-                <button type="button" class="btn" [disabled]="last" (click)="down(idx)">Down</button>
+                <button type="button" class="btn" [disabled]="first" (click)="up(idx)">{{ t('moveUp') }}</button>
+                <button type="button" class="btn" [disabled]="last" (click)="down(idx)">{{ t('moveDown') }}</button>
               }
               <button type="button" class="btn" (click)="remove(idx)">
-                {{ translations.removeTooltip }}
+                {{ t('removeItem') }}
               </button>
             </div>
           }
@@ -82,14 +79,13 @@ import {
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, JsonFormsModule],
+  imports: [CommonModule, JsonFormsModule, TranslocoDirective],
 })
 export class ArrayLayoutRenderer
   extends JsonFormsAbstractControl<StatePropsOfArrayLayout>
   implements OnInit
 {
   noData = false;
-  translations: ArrayTranslations = {};
   uischemas: { tester: UISchemaTester; uischema: UISchemaElement }[] = [];
 
   private addItemFn!: (path: string, value: any) => () => void;
@@ -97,11 +93,8 @@ export class ArrayLayoutRenderer
   private moveItemDownFn: ((path: string, index: number) => () => void) | undefined;
   private removeItemsFn: ((path: string, toDelete: number[]) => () => void) | undefined;
 
-  mapToProps(state: JsonFormsState): StatePropsOfArrayLayout & { translations: ArrayTranslations } {
-    const props = mapStateToArrayLayoutProps(state, this.getOwnProps());
-    const t = state.jsonforms.i18n?.translate ?? defaultJsonFormsI18nState.translate;
-    const translations = getArrayTranslations(t, arrayDefaultTranslations, props.i18nKeyPrefix ?? '', props.label);
-    return { ...props, translations };
+  mapToProps(state: JsonFormsState): StatePropsOfArrayLayout {
+    return mapStateToArrayLayoutProps(state, this.getOwnProps());
   }
 
   items(): number[] {
@@ -136,10 +129,9 @@ export class ArrayLayoutRenderer
     this.removeItemsFn = removeItems;
   }
 
-  override mapAdditionalProps(props: ArrayLayoutProps & { translations: ArrayTranslations }): void {
+  override mapAdditionalProps(props: ArrayLayoutProps): void {
     this.noData = !props.data || props.data === 0;
     this.uischemas = props.uischemas ?? [];
-    this.translations = props.translations;
   }
 
   getProps(index: number): OwnPropsOfRenderer {

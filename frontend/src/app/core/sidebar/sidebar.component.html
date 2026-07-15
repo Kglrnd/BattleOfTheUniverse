@@ -1,56 +1,56 @@
-<nav class="sidebar-tree" aria-label="Main menu">
+<nav class="sidebar-tree" [attr.aria-label]="t('mainMenu')" *transloco="let t; prefix: 'nav'">
   @if (isAdminArea()) {
     @if (canAccessAdmin()) {
       <div class="tree-node">
-        <a class="tree-toggle" routerLink="/admin/users" routerLinkActive="active">Users</a>
+        <a class="tree-toggle" routerLink="/admin/users" routerLinkActive="active">{{ t('users') }}</a>
       </div>
 
       <div class="tree-node">
-        <a class="tree-toggle" routerLink="/admin/planets" routerLinkActive="active">Planets</a>
+        <a class="tree-toggle" routerLink="/admin/planets" routerLinkActive="active">{{ t('planets') }}</a>
       </div>
 
       @for (catalog of catalogTypes; track catalog.type) {
         <div class="tree-node">
-          <a class="tree-toggle" [routerLink]="['/admin/catalog', catalog.type]" routerLinkActive="active">{{ catalog.label }}</a>
+          <a class="tree-toggle" [routerLink]="['/admin/catalog', catalog.type]" routerLinkActive="active">{{ t(catalog.labelKey) }}</a>
         </div>
       }
     }
 
     @if (isAdmin()) {
       <div class="tree-node">
-        <a class="tree-toggle" routerLink="/admin/reset" routerLinkActive="active">Reset game</a>
+        <a class="tree-toggle" routerLink="/admin/reset" routerLinkActive="active">{{ t('resetGame') }}</a>
       </div>
     }
   } @else {
     <div class="tree-node">
       <a class="tree-toggle" routerLink="/universe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        Overview
+        {{ t('overview') }}
       </a>
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/buildings" routerLinkActive="active">Buildings</a>
+      <a class="tree-toggle" routerLink="/buildings" routerLinkActive="active">{{ t('buildings') }}</a>
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/espionage" routerLinkActive="active">Espionage</a>
+      <a class="tree-toggle" routerLink="/espionage" routerLinkActive="active">{{ t('espionage') }}</a>
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/research" routerLinkActive="active">Research</a>
+      <a class="tree-toggle" routerLink="/research" routerLinkActive="active">{{ t('research') }}</a>
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/fleet" routerLinkActive="active">Fleet</a>
+      <a class="tree-toggle" routerLink="/fleet" routerLinkActive="active">{{ t('fleet') }}</a>
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/defense" routerLinkActive="active">Defense</a>
+      <a class="tree-toggle" routerLink="/defense" routerLinkActive="active">{{ t('defense') }}</a>
     </div>
 
     <div class="tree-node">
       <a class="tree-toggle" routerLink="/messages" routerLinkActive="active">
-        Messages
+        {{ t('messages') }}
         @if (unreadCount() > 0) {
           <span class="badge-unread">{{ unreadCount() }}</span>
         }
@@ -58,18 +58,18 @@
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/universe/system" routerLinkActive="active">Galaxy</a>
+      <a class="tree-toggle" routerLink="/universe/system" routerLinkActive="active">{{ t('galaxy') }}</a>
     </div>
 
     <div class="tree-node">
-      <a class="tree-toggle" routerLink="/highscore" routerLinkActive="active">Highscore</a>
+      <a class="tree-toggle" routerLink="/highscore" routerLinkActive="active">{{ t('highscore') }}</a>
     </div>
 
     <div class="tree-node">
       <div class="tree-select-item">
-        <label class="tree-select-label" for="jump-to-planet-select">Jump to planet</label>
+        <label class="tree-select-label" for="jump-to-planet-select">{{ t('jumpToPlanet') }}</label>
         <select id="jump-to-planet-select" class="select tree-select" (change)="goToPlanet($event)">
-          <option value="" disabled selected>Jump to planet…</option>
+          <option value="" disabled selected>{{ t('jumpToPlanetPlaceholder') }}</option>
           @for (planet of planets(); track planet.id) {
             <option [value]="planet.id">{{ planet.coordinates }}</option>
           }

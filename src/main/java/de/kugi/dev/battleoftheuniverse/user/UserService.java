@@ -24,7 +24,7 @@ public class UserService {
     /** Convenience for callers outside this module, which can't see the {@code dto} package. */
     @Transactional
     public UserView register(String username, String email, String password) {
-        return register(new RegisterRequest(username, email, password));
+        return register(new RegisterRequest(username, email, password, null));
     }
 
     @Transactional
@@ -37,10 +37,22 @@ public class UserService {
         }
 
         User user = new User(request.username(), request.email(), passwordEncoder.encode(request.password()));
+        if (request.preferredLanguage() != null) {
+            user.setPreferredLanguage(request.preferredLanguage());
+        }
         user = userRepository.save(user);
 
         events.publishEvent(new UserRegistered(user.getId(), user.getUsername()));
 
+        return userMapper.toView(user);
+    }
+
+    @Transactional
+    public UserView updatePreferredLanguage(Long userId, String language) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setPreferredLanguage(language);
+        userRepository.save(user);
         return userMapper.toView(user);
     }
 

@@ -2,6 +2,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { DriveOptionView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
@@ -11,13 +12,14 @@ const PROBE_SHIP_KEY = 'espionage_probe';
 
 @Component({
   selector: 'app-espionage',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, TranslocoDirective],
   templateUrl: './espionage.component.html',
   styleUrl: './espionage.component.css'
 })
 export class EspionageComponent {
   private readonly api = inject(UniverseApiService);
   private readonly fleetApi = inject(FleetApiService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly planetId = input.required<number>();
 
@@ -73,7 +75,7 @@ export class EspionageComponent {
           this.driveOptions.set(options);
           if (options.length === 0) {
             this.selectedDriveKey.set(null);
-            this.driveOptionsError.set('No researched drive is capable of this mission.');
+            this.driveOptionsError.set(this.transloco.translate('espionage.espionage.noDriveCapable'));
             return;
           }
           const stillOffered = options.some((o) => o.key === this.selectedDriveKey());
@@ -86,7 +88,7 @@ export class EspionageComponent {
           this.driveOptionsLoading.set(false);
           this.driveOptions.set([]);
           this.selectedDriveKey.set(null);
-          this.driveOptionsError.set(err.error?.message ?? 'Could not compute drive options.');
+          this.driveOptionsError.set(err.error?.message ?? this.transloco.translate('espionage.espionage.driveOptionsFailed'));
         }
       });
   }
@@ -128,7 +130,7 @@ export class EspionageComponent {
         },
         error: (err) => {
           this.sending.set(false);
-          this.errorMessage.set(err.error?.message ?? 'Dispatch failed.');
+          this.errorMessage.set(err.error?.message ?? this.transloco.translate('espionage.espionage.dispatchFailed'));
         }
       });
   }

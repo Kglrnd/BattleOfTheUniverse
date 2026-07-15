@@ -1,24 +1,26 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { AdminPlanetsApiService } from './admin-planets-api.service';
 
 @Component({
   selector: 'app-admin-planets',
-  imports: [],
+  imports: [TranslocoDirective],
   templateUrl: './admin-planets.component.html',
   styleUrl: './admin-planets.component.css'
 })
 export class AdminPlanetsComponent {
   private readonly api = inject(AdminPlanetsApiService);
+  private readonly transloco = inject(TranslocoService);
 
   private readonly planetsResource = rxResource({ stream: () => this.api.list() });
   protected readonly planets = computed(() => this.planetsResource.value() ?? []);
   protected readonly loading = this.planetsResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.planetsResource.error() as HttpErrorResponse | undefined;
-    return error ? (error.error?.message ?? 'Failed to load planets.') : null;
+    return error ? (error.error?.message ?? this.transloco.translate('admin.planets.loadError')) : null;
   });
 
   protected readonly ownerFilter = signal('');

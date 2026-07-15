@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from '@angular/aria/menu';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { PlanetView, SystemSlotView, SystemView } from '../../core/models';
@@ -8,7 +9,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-system-view',
-  imports: [RouterLink, Menu, MenuContent, MenuItem, MenuTrigger],
+  imports: [RouterLink, Menu, MenuContent, MenuItem, MenuTrigger, TranslocoDirective],
   templateUrl: './system-view.component.html',
   styleUrl: './system-view.component.css'
 })
@@ -18,6 +19,7 @@ export class SystemViewComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly currentPlanet = inject(CurrentPlanetService);
+  private readonly transloco = inject(TranslocoService);
 
   private static readonly MIN_SYSTEM = 1;
   private static readonly MAX_SYSTEM = 100;
@@ -145,7 +147,7 @@ export class SystemViewComponent {
       next: (planet) => this.goTo(planet.galaxy, planet.system),
       error: () => {
         this.loading.set(false);
-        this.errorMessage.set('Could not determine a starting system.');
+        this.errorMessage.set(this.transloco.translate('universe.systemView.couldNotDetermineStartingSystem'));
       }
     });
   }
@@ -160,7 +162,7 @@ export class SystemViewComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.message ?? 'System not found.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('universe.systemView.systemNotFound'));
       }
     });
   }

@@ -1,301 +1,315 @@
-<h1>Fleet</h1>
+<ng-container *transloco="let t; prefix: 'fleet'">
+  <h1>{{ t('title') }}</h1>
 
-@if (errorMessage()) {
-  <p class="error">{{ errorMessage() }}</p>
-}
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
 
-<div class="field origin-field">
-  <label for="origin-select">Origin planet</label>
-  <select id="origin-select" class="select" name="origin" [ngModel]="originPlanetId()" (ngModelChange)="onOriginChange($event)">
-    @for (p of planets(); track p.id) {
-      <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
-    }
-  </select>
-</div>
+  <div class="field origin-field">
+    <label for="origin-select">{{ t('originPlanet') }}</label>
+    <select id="origin-select" class="select" name="origin" [ngModel]="originPlanetId()" (ngModelChange)="onOriginChange($event)">
+      @for (p of planets(); track p.id) {
+        <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+      }
+    </select>
+  </div>
 
-<h2>Shipyard</h2>
-@if (ships().length === 0) {
-  <p>No ships available yet.</p>
-} @else {
-  <div class="card-grid">
-    @for (ship of ships(); track ship.key) {
-      <div class="card building-card">
-        <div class="card-header">
-          <div class="card-title">{{ ship.name }}</div>
-          <div class="card-subtitle">Owned: {{ ship.owned }}</div>
+  <h2>{{ t('shipyard') }}</h2>
+  @if (ships().length === 0) {
+    <p>{{ t('noShipsYet') }}</p>
+  } @else {
+    <div class="card-grid">
+      @for (ship of ships(); track ship.key) {
+        <div class="card building-card">
+          <div class="card-header">
+            <div class="card-title">{{ shipName(ship) }}</div>
+            <div class="card-subtitle">{{ t('owned', { value: ship.owned }) }}</div>
+          </div>
+          <div class="card-content">
+            <p>{{ shipDescription(ship) }}</p>
+            @if (ship.buildActive) {
+              <div class="progress progress-indeterminate"></div>
+              <p class="countdown">
+                {{ t('buildingProgress', { quantity: ship.buildingQuantity, remaining: remainingShipLabel(ship) }) }}
+              </p>
+            } @else {
+              <p class="cost">
+                {{
+                  t('unitCost', {
+                    metal: ship.unitCost.metal,
+                    crystal: ship.unitCost.crystal,
+                    deuterium: ship.unitCost.deuterium,
+                    seconds: ship.unitBuildTimeSeconds
+                  })
+                }}
+              </p>
+            }
+            <p class="field-hint">{{ t('cargoFuel', { cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption }) }}</p>
+          </div>
+          <div class="card-actions">
+            <label class="qty-label" [for]="'ship-qty-' + ship.key">{{ t('qty') }}</label>
+            <input [id]="'ship-qty-' + ship.key" #qty type="number" class="input" min="1" value="1" style="width: 4rem" />
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
+              (click)="buildShip(ship, qty.valueAsNumber)"
+            >
+              {{ t('build') }}
+            </button>
+          </div>
         </div>
-        <div class="card-content">
-          <p>{{ ship.description }}</p>
-          @if (ship.buildActive) {
-            <div class="progress progress-indeterminate"></div>
-            <p class="countdown">
-              Building {{ ship.buildingQuantity }} — {{ remainingShipLabel(ship) }}
-            </p>
-          } @else {
-            <p class="cost">
-              Per unit: {{ ship.unitCost.metal }} metal, {{ ship.unitCost.crystal }} crystal,
-              {{ ship.unitCost.deuterium }} deuterium ({{ ship.unitBuildTimeSeconds }}s)
-            </p>
-          }
-          <p class="field-hint">Cargo: {{ ship.cargoCapacity }} · Fuel: {{ ship.hydrogenConsumption }} hydrogen/hop</p>
-        </div>
-        <div class="card-actions">
-          <label class="qty-label" [for]="'ship-qty-' + ship.key">Qty</label>
-          <input [id]="'ship-qty-' + ship.key" #qty type="number" class="input" min="1" value="1" style="width: 4rem" />
+      }
+    </div>
+  }
+
+  <h2>{{ t('dispatchMission') }}</h2>
+  <div class="card dispatch-card">
+    <div class="card-content">
+      <div class="field">
+        <span class="field-label-text">{{ t('missionType') }}</span>
+        <div class="mission-type-toggle">
           <button
             type="button"
-            class="btn btn-primary"
-            [disabled]="ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
-            (click)="buildShip(ship, qty.valueAsNumber)"
+            class="btn"
+            [class.btn-primary]="missionType() === 'COLONIZE'"
+            (click)="setMissionType('COLONIZE')"
           >
-            Build
+            {{ t('missionColonize') }}
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="missionType() === 'STATION'"
+            (click)="setMissionType('STATION')"
+          >
+            {{ t('missionStation') }}
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="missionType() === 'ATTACK'"
+            (click)="setMissionType('ATTACK')"
+          >
+            {{ t('missionAttack') }}
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="missionType() === 'TRANSPORT'"
+            (click)="setMissionType('TRANSPORT')"
+          >
+            {{ t('missionTransport') }}
           </button>
         </div>
       </div>
-    }
-  </div>
-}
 
-<h2>Dispatch mission</h2>
-<div class="card dispatch-card">
-  <div class="card-content">
-    <div class="field">
-      <span class="field-label-text">Mission type</span>
-      <div class="mission-type-toggle">
-        <button
-          type="button"
-          class="btn"
-          [class.btn-primary]="missionType() === 'COLONIZE'"
-          (click)="setMissionType('COLONIZE')"
-        >
-          Colonize
-        </button>
-        <button
-          type="button"
-          class="btn"
-          [class.btn-primary]="missionType() === 'STATION'"
-          (click)="setMissionType('STATION')"
-        >
-          Station
-        </button>
-        <button
-          type="button"
-          class="btn"
-          [class.btn-primary]="missionType() === 'ATTACK'"
-          (click)="setMissionType('ATTACK')"
-        >
-          Attack
-        </button>
-        <button
-          type="button"
-          class="btn"
-          [class.btn-primary]="missionType() === 'TRANSPORT'"
-          (click)="setMissionType('TRANSPORT')"
-        >
-          Transport
-        </button>
+      <div class="field">
+        <span class="field-label-text">{{ t('title') }}</span>
+        @if (ships().length === 0) {
+          <p class="field-hint">{{ t('noShipsOnPlanet') }}</p>
+        } @else {
+          <div class="fleet-manifest">
+            @for (ship of ships(); track ship.key) {
+              <div class="manifest-row">
+                <span class="manifest-ship-name">{{ shipName(ship) }}</span>
+                <span class="manifest-ship-owned">{{
+                  t('manifestShipInfo', { owned: ship.owned, cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption })
+                }}</span>
+                <input
+                  [id]="'manifest-qty-' + ship.key"
+                  type="number"
+                  class="input manifest-qty-input"
+                  min="0"
+                  [max]="ship.owned"
+                  [value]="manifestQuantities()[ship.key] ?? 0"
+                  [disabled]="ship.owned === 0"
+                  (change)="
+                    updateManifestQuantity(
+                      ship.key,
+                      $event,
+                      targetGalaxy.valueAsNumber,
+                      targetSystem.valueAsNumber,
+                      targetPosition.valueAsNumber
+                    )
+                  "
+                />
+              </div>
+            }
+          </div>
+        }
       </div>
-    </div>
 
-    <div class="field">
-      <span class="field-label-text">Fleet</span>
-      @if (ships().length === 0) {
-        <p class="field-hint">No ships available on this planet yet.</p>
-      } @else {
-        <div class="fleet-manifest">
-          @for (ship of ships(); track ship.key) {
-            <div class="manifest-row">
-              <span class="manifest-ship-name">{{ ship.name }}</span>
-              <span class="manifest-ship-owned">owned: {{ ship.owned }} · cargo: {{ ship.cargoCapacity }} · fuel: {{ ship.hydrogenConsumption }}/hop</span>
-              <input
-                [id]="'manifest-qty-' + ship.key"
-                type="number"
-                class="input manifest-qty-input"
-                min="0"
-                [max]="ship.owned"
-                [value]="manifestQuantities()[ship.key] ?? 0"
-                [disabled]="ship.owned === 0"
-                (change)="
-                  updateManifestQuantity(
-                    ship.key,
-                    $event,
-                    targetGalaxy.valueAsNumber,
-                    targetSystem.valueAsNumber,
-                    targetPosition.valueAsNumber
-                  )
-                "
-              />
-            </div>
-          }
+      @if (missionType() === 'STATION' || missionType() === 'TRANSPORT') {
+        <div class="field">
+          <label for="dispatch-target-planet">{{ t('targetPlanet') }}</label>
+          <select
+            id="dispatch-target-planet"
+            class="select"
+            (change)="onTargetPlanetChange($event, targetGalaxy, targetSystem, targetPosition)"
+          >
+            <option value="" disabled selected>{{ t('choosePlanetPlaceholder') }}</option>
+            @for (p of otherPlanets(); track p.id) {
+              <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+            }
+          </select>
         </div>
       }
-    </div>
 
-    @if (missionType() === 'STATION' || missionType() === 'TRANSPORT') {
-      <div class="field">
-        <label for="dispatch-target-planet">Target planet</label>
-        <select
-          id="dispatch-target-planet"
-          class="select"
-          (change)="onTargetPlanetChange($event, targetGalaxy, targetSystem, targetPosition)"
-        >
-          <option value="" disabled selected>Choose one of your planets…</option>
-          @for (p of otherPlanets(); track p.id) {
-            <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
-          }
-        </select>
-      </div>
-    }
-
-    @if (missionType() === 'TRANSPORT') {
-      <div class="field">
-        <span class="field-label-text">Cargo ({{ cargoUsed() }} / {{ fleetCargoCapacity() }} capacity used)</span>
-        <div class="fleet-manifest">
-          @for (resourceKey of transportableResources; track resourceKey) {
-            <div class="manifest-row">
-              <span class="manifest-ship-name">{{ resourceKey }}</span>
-              <span class="manifest-ship-owned">on hand: {{ resourceOnHand(resourceKey) }}</span>
-              <input
-                [id]="'cargo-qty-' + resourceKey"
-                type="number"
-                class="input manifest-qty-input"
-                min="0"
-                [max]="resourceOnHand(resourceKey)"
-                [value]="cargoQuantities()[resourceKey] ?? 0"
-                [disabled]="resourceOnHand(resourceKey) === 0"
-                (change)="updateCargoQuantity(resourceKey, $event)"
-              />
-            </div>
-          }
+      @if (missionType() === 'TRANSPORT') {
+        <div class="field">
+          <span class="field-label-text">{{ t('cargoCapacityUsed', { used: cargoUsed(), capacity: fleetCargoCapacity() }) }}</span>
+          <div class="fleet-manifest">
+            @for (resourceKey of transportableResources; track resourceKey) {
+              <div class="manifest-row">
+                <span class="manifest-ship-name">{{ resourceKey }}</span>
+                <span class="manifest-ship-owned">{{ t('onHand', { amount: resourceOnHand(resourceKey) }) }}</span>
+                <input
+                  [id]="'cargo-qty-' + resourceKey"
+                  type="number"
+                  class="input manifest-qty-input"
+                  min="0"
+                  [max]="resourceOnHand(resourceKey)"
+                  [value]="cargoQuantities()[resourceKey] ?? 0"
+                  [disabled]="resourceOnHand(resourceKey) === 0"
+                  (change)="updateCargoQuantity(resourceKey, $event)"
+                />
+              </div>
+            }
+          </div>
         </div>
-      </div>
-    }
-
-    <div class="field">
-      <span class="field-label-text">Target coordinates [galaxy:system:position]</span>
-      <div class="coordinate-inputs">
-        <div class="coordinate-field">
-          <label class="coordinate-label" for="target-galaxy">Galaxy</label>
-          <input
-            id="target-galaxy"
-            #targetGalaxy
-            type="number"
-            class="input"
-            min="1"
-            placeholder="Galaxy"
-            [value]="prefillGalaxy() ?? ''"
-            [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
-            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
-          />
-        </div>
-        <div class="coordinate-field">
-          <label class="coordinate-label" for="target-system">System</label>
-          <input
-            id="target-system"
-            #targetSystem
-            type="number"
-            class="input"
-            min="1"
-            placeholder="System"
-            [value]="prefillSystem() ?? ''"
-            [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
-            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
-          />
-        </div>
-        <div class="coordinate-field">
-          <label class="coordinate-label" for="target-position">Position</label>
-          <input
-            id="target-position"
-            #targetPosition
-            type="number"
-            class="input"
-            min="1"
-            placeholder="Position"
-            [value]="prefillPosition() ?? ''"
-            [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
-            (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
-          />
-        </div>
-      </div>
-      @if (missionType() === 'COLONIZE') {
-        <p class="field-hint">
-          Needs at least one colony ship in the fleet. Any other ships sent along are stationed at the new colony once it's founded.
-          Find a free slot in <a routerLink="/universe/system">System view</a>.
-        </p>
-      } @else if (missionType() === 'ATTACK') {
-        <p class="field-hint">
-          Enter the coordinates of another player's planet. On arrival the fleet battles the target's defenses; survivors
-          return home and both sides receive a battle report.
-        </p>
-      } @else if (missionType() === 'TRANSPORT') {
-        <p class="field-hint">Delivers the loaded cargo to one of your own planets. Ships are not consumed - they're stationed at the destination.</p>
       }
-    </div>
 
-    @if (driveOptionsLoading()) {
-      <p class="field-hint">Calculating drive options…</p>
-    } @else if (driveOptionsError()) {
-      <p class="field-error">{{ driveOptionsError() }}</p>
-    } @else if (driveOptions().length > 0) {
       <div class="field">
-        <span class="field-label-text">Drive</span>
-        <div class="drive-options">
-          @for (option of driveOptions(); track option.key) {
-            <button
-              type="button"
-              class="drive-option"
-              [class.drive-option-selected]="selectedDriveKey() === option.key"
-              (click)="selectDrive(option.key)"
-            >
-              <span class="drive-option-row">
-                <span class="drive-option-name">{{ option.name }}</span>
-                <span class="class-badge">{{ option.driveScope }}</span>
-              </span>
-              <span class="drive-option-row">
-                <span class="drive-option-detail">Level {{ option.level }} · x{{ option.speedMultiplier.toFixed(2) }} speed</span>
-                <span class="drive-option-eta">ETA {{ formatEta(option.etaSeconds) }} · Fuel {{ option.fuelCost }} hydrogen</span>
-              </span>
-            </button>
-          }
+        <span class="field-label-text">{{ t('targetCoordinates') }}</span>
+        <div class="coordinate-inputs">
+          <div class="coordinate-field">
+            <label class="coordinate-label" for="target-galaxy">{{ t('galaxy') }}</label>
+            <input
+              id="target-galaxy"
+              #targetGalaxy
+              type="number"
+              class="input"
+              min="1"
+              [attr.placeholder]="t('galaxy')"
+              [value]="prefillGalaxy() ?? ''"
+              [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
+              (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            />
+          </div>
+          <div class="coordinate-field">
+            <label class="coordinate-label" for="target-system">{{ t('system') }}</label>
+            <input
+              id="target-system"
+              #targetSystem
+              type="number"
+              class="input"
+              min="1"
+              [attr.placeholder]="t('system')"
+              [value]="prefillSystem() ?? ''"
+              [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
+              (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            />
+          </div>
+          <div class="coordinate-field">
+            <label class="coordinate-label" for="target-position">{{ t('position') }}</label>
+            <input
+              id="target-position"
+              #targetPosition
+              type="number"
+              class="input"
+              min="1"
+              [attr.placeholder]="t('position')"
+              [value]="prefillPosition() ?? ''"
+              [readOnly]="missionType() === 'STATION' || missionType() === 'TRANSPORT'"
+              (change)="refreshDriveOptions(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+            />
+          </div>
         </div>
-      </div>
-    }
-  </div>
-  <div class="card-actions">
-    <button
-      type="button"
-      class="btn btn-primary"
-      [disabled]="dispatching() || currentManifest().length === 0 || !selectedDriveKey()"
-      (click)="dispatch(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
-    >
-      Dispatch
-    </button>
-  </div>
-</div>
-
-<h2>Active fleet movements</h2>
-@if (movements().length === 0) {
-  <p>No fleets currently in flight.</p>
-} @else {
-  <div class="card-grid">
-    @for (movement of movements(); track movement.id) {
-      <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
-        <div class="card-header">
-          <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
-          <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
-        </div>
-        <div class="card-content">
-          <p class="cost">
-            From {{ originLabel(movement.originPlanetId) }} to
-            [{{ movement.targetGalaxy }}:{{ movement.targetSystem }}:{{ movement.targetPosition }}]
+        @if (missionType() === 'COLONIZE') {
+          <p class="field-hint">
+            {{ t('colonizeHintPart1') }}<a routerLink="/universe/system">{{ t('systemView') }}</a>.
           </p>
-          @if (movement.cargo.length > 0) {
-            <p class="cost">Cargo: {{ formatCargo(movement.cargo) }}</p>
-          }
-          <div class="progress progress-indeterminate"></div>
-          <p class="countdown">Arriving in {{ remainingMovementLabel(movement) }}</p>
-        </div>
+        } @else if (missionType() === 'ATTACK') {
+          <p class="field-hint">
+            {{ t('attackHint') }}
+          </p>
+        } @else if (missionType() === 'TRANSPORT') {
+          <p class="field-hint">{{ t('transportHint') }}</p>
+        }
       </div>
-    }
+
+      @if (driveOptionsLoading()) {
+        <p class="field-hint">{{ t('calculatingDriveOptions') }}</p>
+      } @else if (driveOptionsError()) {
+        <p class="field-error">{{ driveOptionsError() }}</p>
+      } @else if (driveOptions().length > 0) {
+        <div class="field">
+          <span class="field-label-text">{{ t('drive') }}</span>
+          <div class="drive-options">
+            @for (option of driveOptions(); track option.key) {
+              <button
+                type="button"
+                class="drive-option"
+                [class.drive-option-selected]="selectedDriveKey() === option.key"
+                (click)="selectDrive(option.key)"
+              >
+                <span class="drive-option-row">
+                  <span class="drive-option-name">{{ option.name }}</span>
+                  <span class="class-badge">{{ option.driveScope }}</span>
+                </span>
+                <span class="drive-option-row">
+                  <span class="drive-option-detail">{{ t('driveLevel', { level: option.level, speed: option.speedMultiplier.toFixed(2) }) }}</span>
+                  <span class="drive-option-eta">{{ t('driveEta', { eta: formatEta(option.etaSeconds), fuel: option.fuelCost }) }}</span>
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    <div class="card-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="dispatching() || currentManifest().length === 0 || !selectedDriveKey()"
+        (click)="dispatch(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
+      >
+        {{ t('dispatch') }}
+      </button>
+    </div>
   </div>
-}
+
+  <h2>{{ t('activeFleetMovements') }}</h2>
+  @if (movements().length === 0) {
+    <p>{{ t('noFleetsInFlight') }}</p>
+  } @else {
+    <div class="card-grid">
+      @for (movement of movements(); track movement.id) {
+        <div class="card" [class.card-attack]="isAttackMission(movement.missionType)">
+          <div class="card-header">
+            <div class="card-title">{{ formatShipManifest(movement.ships) }}</div>
+            <div class="card-subtitle">{{ missionLabel(movement.missionType) }}</div>
+          </div>
+          <div class="card-content">
+            <p class="cost">
+              {{
+                t('fromTo', {
+                  origin: originLabel(movement.originPlanetId),
+                  galaxy: movement.targetGalaxy,
+                  system: movement.targetSystem,
+                  position: movement.targetPosition
+                })
+              }}
+            </p>
+            @if (movement.cargo.length > 0) {
+              <p class="cost">{{ t('cargoLine', { cargo: formatCargo(movement.cargo) }) }}</p>
+            }
+            <div class="progress progress-indeterminate"></div>
+            <p class="countdown">{{ t('arrivingIn', { remaining: remainingMovementLabel(movement) }) }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</ng-container>

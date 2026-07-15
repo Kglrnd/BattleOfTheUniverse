@@ -1,14 +1,14 @@
-<div class="auth-card">
-  <h1>Log in</h1>
+<div class="auth-card" *transloco="let t; prefix: 'auth.login'">
+  <h1>{{ t('title') }}</h1>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
     <div class="field">
-      <label for="login-username">Username</label>
+      <label for="login-username">{{ t('username') }}</label>
       <input class="input" id="login-username" formControlName="username" autocomplete="username" />
     </div>
 
     <div class="field">
-      <label for="login-password">Password</label>
+      <label for="login-password">{{ t('password') }}</label>
       <input class="input" id="login-password" type="password" formControlName="password" autocomplete="current-password" />
     </div>
 
@@ -17,9 +17,9 @@
     }
 
     <button class="btn btn-primary" type="submit" [disabled]="form.invalid || submitting()">
-      Log in
+      {{ t('submit') }}
     </button>
   </form>
 
-  <p class="switch">No account yet? <a routerLink="/register">Register</a></p>
+  <p class="switch">{{ t('noAccountYet') }} <a routerLink="/register">{{ t('registerLink') }}</a></p>
 </div>

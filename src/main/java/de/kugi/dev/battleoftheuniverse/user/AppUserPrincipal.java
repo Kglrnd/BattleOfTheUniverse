@@ -25,6 +25,10 @@ public class AppUserPrincipal implements UserDetails {
         return user.getRole();
     }
 
+    public String getPreferredLanguage() {
+        return user.getPreferredLanguage();
+    }
+
     @Override
     public List<GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));

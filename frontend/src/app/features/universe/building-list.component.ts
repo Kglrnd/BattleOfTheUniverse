@@ -1,20 +1,23 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
+import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown } from '../../core/countdown';
 import { BuildingView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-building-list',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, TranslocoDirective],
   templateUrl: './building-list.component.html',
   styleUrl: './building-list.component.css'
 })
 export class BuildingListComponent {
   private readonly api = inject(UniverseApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   readonly planetId = input.required<number>();
 
@@ -55,7 +58,7 @@ export class BuildingListComponent {
       },
       error: (err) => {
         this.upgrading.set(null);
-        this.errorMessage.set(err.error?.message ?? 'Upgrade failed.');
+        this.errorMessage.set(err.error?.message ?? this.transloco.translate('universe.buildingList.upgradeFailed'));
       }
     });
   }
@@ -63,6 +66,9 @@ export class BuildingListComponent {
   hasActiveConstruction(): boolean {
     return (this.buildingsResource.value() ?? []).some((b) => b.constructionActive);
   }
+
+  protected readonly buildingName = (b: BuildingView) => catalogName(this.transloco, 'buildings', b);
+  protected readonly buildingDescription = (b: BuildingView) => catalogDescription(this.transloco, 'buildings', b);
 
   remainingLabel(building: BuildingView): string {
     this.clockTick();

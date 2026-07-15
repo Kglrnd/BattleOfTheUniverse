@@ -1,47 +1,53 @@
-@if (errorMessage()) {
-  <p class="error">{{ errorMessage() }}</p>
-}
-
-<div class="card-grid">
-  @for (building of buildingsResource.value() ?? []; track building.key) {
-    <div class="card building-card" [class.card-locked]="!building.unlocked">
-      <div class="card-header">
-        <div class="card-title">{{ building.name }}</div>
-        <div class="card-subtitle">Level {{ building.level }}</div>
-      </div>
-      <div class="card-content">
-        <p>{{ building.description }}</p>
-        @if (building.researchEfficiency != null) {
-          <p class="research-efficiency">Research efficiency: {{ building.researchEfficiency | number: '1.2-2' }}%</p>
-        }
-        @if (!building.unlocked) {
-          <ul class="requirement-list">
-            @for (requirement of building.missingRequirements; track requirement.label) {
-              <li>Requires {{ requirement.label }} level {{ requirement.requiredLevel }} (currently {{ requirement.currentLevel }})</li>
-            }
-          </ul>
-        } @else if (building.constructionActive) {
-          <div class="progress progress-indeterminate"></div>
-          <p class="countdown">Upgrading to level {{ building.level + 1 }} — {{ remainingLabel(building) }}</p>
-        } @else {
-          <p class="cost">
-            Next level: {{ building.nextLevelCost.metal }} metal,
-            {{ building.nextLevelCost.crystal }} crystal,
-            {{ building.nextLevelCost.deuterium }} deuterium
-            ({{ building.nextLevelBuildTimeSeconds }}s)
-          </p>
-        }
-      </div>
-      <div class="card-actions">
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!building.unlocked || building.constructionActive || hasActiveConstruction() || upgrading() === building.key"
-          (click)="upgrade(building)"
-        >
-          Upgrade
-        </button>
-      </div>
-    </div>
+<ng-container *transloco="let t; prefix: 'universe.buildingList'">
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
   }
-</div>
+
+  <div class="card-grid">
+    @for (building of buildingsResource.value() ?? []; track building.key) {
+      <div class="card building-card" [class.card-locked]="!building.unlocked">
+        <div class="card-header">
+          <div class="card-title">{{ buildingName(building) }}</div>
+          <div class="card-subtitle">{{ t('level', { level: building.level }) }}</div>
+        </div>
+        <div class="card-content">
+          <p>{{ buildingDescription(building) }}</p>
+          @if (building.researchEfficiency != null) {
+            <p class="research-efficiency">{{ t('researchEfficiency', { value: (building.researchEfficiency | number: '1.2-2') }) }}</p>
+          }
+          @if (!building.unlocked) {
+            <ul class="requirement-list">
+              @for (requirement of building.missingRequirements; track requirement.label) {
+                <li>{{ t('requires', { label: requirement.label, requiredLevel: requirement.requiredLevel, currentLevel: requirement.currentLevel }) }}</li>
+              }
+            </ul>
+          } @else if (building.constructionActive) {
+            <div class="progress progress-indeterminate"></div>
+            <p class="countdown">{{ t('upgradingToLevel', { level: building.level + 1, time: remainingLabel(building) }) }}</p>
+          } @else {
+            <p class="cost">
+              {{
+                t('nextLevelCost', {
+                  metal: building.nextLevelCost.metal,
+                  crystal: building.nextLevelCost.crystal,
+                  deuterium: building.nextLevelCost.deuterium,
+                  seconds: building.nextLevelBuildTimeSeconds
+                })
+              }}
+            </p>
+          }
+        </div>
+        <div class="card-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!building.unlocked || building.constructionActive || hasActiveConstruction() || upgrading() === building.key"
+            (click)="upgrade(building)"
+          >
+            {{ t('upgrade') }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</ng-container>

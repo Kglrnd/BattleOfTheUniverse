@@ -16,6 +16,15 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+  messages:
+    basename: messages
+    encoding: UTF-8
+    # Without this, Spring falls back to the JVM's default system locale (not our
+    # base/English bundle) when a specific-language bundle is missing for a given
+    # locale - on a server whose system locale happens to be German, that would
+    # silently render messages in German even for users who prefer English.
+    fallback-to-system-locale: false
+
 server:
   port: 8080
 

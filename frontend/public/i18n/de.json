@@ -1,0 +1,441 @@
+{
+  "common": {
+    "loading": "Wird geladen…",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "header": {
+    "brand": "Battle of the Universe",
+    "playerView": "Spieler-Ansicht",
+    "adminView": "Admin-Ansicht",
+    "logout": "Abmelden",
+    "login": "Anmelden",
+    "register": "Registrieren"
+  },
+  "nav": {
+    "mainMenu": "Hauptmenü",
+    "users": "Benutzer",
+    "planets": "Planeten",
+    "catalogBuildings": "Gebäude",
+    "catalogShips": "Schiffe",
+    "catalogTechnologies": "Technologien",
+    "catalogDefenses": "Verteidigungsanlagen",
+    "resetGame": "Spiel zurücksetzen",
+    "overview": "Übersicht",
+    "buildings": "Gebäude",
+    "espionage": "Spionage",
+    "research": "Forschung",
+    "fleet": "Flotte",
+    "defense": "Verteidigung",
+    "messages": "Nachrichten",
+    "galaxy": "Galaxie",
+    "highscore": "Bestenliste",
+    "jumpToPlanet": "Zu Planet springen",
+    "jumpToPlanetPlaceholder": "Zu Planet springen…"
+  },
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "username": "Benutzername",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "noAccountYet": "Noch kein Konto?",
+      "registerLink": "Registrieren",
+      "invalidCredentials": "Ungültiger Benutzername oder Passwort."
+    },
+    "register": {
+      "title": "Registrieren",
+      "username": "Benutzername",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Konto erstellen",
+      "alreadyHaveAccount": "Bereits ein Konto?",
+      "loginLink": "Anmelden",
+      "registrationFailed": "Registrierung fehlgeschlagen."
+    }
+  },
+  "admin": {
+    "users": {
+      "title": "Benutzer",
+      "loading": "Lädt…",
+      "noUsers": "Keine Benutzer gefunden.",
+      "colUsername": "Benutzername",
+      "colEmail": "E-Mail",
+      "colRole": "Rolle",
+      "colActive": "Aktiv",
+      "colCreated": "Erstellt",
+      "ownRoleTitle": "Du kannst deine eigene Rolle nicht ändern",
+      "onlyAdminsTitle": "Nur Admins können Rollen ändern",
+      "yes": "Ja",
+      "no": "Nein",
+      "loadError": "Benutzer konnten nicht geladen werden.",
+      "changeRoleError": "Rolle konnte nicht geändert werden."
+    },
+    "planets": {
+      "title": "Planeten",
+      "loading": "Lädt…",
+      "loadError": "Planeten konnten nicht geladen werden.",
+      "filterOwnerLabel": "Besitzer",
+      "filterOwnerPlaceholder": "Benutzername",
+      "filterNameLabel": "Planetenname",
+      "filterNamePlaceholder": "Name",
+      "filterGalaxyLabel": "Galaxie",
+      "filterGalaxyPlaceholder": "Beliebig",
+      "filterSystemLabel": "System",
+      "filterSystemPlaceholder": "Beliebig",
+      "filterHomeworldLabel": "Nur Heimatwelten",
+      "clearFilters": "Filter zurücksetzen",
+      "resultCount": "{{count}} von {{total}} Planeten",
+      "noMatch": "Keine Planeten entsprechen diesen Filtern.",
+      "colName": "Name",
+      "colOwner": "Besitzer",
+      "colCoordinates": "Koordinaten",
+      "colClass": "Klasse",
+      "colHomeworld": "Heimatwelt",
+      "colCreated": "Erstellt",
+      "yes": "Ja"
+    },
+    "reset": {
+      "title": "Spiel zurücksetzen",
+      "dangerZone": "Gefahrenzone",
+      "introText": "Das Zurücksetzen des Spiels wird für jeden registrierten Benutzer:",
+      "liDeletePlanets": "Jeden kolonisierten Planeten löschen",
+      "liMoveHomeworld": "Jede Heimatwelt an eine neue zufällige Position verschieben",
+      "liResetProgress": "Gebäude, Ressourcen und Forschung auf einen Neustart zurücksetzen",
+      "liClearFleet": "Jedes stationierte Schiff und jede Flottenbewegung löschen",
+      "liDeleteMessages": "Alle Nachrichten löschen",
+      "fieldHint": "Benutzerkonten, Benutzernamen und Passwörter sind nicht betroffen — nur der Spielfortschritt.",
+      "resetting": "Wird zurückgesetzt…",
+      "resetGame": "Spiel zurücksetzen",
+      "confirmMessage": "Dies löscht die Gebäude, Ressourcen, Forschung, Flotte und Nachrichten jedes Spielers, entfernt alle Kolonien und verschiebt jede Heimatwelt an eine neue zufällige Position. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
+      "doneMessage": "Das Spiel wurde zurückgesetzt. Jeder Spieler startet jetzt neu.",
+      "resetError": "Zurücksetzen fehlgeschlagen."
+    },
+    "catalog": {
+      "title": "Katalog-Editor",
+      "navBuildings": "Gebäude",
+      "navShips": "Schiffe",
+      "navTechnologies": "Technologien",
+      "loading": "Lädt…",
+      "save": "Speichern",
+      "saved": "Gespeichert.",
+      "saveFailed": "Speichern fehlgeschlagen.",
+      "addItem": "Hinzufügen",
+      "removeItem": "Entfernen",
+      "noItems": "Noch keine Einträge.",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten"
+    }
+  },
+  "defense": {
+    "defensePage": {
+      "title": "Verteidigung",
+      "noPlanetHint": "Du benötigst mindestens einen Planeten, um Verteidigungsanlagen zu bauen.",
+      "planetLabel": "Planet"
+    },
+    "defense": {
+      "owned": "Vorhanden: {{value}}",
+      "defenseValue": "Verteidigungswert {{value}}",
+      "requirementText": "Benötigt {{label}} Stufe {{requiredLevel}} (aktuell {{currentLevel}})",
+      "buildingProgress": "Baue {{quantity}} — {{remaining}}",
+      "unitCost": "Pro Einheit: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{buildTime}}s)",
+      "qty": "Anzahl",
+      "build": "Bauen",
+      "buildFailed": "Bau fehlgeschlagen."
+    }
+  },
+  "espionage": {
+    "espionagePage": {
+      "title": "Spionage",
+      "noPlanetHint": "Du benötigst mindestens einen Planeten, um Spionagesonden zu senden.",
+      "planetLabel": "Planet"
+    },
+    "espionage": {
+      "cardTitle": "Spionagesonde senden",
+      "probesOwned": "Vorhandene Sonden: {{value}}",
+      "noProbesHint": "Hier sind keine Spionagesonden stationiert. Baue welche in der Flotten-Werft und sende sie von hier aus.",
+      "probesToSendLabel": "Zu sendende Sonden",
+      "targetCoordinatesLabel": "Zielkoordinaten [Galaxie:System:Position]",
+      "galaxyLabel": "Galaxie",
+      "systemLabel": "System",
+      "positionLabel": "Position",
+      "coordinatesHintPrefix": "Gib die Koordinaten des Planeten eines anderen Spielers ein. Finde einen in der",
+      "systemViewLink": "Systemansicht",
+      "calculatingDriveOptions": "Berechne Antriebsoptionen…",
+      "driveLabel": "Antrieb",
+      "driveLevelSpeed": "Stufe {{level}} · x{{speed}} Geschwindigkeit",
+      "driveEta": "ETA {{eta}}",
+      "sendProbe": "Sonde senden",
+      "dispatchedPrefix": "Sonde losgeschickt. Sieh unter",
+      "messagesLink": "Nachrichten",
+      "dispatchedSuffix": "nach, sobald sie ankommt, um den Bericht oder Fehlschlag zu sehen.",
+      "noDriveCapable": "Kein erforschter Antrieb ist für diese Mission geeignet.",
+      "driveOptionsFailed": "Antriebsoptionen konnten nicht berechnet werden.",
+      "dispatchFailed": "Versand fehlgeschlagen."
+    }
+  },
+  "fleet": {
+    "title": "Flotte",
+    "originPlanet": "Ausgangsplanet",
+    "shipyard": "Werft",
+    "noShipsYet": "Noch keine Schiffe verfügbar.",
+    "owned": "Vorhanden: {{value}}",
+    "buildingProgress": "Baue {{quantity}} — {{remaining}}",
+    "unitCost": "Pro Einheit: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{seconds}}s)",
+    "cargoFuel": "Ladung: {{cargo}} · Treibstoff: {{fuel}} Wasserstoff/Sprung",
+    "qty": "Anzahl",
+    "build": "Bauen",
+    "dispatchMission": "Mission abschicken",
+    "missionType": "Missionstyp",
+    "missionColonize": "Kolonisieren",
+    "missionStation": "Stationieren",
+    "missionAttack": "Angreifen",
+    "missionTransport": "Transport",
+    "noShipsOnPlanet": "Auf diesem Planeten sind noch keine Schiffe verfügbar.",
+    "manifestShipInfo": "vorhanden: {{owned}} · Ladung: {{cargo}} · Treibstoff: {{fuel}}/Sprung",
+    "targetPlanet": "Zielplanet",
+    "choosePlanetPlaceholder": "Wähle einen deiner Planeten…",
+    "cargoCapacityUsed": "Ladung ({{used}} / {{capacity}} Kapazität genutzt)",
+    "onHand": "vorrätig: {{amount}}",
+    "targetCoordinates": "Zielkoordinaten [Galaxie:System:Position]",
+    "galaxy": "Galaxie",
+    "system": "System",
+    "position": "Position",
+    "colonizeHintPart1": "Benötigt mindestens ein Kolonieschiff in der Flotte. Alle anderen mitgeschickten Schiffe werden nach der Gründung an der neuen Kolonie stationiert. Finde einen freien Slot in ",
+    "systemView": "Systemansicht",
+    "attackHint": "Gib die Koordinaten des Planeten eines anderen Spielers ein. Bei Ankunft kämpft die Flotte gegen die Verteidigung des Ziels; Überlebende kehren zurück und beide Seiten erhalten einen Kampfbericht.",
+    "transportHint": "Liefert die geladene Fracht zu einem deiner eigenen Planeten. Schiffe werden nicht verbraucht - sie werden am Zielort stationiert.",
+    "calculatingDriveOptions": "Berechne Antriebsoptionen…",
+    "drive": "Antrieb",
+    "driveLevel": "Stufe {{level}} · x{{speed}} Geschwindigkeit",
+    "driveEta": "ETA {{eta}} · Treibstoff {{fuel}} Wasserstoff",
+    "dispatch": "Abschicken",
+    "activeFleetMovements": "Aktive Flottenbewegungen",
+    "noFleetsInFlight": "Aktuell keine Flotten unterwegs",
+    "fromTo": "Von {{origin}} nach [{{galaxy}}:{{system}}:{{position}}]",
+    "cargoLine": "Ladung: {{cargo}}",
+    "arrivingIn": "Ankunft in {{remaining}}",
+    "noDriveCapable": "Kein erforschter Antrieb ist für diese Mission geeignet.",
+    "shipyardOrderFailed": "Werftauftrag fehlgeschlagen.",
+    "dispatchFailed": "Abschicken fehlgeschlagen.",
+    "driveOptionsFailed": "Antriebsoptionen konnten nicht berechnet werden."
+  },
+  "messages": {
+    "title": "Nachrichten",
+    "inbox": "Posteingang",
+    "sent": "Gesendet",
+    "compose": "Verfassen",
+    "cancel": "Abbrechen",
+    "recipientLabel": "An (Benutzername)",
+    "subjectLabel": "Betreff",
+    "messageLabel": "Nachricht",
+    "send": "Senden",
+    "noMessages": "Keine Nachrichten.",
+    "from": "Von",
+    "to": "An",
+    "couldNotSend": "Nachricht konnte nicht gesendet werden."
+  },
+  "highscore": {
+    "title": "Bestenliste",
+    "loading": "Wird geladen…",
+    "noPlayersYet": "Noch keine Spieler in der Bestenliste.",
+    "rank": "Platz",
+    "player": "Spieler",
+    "score": "Punkte",
+    "loadingPlanets": "Planeten werden geladen…",
+    "noPlanetsFound": "Keine Planeten gefunden.",
+    "rankHintPrefix": "Du bist auf Platz",
+    "rankHintSuffix": "Häng dich rein, um in die Top 100 aufzusteigen!",
+    "failedToLoad": "Bestenliste konnte nicht geladen werden."
+  },
+  "research": {
+    "title": "Forschung",
+    "activePlanetHeading": "Aktiver Forschungsplanet",
+    "needPlanet": "Du benötigst mindestens einen Planeten, von dem aus geforscht werden kann.",
+    "researchEfficiency": "Forschungseffizienz",
+    "noResearchLab": "Hier wurde noch kein Forschungslabor gebaut.",
+    "researchLabLevel": "Forschungslabor Stufe",
+    "active": "Aktiv",
+    "activate": "Aktivieren",
+    "selectActivePlanet": "Wähle oben einen aktiven Forschungsplaneten aus, bevor du mit der Forschung beginnst.",
+    "level": "Stufe",
+    "requires": "Benötigt",
+    "currently": "aktuell",
+    "researchingLevel": "Erforsche Stufe",
+    "nextLevel": "Nächste Stufe",
+    "metal": "Metall",
+    "crystal": "Kristall",
+    "deuterium": "Deuterium",
+    "researchButton": "Erforschen",
+    "activatePlanetError": "Dieser Forschungsplanet konnte nicht aktiviert werden.",
+    "startError": "Forschung fehlgeschlagen."
+  },
+  "universe": {
+    "systemView": {
+      "title": "Systemansicht",
+      "loading": "Wird geladen…",
+      "coordinates": "Galaxie {{galaxy}} · System {{system}}",
+      "previousGalaxyTitle": "Vorherige Galaxie",
+      "previousGalaxyLabel": "‹‹ Galaxie",
+      "previousSystemTitle": "Vorheriges System",
+      "previousSystemLabel": "‹ System",
+      "goButton": "Los",
+      "nextSystemTitle": "Nächstes System",
+      "nextSystemLabel": "System ›",
+      "nextGalaxyTitle": "Nächste Galaxie",
+      "nextGalaxyLabel": "Galaxie ››",
+      "free": "Frei",
+      "homeworld": "Heimatwelt",
+      "viewPlanet": "Planet ansehen",
+      "actions": "Aktionen",
+      "colonize": "Kolonisieren",
+      "attack": "Angreifen",
+      "couldNotDetermineStartingSystem": "Es konnte kein Startsystem ermittelt werden.",
+      "systemNotFound": "System nicht gefunden."
+    },
+    "planetList": {
+      "title": "Deine Planeten",
+      "loading": "Wird geladen…",
+      "noPlanetsYet": "Noch keine Planeten.",
+      "attacksIncoming": "⚠ {{count}} Angriff(e) im Anflug",
+      "incomingCount": "{{count}} ankommend",
+      "outgoingCount": "{{count}} ausgehend"
+    },
+    "planetDetail": {
+      "viewSystem": "System ansehen",
+      "manageFleet": "Flotte verwalten",
+      "incomingFleets": "Ankommende Flotten",
+      "arrivingIn": "Ankunft in {{time}}",
+      "outgoingFleets": "Ausgehende Flotten",
+      "toCoordinates": "Nach [{{galaxy}}:{{system}}:{{position}}]",
+      "buildings": "Gebäude"
+    },
+    "buildingList": {
+      "level": "Stufe {{level}}",
+      "researchEfficiency": "Forschungseffizienz: {{value}}%",
+      "requires": "Erfordert {{label}} Stufe {{requiredLevel}} (aktuell {{currentLevel}})",
+      "upgradingToLevel": "Ausbau auf Stufe {{level}} — {{time}}",
+      "nextLevelCost": "Nächste Stufe: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{seconds}}s)",
+      "upgrade": "Ausbauen",
+      "upgradeFailed": "Ausbau fehlgeschlagen."
+    },
+    "resourceBar": {},
+    "buildingsPage": {
+      "title": "Gebäude",
+      "noPlanets": "Du benötigst mindestens einen Planeten, um zu bauen.",
+      "planetLabel": "Planet"
+    }
+  },
+  "catalogData": {
+    "buildings": {
+      "main_building": {
+        "name": "Kommandozentrale",
+        "description": "Die zentrale Anlage des Planeten. Höhere Stufen schalten den Bau fortschrittlicherer Gebäude frei."
+      },
+      "metal_mine": {
+        "name": "Metallmine",
+        "description": "Fördert Metallerz aus der Kruste des Planeten."
+      },
+      "crystal_mine": {
+        "name": "Kristallmine",
+        "description": "Baut Kristallvorkommen ab, die in fortschrittlicher Elektronik verwendet werden."
+      },
+      "deuterium_synthesizer": {
+        "name": "Deuteriumsynthesizer",
+        "description": "Gewinnt Deuterium aus Oberflächeneis zur Verwendung als Treibstoff."
+      },
+      "refinery": {
+        "name": "Raffinerie",
+        "description": "Verarbeitet rohe Eisvorkommen zu Wasserstofftreibstoff für den Schiffsantrieb."
+      },
+      "solar_plant": {
+        "name": "Solarkraftwerk",
+        "description": "Wandelt Sonnenlicht in Energie um, um andere Gebäude mit Strom zu versorgen."
+      },
+      "shipyard": {
+        "name": "Werft",
+        "description": "Baut und repariert Schiffe."
+      },
+      "research_lab": {
+        "name": "Forschungslabor",
+        "description": "Ermöglicht die Erforschung neuer Technologien."
+      },
+      "defense_facility": {
+        "name": "Verteidigungsanlage",
+        "description": "Verteidigt sich nicht selbst, schaltet aber bodengestützte Verteidigungstürme frei und koordiniert sie."
+      }
+    },
+    "ships": {
+      "light_fighter": {
+        "name": "Leichter Jäger",
+        "description": "Schneller, günstiger Abfangjäger."
+      },
+      "cruiser": {
+        "name": "Kreuzer",
+        "description": "Ausgewogenes Kriegsschiff der mittleren Klasse."
+      },
+      "small_cargo": {
+        "name": "Transportschiff",
+        "description": "Transportiert große Mengen an Ressourcen zwischen Planeten."
+      },
+      "colony_ship": {
+        "name": "Kolonieschiff",
+        "description": "Trägt die Ausrüstung, die zur Gründung einer neuen Kolonie benötigt wird."
+      },
+      "espionage_probe": {
+        "name": "Spionagesonde",
+        "description": "Unbewaffnetes Aufklärungsschiff, das feindliche Sensoren umgehen soll, um Flotte und Ressourcen eines Planeten auszukundschaften."
+      }
+    },
+    "technologies": {
+      "energy_technology": {
+        "name": "Energietechnik",
+        "description": "Grundlage für fortschrittlichere Energieerzeugung und Waffen."
+      },
+      "laser_technology": {
+        "name": "Lasertechnik",
+        "description": "Erhöht den Waffenschaden von Schiffen im Kampf."
+      },
+      "shielding_technology": {
+        "name": "Schildtechnik",
+        "description": "Verbessert die Schutzschilde stationierter Schiffe und Verteidigungstürme."
+      },
+      "espionage_technology": {
+        "name": "Spionagetechnik",
+        "description": "Verbessert die Sensorkalibrierung von Sonden und erhöht die Chance, dass eine Spionagemission erfolgreich Informationen sammelt, bevor sie entdeckt wird."
+      },
+      "chemical_drive": {
+        "name": "Chemischer Antrieb",
+        "description": "Grundlegende Antriebstechnik. Ermöglicht Reisen zwischen Positionen innerhalb eines Systems. Günstig und mit stetiger Verbesserung - überholt den Ionenantrieb auf hohen Stufen. Ab Stufe 3 wird die Erforschung des Impulsantriebs freigeschaltet."
+      },
+      "ion_drive": {
+        "name": "Ionenantrieb",
+        "description": "Effizienterer Antrieb für Reisen innerhalb eines Systems. Teurer und schneller als der Chemische Antrieb zu Beginn, verbessert sich pro Stufe jedoch langsamer."
+      },
+      "impulse_drive": {
+        "name": "Impulsantrieb",
+        "description": "Ermöglicht Reisen zwischen Systemen innerhalb derselben Galaxie. Günstig und mit stetiger Verbesserung - überholt den Warpantrieb auf hohen Stufen. Erfordert einen systeminternen Antrieb mit mindestens Stufe 3. Ab Stufe 5 wird die Erforschung des Hyperraumantriebs freigeschaltet."
+      },
+      "warp_drive": {
+        "name": "Warpantrieb",
+        "description": "Fortschrittlicher Antrieb für Reisen zwischen Systemen. Teurer und schneller als der Impulsantrieb zu Beginn, verbessert sich pro Stufe jedoch langsamer."
+      },
+      "hyperspace_drive": {
+        "name": "Hyperraumantrieb",
+        "description": "Faltet den Raum selbst und ermöglicht so Reisen zwischen Galaxien. Erfordert einen Zwischensystem-Antrieb mit mindestens Stufe 5."
+      }
+    },
+    "defenses": {
+      "light_defense_tower": {
+        "name": "Leichter Verteidigungsturm",
+        "description": "Ein Nahverteidigungsgeschütz, dessen Feuerkraft der eines Leichten Jägers entspricht."
+      },
+      "heavy_defense_tower": {
+        "name": "Schwerer Verteidigungsturm",
+        "description": "Eine gehärtete Stellung, gebaut, um einem Kreuzer standzuhalten."
+      }
+    }
+  }
+}
