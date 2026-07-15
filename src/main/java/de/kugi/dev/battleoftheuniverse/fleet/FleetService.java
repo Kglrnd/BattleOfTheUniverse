@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.fleet;
 
+import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
@@ -54,6 +55,9 @@ public class FleetService {
     private static final long SYSTEM_STEP = 1_000;
     private static final long POSITION_STEP = 100;
 
+    /** Matches the "shipyard" entry in the building catalog; its level speeds up ship construction. */
+    private static final String SHIPYARD_KEY = "shipyard";
+
     /** Only this ship can found a colony - matches the "colony_ship" entry in the ship catalog. */
     private static final String COLONY_SHIP_KEY = "colony_ship";
 
@@ -72,6 +76,7 @@ public class FleetService {
     private final ResourceService resourceService;
     private final PlanetService planetService;
     private final ResearchService researchService;
+    private final BuildingService buildingService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher events;
     private final FleetMovementMapper fleetMovementMapper;
@@ -79,6 +84,7 @@ public class FleetService {
 
     public List<ShipyardView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
+        int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
 
         return catalogService.ships().stream()
                 .map(definition -> {
@@ -92,7 +98,7 @@ public class FleetService {
                             definition.cargoCapacity(),
                             definition.hydrogenConsumption(),
                             definition.baseCost(),
-                            definition.baseBuildTimeSeconds(),
+                            unitBuildTimeSeconds(definition, shipyardLevel),
                             isBeingBuilt,
                             isBeingBuilt ? activeJob.get().getQuantity() : null,
                             isBeingBuilt ? activeJob.get().getEndsAt() : null
@@ -112,11 +118,17 @@ public class FleetService {
         ResourceCost cost = definition.baseCost().scaled(quantity);
         resourceService.debit(planetId, cost);
 
+        int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
         Instant startedAt = Instant.now();
-        Instant endsAt = startedAt.plusSeconds((long) definition.baseBuildTimeSeconds() * quantity);
+        Instant endsAt = startedAt.plusSeconds(unitBuildTimeSeconds(definition, shipyardLevel) * quantity);
         jobRepository.save(new ShipyardJob(planetId, shipKey, quantity, startedAt, endsAt));
 
         return new ShipyardBuildResponse(shipKey, quantity, endsAt);
+    }
+
+    /** Each shipyard level speeds up construction (level 0 - no shipyard yet - is baseline speed). */
+    private static long unitBuildTimeSeconds(ShipDefinition definition, int shipyardLevel) {
+        return Math.max(1, Math.round(definition.baseBuildTimeSeconds() / (1.0 + shipyardLevel)));
     }
 
     @Transactional

@@ -1,0 +1,5 @@
+.qty-label {
+  align-self: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

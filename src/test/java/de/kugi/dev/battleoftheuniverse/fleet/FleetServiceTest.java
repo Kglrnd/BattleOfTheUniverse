@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.fleet;
 
+import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
@@ -68,6 +69,8 @@ class FleetServiceTest {
     @Mock
     private ResearchService researchService;
     @Mock
+    private BuildingService buildingService;
+    @Mock
     private UserRepository userRepository;
     @Mock
     private ApplicationEventPublisher events;
@@ -88,7 +91,7 @@ class FleetServiceTest {
     @BeforeEach
     void setUp() {
         service = new FleetService(shipRepository, jobRepository, movementRepository, catalogService,
-                resourceService, planetService, researchService, userRepository, events, new FleetMovementMapperImpl(),
+                resourceService, planetService, researchService, buildingService, userRepository, events, new FleetMovementMapperImpl(),
                 new ResourceMapperImpl());
         origin.setId(ORIGIN_ID);
     }

@@ -72,7 +72,6 @@ export class FleetComponent {
   protected readonly manifestQuantities = signal<Record<string, number>>({});
   /** Resource key -> amount picked for a TRANSPORT mission's cargo. */
   protected readonly cargoQuantities = signal<Record<string, number>>({});
-  protected readonly queuingShip = signal<string | null>(null);
   protected readonly dispatching = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly driveOptions = signal<DriveOptionView[]>([]);
@@ -283,35 +282,8 @@ export class FleetComponent {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
 
-  buildShip(ship: ShipyardView, quantity: number): void {
-    const originId = this.originPlanetId();
-    if (!originId || this.queuingShip() || !quantity || quantity < 1) {
-      return;
-    }
-    this.errorMessage.set(null);
-    this.queuingShip.set(ship.key);
-    this.api.buildShips(originId, ship.key, quantity).subscribe({
-      next: () => {
-        this.queuingShip.set(null);
-        this.shipsResource.reload();
-      },
-      error: (err) => {
-        this.queuingShip.set(null);
-        this.errorMessage.set(err.error?.message ?? this.transloco.translate('fleet.shipyardOrderFailed'));
-      }
-    });
-  }
-
-  hasActiveShipyardJob(): boolean {
-    return this.ships().some((s) => s.buildActive);
-  }
-
   protected readonly shipName = (ship: ShipyardView) => catalogName(this.transloco, 'ships', ship);
   protected readonly shipDescription = (ship: ShipyardView) => catalogDescription(this.transloco, 'ships', ship);
-
-  remainingShipLabel(ship: ShipyardView): string {
-    return this.countdown(ship.buildEndsAt);
-  }
 
   shipsAvailable(shipKey: string): number {
     return this.ships().find((s) => s.key === shipKey)?.owned ?? 0;

@@ -38,6 +38,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/universe/buildings-page.component').then((m) => m.BuildingsPageComponent)
   },
   {
+    path: 'shipyard',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/fleet/shipyard-page.component').then((m) => m.ShipyardPageComponent)
+  },
+  {
     path: 'fleet',
     canActivate: [authGuard],
     loadComponent: () => import('./features/fleet/fleet.component').then((m) => m.FleetComponent)

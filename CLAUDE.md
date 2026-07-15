@@ -52,7 +52,7 @@ Dependency graph (who each module is allowed to call into):
 - `resource` — depends on `planet`, `catalog`, `user`.
 - `building` — depends on `planet`, `resource`, `catalog`, `user`.
 - `research` — depends on `planet`, `resource`, `catalog`, `user`, `building`.
-- `fleet` — depends on `planet`, `resource`, `catalog`, `user`, `research` (and `research::dto`).
+- `fleet` — depends on `planet`, `resource`, `catalog`, `building`, `user`, `research` (and `research::dto`). Uses `building.BuildingService.levelOf` to look up the planet's shipyard level, which speeds up ship construction.
 - `combat` — depends on nothing (currently minimal: just `BattleReport`).
 - `config` — an `OPEN` module (exempt from the boundary check), depends on `user`. Cross-cutting security/CORS/error-handling wiring.
 

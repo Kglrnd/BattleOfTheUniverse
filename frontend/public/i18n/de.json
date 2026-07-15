@@ -25,6 +25,7 @@
     "resetGame": "Spiel zurücksetzen",
     "overview": "Übersicht",
     "buildings": "Gebäude",
+    "shipyard": "Werft",
     "espionage": "Spionage",
     "research": "Forschung",
     "fleet": "Flotte",
@@ -179,14 +180,7 @@
   "fleet": {
     "title": "Flotte",
     "originPlanet": "Ausgangsplanet",
-    "shipyard": "Werft",
-    "noShipsYet": "Noch keine Schiffe verfügbar.",
-    "owned": "Vorhanden: {{value}}",
-    "buildingProgress": "Baue {{quantity}} — {{remaining}}",
-    "unitCost": "Pro Einheit: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{seconds}}s)",
-    "cargoFuel": "Ladung: {{cargo}} · Treibstoff: {{fuel}} Wasserstoff/Sprung",
-    "qty": "Anzahl",
-    "build": "Bauen",
+    "manageShipyard": "Werft verwalten",
     "dispatchMission": "Mission abschicken",
     "missionType": "Missionstyp",
     "missionColonize": "Kolonisieren",
@@ -218,9 +212,25 @@
     "cargoLine": "Ladung: {{cargo}}",
     "arrivingIn": "Ankunft in {{remaining}}",
     "noDriveCapable": "Kein erforschter Antrieb ist für diese Mission geeignet.",
-    "shipyardOrderFailed": "Werftauftrag fehlgeschlagen.",
     "dispatchFailed": "Abschicken fehlgeschlagen.",
     "driveOptionsFailed": "Antriebsoptionen konnten nicht berechnet werden."
+  },
+  "shipyard": {
+    "shipyardPage": {
+      "title": "Werft",
+      "noPlanetHint": "Du benötigst mindestens einen Planeten, um Schiffe zu bauen.",
+      "planetLabel": "Planet"
+    },
+    "shipyard": {
+      "noShipsYet": "Noch keine Schiffe verfügbar.",
+      "owned": "Vorhanden: {{value}}",
+      "buildingProgress": "Baue {{quantity}} — {{remaining}}",
+      "unitCost": "Pro Einheit: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{seconds}}s)",
+      "cargoFuel": "Ladung: {{cargo}} · Treibstoff: {{fuel}} Wasserstoff/Sprung",
+      "qty": "Anzahl",
+      "build": "Bauen",
+      "shipyardOrderFailed": "Werftauftrag fehlgeschlagen."
+    }
   },
   "messages": {
     "title": "Nachrichten",

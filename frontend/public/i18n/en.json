@@ -25,6 +25,7 @@
     "resetGame": "Reset game",
     "overview": "Overview",
     "buildings": "Buildings",
+    "shipyard": "Shipyard",
     "espionage": "Espionage",
     "research": "Research",
     "fleet": "Fleet",
@@ -179,14 +180,7 @@
   "fleet": {
     "title": "Fleet",
     "originPlanet": "Origin planet",
-    "shipyard": "Shipyard",
-    "noShipsYet": "No ships available yet.",
-    "owned": "Owned: {{value}}",
-    "buildingProgress": "Building {{quantity}} — {{remaining}}",
-    "unitCost": "Per unit: {{metal}} metal, {{crystal}} crystal, {{deuterium}} deuterium ({{seconds}}s)",
-    "cargoFuel": "Cargo: {{cargo}} · Fuel: {{fuel}} hydrogen/hop",
-    "qty": "Qty",
-    "build": "Build",
+    "manageShipyard": "Manage shipyard",
     "dispatchMission": "Dispatch mission",
     "missionType": "Mission type",
     "missionColonize": "Colonize",
@@ -218,9 +212,25 @@
     "cargoLine": "Cargo: {{cargo}}",
     "arrivingIn": "Arriving in {{remaining}}",
     "noDriveCapable": "No researched drive is capable of this mission.",
-    "shipyardOrderFailed": "Shipyard order failed.",
     "dispatchFailed": "Dispatch failed.",
     "driveOptionsFailed": "Could not compute drive options."
+  },
+  "shipyard": {
+    "shipyardPage": {
+      "title": "Shipyard",
+      "noPlanetHint": "You need at least one planet to build ships.",
+      "planetLabel": "Planet"
+    },
+    "shipyard": {
+      "noShipsYet": "No ships available yet.",
+      "owned": "Owned: {{value}}",
+      "buildingProgress": "Building {{quantity}} — {{remaining}}",
+      "unitCost": "Per unit: {{metal}} metal, {{crystal}} crystal, {{deuterium}} deuterium ({{seconds}}s)",
+      "cargoFuel": "Cargo: {{cargo}} · Fuel: {{fuel}} hydrogen/hop",
+      "qty": "Qty",
+      "build": "Build",
+      "shipyardOrderFailed": "Shipyard order failed."
+    }
   },
   "messages": {
     "title": "Messages",

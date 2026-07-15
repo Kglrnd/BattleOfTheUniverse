@@ -1,0 +1,26 @@
+<ng-container *transloco="let t; prefix: 'shipyard.shipyardPage'">
+<h1>{{ t('title') }}</h1>
+
+@if (planets().length === 0) {
+  <p>{{ t('noPlanetHint') }}</p>
+} @else {
+  <div class="field origin-field">
+    <label for="shipyard-planet-select">{{ t('planetLabel') }}</label>
+    <select
+      id="shipyard-planet-select"
+      class="select"
+      name="shipyard-planet"
+      [ngModel]="selectedPlanetId()"
+      (ngModelChange)="onPlanetChange($event)"
+    >
+      @for (p of planets(); track p.id) {
+        <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+      }
+    </select>
+  </div>
+
+  @if (selectedPlanetId(); as planetId) {
+    <app-shipyard [planetId]="planetId" />
+  }
+}
+</ng-container>
