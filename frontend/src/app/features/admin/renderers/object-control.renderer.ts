@@ -26,7 +26,7 @@ function startCase(path: string): string {
 }
 
 @Component({
-  selector: 'ObjectControlRenderer',
+  selector: 'app-object-control-renderer',
   template: `
     <div class="card object-layout">
       <jsonforms-outlet [uischema]="detailUiSchema" [schema]="scopedSchema" [path]="propsPath" />

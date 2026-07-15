@@ -22,7 +22,7 @@ import {
 import { TranslocoDirective } from '@jsverse/transloco';
 
 @Component({
-  selector: 'ArrayLayoutRenderer',
+  selector: 'app-array-layout-renderer',
   template: `
     <div class="array-layout" [style.display]="hidden ? 'none' : ''" *transloco="let t; prefix: 'admin.catalog'">
       <div class="array-layout-toolbar">
@@ -88,7 +88,7 @@ export class ArrayLayoutRenderer
   noData = false;
   uischemas: { tester: UISchemaTester; uischema: UISchemaElement }[] = [];
 
-  private addItemFn!: (path: string, value: any) => () => void;
+  private addItemFn!: (path: string, value: unknown) => () => void;
   private moveItemUpFn: ((path: string, index: number) => () => void) | undefined;
   private moveItemDownFn: ((path: string, index: number) => () => void) | undefined;
   private removeItemsFn: ((path: string, toDelete: number[]) => () => void) | undefined;

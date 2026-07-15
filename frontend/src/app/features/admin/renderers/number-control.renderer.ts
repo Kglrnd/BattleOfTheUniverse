@@ -12,7 +12,7 @@ import {
 } from '@jsonforms/core';
 
 @Component({
-  selector: 'NumberControlRenderer',
+  selector: 'app-number-control-renderer',
   template: `
     <div class="field" [style.display]="hidden ? 'none' : ''">
       <label [for]="id">{{ label }}</label>
@@ -45,8 +45,8 @@ export class NumberControlRenderer extends JsonFormsControl {
   step: number | null = null;
   focused = false;
 
-  override getEventValue = (event: any) => {
-    const value = event.target.value;
+  override getEventValue = (event: Event) => {
+    const value = (event.target as HTMLInputElement).value;
     if (value === '' || value === null) {
       return undefined;
     }

@@ -4,7 +4,7 @@ import { JsonFormsControl } from '@jsonforms/angular';
 import { isBooleanControl, RankedTester, rankWith } from '@jsonforms/core';
 
 @Component({
-  selector: 'BooleanControlRenderer',
+  selector: 'app-boolean-control-renderer',
   template: `
     <div class="checkbox-field" [style.display]="hidden ? 'none' : ''">
       <input
@@ -25,7 +25,7 @@ import { isBooleanControl, RankedTester, rankWith } from '@jsonforms/core';
 })
 export class BooleanControlRenderer extends JsonFormsControl {
   isChecked = () => !!this.data;
-  override getEventValue = (event: any) => event.target.checked;
+  override getEventValue = (event: Event) => (event.target as HTMLInputElement).checked;
 }
 
 export const BooleanControlRendererTester: RankedTester = rankWith(1, isBooleanControl);

@@ -6,7 +6,7 @@ import { GroupLayout, RankedTester, rankWith, uiTypeIs } from '@jsonforms/core';
 import { LayoutChildrenRenderPropsPipe, LayoutRenderer } from './layout-renderer.base';
 
 @Component({
-  selector: 'GroupLayoutRenderer',
+  selector: 'app-group-layout-renderer',
   template: `
     <div class="card group-layout" [style.display]="hidden ? 'none' : ''">
       @if (label) {

@@ -12,7 +12,7 @@
         </div>
         <div class="card-content">
           <p>{{ buildingDescription(building) }}</p>
-          @if (building.researchEfficiency != null) {
+          @if (building.researchEfficiency !== null) {
             <p class="research-efficiency">{{ t('researchEfficiency', { value: (building.researchEfficiency | number: '1.2-2') }) }}</p>
           }
           @if (!building.unlocked) {

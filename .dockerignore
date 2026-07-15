@@ -1,0 +1,8 @@
+target/
+data/
+config/
+frontend/
+.git/
+.idea/
+*.iml
+HELP.md

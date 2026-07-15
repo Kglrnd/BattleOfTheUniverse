@@ -6,7 +6,7 @@ import { RankedTester, rankWith, uiTypeIs, VerticalLayout } from '@jsonforms/cor
 import { LayoutChildrenRenderPropsPipe, LayoutRenderer } from './layout-renderer.base';
 
 @Component({
-  selector: 'VerticalLayoutRenderer',
+  selector: 'app-vertical-layout-renderer',
   template: `
     <div class="vertical-layout" [style.display]="hidden ? 'none' : ''">
       @for (props of uischema | layoutChildrenRenderProps: schema : path; track trackElement($index, props)) {

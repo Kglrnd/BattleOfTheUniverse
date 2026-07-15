@@ -15,7 +15,7 @@ import {
 } from '@jsonforms/core';
 
 @Component({
-  selector: 'EnumControlRenderer',
+  selector: 'app-enum-control-renderer',
   template: `
     <div class="field" [style.display]="hidden ? 'none' : ''">
       <label [for]="id">{{ label }}</label>
@@ -34,7 +34,7 @@ import {
 })
 export class EnumControlRenderer extends JsonFormsControl {
   options: EnumOption[] = [];
-  override getEventValue = (event: any) => event.target.value;
+  override getEventValue = (event: Event) => (event.target as HTMLSelectElement).value;
 
   protected override mapToProps(state: JsonFormsState): StatePropsOfControl & OwnPropsOfEnum {
     return mapStateToEnumControlProps(state, this.getOwnProps());

@@ -5,7 +5,7 @@ import { JsonFormsControl } from '@jsonforms/angular';
 import { isStringControl, RankedTester, rankWith } from '@jsonforms/core';
 
 @Component({
-  selector: 'TextControlRenderer',
+  selector: 'app-text-control-renderer',
   template: `
     <div class="field" [style.display]="hidden ? 'none' : ''">
       <label [for]="id">{{ label }}</label>
@@ -31,12 +31,12 @@ import { isStringControl, RankedTester, rankWith } from '@jsonforms/core';
 })
 export class TextControlRenderer extends JsonFormsControl {
   focused = false;
-  override getEventValue = (event: any) => event.target.value || undefined;
+  override getEventValue = (event: Event) => (event.target as HTMLInputElement).value || undefined;
   getType = (): string => {
-    if (this.uischema.options && this.uischema.options['format']) {
+    if (this.uischema.options?.['format']) {
       return this.uischema.options['format'];
     }
-    if (this.scopedSchema && this.scopedSchema.format) {
+    if (this.scopedSchema?.format) {
       switch (this.scopedSchema.format) {
         case 'email':
           return 'email';

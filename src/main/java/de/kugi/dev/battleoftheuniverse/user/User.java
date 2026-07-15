@@ -11,7 +11,10 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.Instant;
 
 @Entity
@@ -19,11 +22,14 @@ import java.time.Instant;
 @Getter
 @Setter
 @NoArgsConstructor
-public class User {
+public class User implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private @Nullable Long id;
 
     @Column(nullable = false, unique = true)
     private String username;
