@@ -32,6 +32,13 @@ The H2 database file lives at `data/battleoftheuniverse.mv.db` (gitignored). Del
 
 Backend must be running on port 8080 for the frontend dev server's API calls (and its cookie-based auth) to work.
 
+### Docker (production-like full stack)
+
+- `cp .env.example .env` (fill in a real `DB_PASSWORD`), then `docker compose up --build` runs the full stack: `postgres` (16-alpine), `backend` (multi-stage build, `pom.xml`'s `spring.profiles.active=prod` via `SPRING_PROFILES_ACTIVE`, port 8080), `frontend` (multi-stage build, static Angular build served by nginx, port 8081).
+- The frontend's nginx (`frontend/nginx.conf`) reverse-proxies `/api/**` to the `backend` service so the browser only ever talks to one origin — session/CSRF cookies stay first-party and no CORS setup is needed for real browser traffic. `CORS_ALLOWED_ORIGINS` is still required by `application-prod.yml` for any direct (non-browser-proxied) API access.
+- `backend`'s `./config` (mutable catalog JSON, see below) is a named volume (`backend-config`), so admin catalog edits survive container recreation; `postgres-data` likewise persists the database.
+- Both Dockerfiles' `HEALTHCHECK`s use `wget` against `127.0.0.1` explicitly, not `localhost` — Alpine resolves `localhost` to `::1` first, and nginx/the JVM here only bind IPv4, so a `localhost` healthcheck reports false-unhealthy despite the service working fine.
+
 ## Architecture
 
 ### Spring Modulith module boundaries
@@ -75,7 +82,7 @@ Buildings, ships, and technologies are *not* hardcoded — they're defined in JS
 
 ### Auth model
 
-Session-cookie auth via Spring Security form login (not JWT/OAuth): `POST /api/auth/login` and `/api/auth/register` are the only unauthenticated endpoints besides `/actuator/health` and `/h2-console/**`; everything else under `/api/**` requires an authenticated session. CSRF is enabled with a cookie-based token repository (`CsrfCookieFilter` ensures the XSRF cookie is present); the frontend's `credentialsInterceptor` attaches cookies to every `/api` request. Roles are `PLAYER`, `MODERATOR`, `ADMIN` (`Role` enum); admin-only endpoints/routes are gated by `@PreAuthorize`-style method security on the backend and `adminGuard` on the frontend router.
+Session-cookie auth via Spring Security form login (not JWT/OAuth): `POST /api/auth/login` and `/api/auth/register` are the only unauthenticated endpoints besides `GET /api/version`, `/actuator/health` and `/h2-console/**`; everything else under `/api/**` requires an authenticated session. CSRF is enabled with a cookie-based token repository (`CsrfCookieFilter` ensures the XSRF cookie is present); the frontend's `credentialsInterceptor` attaches cookies to every `/api` request. Roles are `PLAYER`, `MODERATOR`, `ADMIN` (`Role` enum); admin-only endpoints/routes are gated by `@PreAuthorize`-style method security on the backend and `adminGuard` on the frontend router.
 
 ### Frontend structure
 

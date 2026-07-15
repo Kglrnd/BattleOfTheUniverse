@@ -35,6 +35,7 @@ build/
 ### Local runtime data ###
 /data/
 /config/
+.env
 
 ### Angular / Node ###
 frontend/node_modules/
