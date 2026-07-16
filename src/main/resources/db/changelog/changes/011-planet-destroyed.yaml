@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-add-planet-destroyed
+      author: kugi
+      changes:
+        - addColumn:
+            tableName: planets
+            columns:
+              - column:
+                  name: destroyed
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

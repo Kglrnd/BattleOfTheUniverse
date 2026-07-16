@@ -80,13 +80,13 @@ class FleetServiceTest {
     private final Planet origin = new Planet("Origin", OWNER_ID, 1, 1, 1, PlanetClass.TEMPERATE);
     private final ShipDefinition colonyShip = new ShipDefinition(
             "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, 6,
-            new ResourceCost(10000, 20000, 10000), 3600, 0);
+            new ResourceCost(10000, 20000, 10000), 3600, 0, List.of());
     private final ShipDefinition cruiser = new ShipDefinition(
             "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4,
-            new ResourceCost(20000, 7000, 2000), 1800, 29);
+            new ResourceCost(20000, 7000, 2000), 1800, 29, List.of());
     private final ShipDefinition lightFighter = new ShipDefinition(
             "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, 1,
-            new ResourceCost(3000, 1000, 0), 60, 4);
+            new ResourceCost(3000, 1000, 0), 60, 4, List.of());
 
     @BeforeEach
     void setUp() {
@@ -175,8 +175,7 @@ class FleetServiceTest {
     @Test
     void dispatchRejectsDuplicateShipKeysInTheManifest() {
         when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
-        Planet target = new Planet("Target", OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
-        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(target));
+        // Manifest-only checks run before target resolution, so no findAtPosition stub is needed.
 
         DispatchRequest request = new DispatchRequest(ORIGIN_ID,
                 List.of(new ShipQuantity("cruiser", 3), new ShipQuantity("cruiser", 2)),
@@ -614,5 +613,116 @@ class FleetServiceTest {
         verify(resourceService).credit(20L, ResourceKey.METAL, 30L);
         verify(resourceService).credit(20L, ResourceKey.CRYSTAL, 10L);
         verify(movementRepository).delete(movement);
+    }
+
+    @Test
+    void dispatchRejectsBombsAndInvasionUnitsSentTogether() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(
+                new ShipQuantity("orbital_bomb", 1), new ShipQuantity("invasion_unit", 1), new ShipQuantity("galaxy_class", 1)),
+                FleetMissionType.BOMBARD, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("cannot be sent together");
+    }
+
+    @Test
+    void dispatchRejectsABombFlyingWithoutAnyEscort() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID, List.of(new ShipQuantity("orbital_bomb", 1)),
+                FleetMissionType.BOMBARD, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("without an escort");
+    }
+
+    @Test
+    void dispatchRejectsABombWithoutAGalaxyClassEscort() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("orbital_bomb", 1), new ShipQuantity("cruiser", 5)),
+                FleetMissionType.BOMBARD, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Galaxy Class escort");
+    }
+
+    @Test
+    void dispatchRejectsBombardingAHomeworld() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet homeworld = new Planet("Enemy Homeworld", OTHER_OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        homeworld.setHomeworld(true);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(homeworld));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("orbital_bomb", 1), new ShipQuantity("galaxy_class", 1)),
+                FleetMissionType.BOMBARD, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Homeworlds");
+    }
+
+    @Test
+    void dispatchRejectsInvadingAPlanetAlreadyDestroyed() {
+        when(planetService.getOwned(ORIGIN_ID, OWNER_ID)).thenReturn(origin);
+        Planet destroyedPlanet = new Planet("Ruins", OTHER_OWNER_ID, 1, 1, 2, PlanetClass.TEMPERATE);
+        destroyedPlanet.setDestroyed(true);
+        when(planetService.findAtPosition(1, 1, 2)).thenReturn(Optional.of(destroyedPlanet));
+
+        DispatchRequest request = new DispatchRequest(ORIGIN_ID,
+                List.of(new ShipQuantity("invasion_unit", 1), new ShipQuantity("galaxy_class", 1)),
+                FleetMissionType.INVADE, 1, 1, 2, DRIVE_KEY);
+
+        assertThatThrownBy(() -> service.dispatch(OWNER_ID, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("destroyed");
+    }
+
+    @Test
+    void listForPlanetReportsMissingRequirementsForAGatedShip() {
+        ShipDefinition galaxyClass = new ShipDefinition("galaxy_class", "Galaxy Class", "desc", 1800, 1800, 8000, 300, 12,
+                new ResourceCost(150000, 60000, 20000), 10800, 220,
+                List.of(new de.kugi.dev.battleoftheuniverse.catalog.Requirement(
+                        de.kugi.dev.battleoftheuniverse.catalog.RequirementType.BUILDING, "shipyard", 10)));
+        when(catalogService.ships()).thenReturn(List.of(galaxyClass));
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(3);
+        de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition shipyardDefinition =
+                new de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition("shipyard", "Shipyard", "desc",
+                        new ResourceCost(200, 100, 0), 1.15, 60, de.kugi.dev.battleoftheuniverse.catalog.ResourceKey.NONE, 0, 5, List.of());
+        when(catalogService.building("shipyard")).thenReturn(shipyardDefinition);
+
+        var views = service.listForPlanet(ORIGIN_ID, OWNER_ID);
+
+        assertThat(views).hasSize(1);
+        assertThat(views.getFirst().unlocked()).isFalse();
+        assertThat(views.getFirst().missingRequirements()).hasSize(1);
+        assertThat(views.getFirst().missingRequirements().getFirst().requiredLevel()).isEqualTo(10);
+        assertThat(views.getFirst().missingRequirements().getFirst().currentLevel()).isEqualTo(3);
+    }
+
+    @Test
+    void queueShipRejectsBuildingAGatedShipBelowItsRequirement() {
+        ShipDefinition galaxyClass = new ShipDefinition("galaxy_class", "Galaxy Class", "desc", 1800, 1800, 8000, 300, 12,
+                new ResourceCost(150000, 60000, 20000), 10800, 220,
+                List.of(new de.kugi.dev.battleoftheuniverse.catalog.Requirement(
+                        de.kugi.dev.battleoftheuniverse.catalog.RequirementType.BUILDING, "shipyard", 10)));
+        when(catalogService.ship("galaxy_class")).thenReturn(galaxyClass);
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(3);
+        de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition shipyardDefinition =
+                new de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition("shipyard", "Shipyard", "desc",
+                        new ResourceCost(200, 100, 0), 1.15, 60, de.kugi.dev.battleoftheuniverse.catalog.ResourceKey.NONE, 0, 5, List.of());
+        when(catalogService.building("shipyard")).thenReturn(shipyardDefinition);
+
+        assertThatThrownBy(() -> service.queueShip(ORIGIN_ID, OWNER_ID, "galaxy_class", 1))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Requirements not met");
+        verify(resourceService, never()).debit(any(), any(ResourceCost.class));
     }
 }

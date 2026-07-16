@@ -187,6 +187,8 @@
     "missionStation": "Stationieren",
     "missionAttack": "Angreifen",
     "missionTransport": "Transport",
+    "missionBombard": "Bombardieren",
+    "missionInvade": "Invasion",
     "noShipsOnPlanet": "Auf diesem Planeten sind noch keine Schiffe verfügbar.",
     "manifestShipInfo": "vorhanden: {{owned}} · Ladung: {{cargo}} · Treibstoff: {{fuel}}/Sprung",
     "targetPlanet": "Zielplanet",
@@ -201,6 +203,11 @@
     "systemView": "Systemansicht",
     "attackHint": "Gib die Koordinaten des Planeten eines anderen Spielers ein. Bei Ankunft kämpft die Flotte gegen die Verteidigung des Ziels; Überlebende kehren zurück und beide Seiten erhalten einen Kampfbericht.",
     "transportHint": "Liefert die geladene Fracht zu einem deiner eigenen Planeten. Schiffe werden nicht verbraucht - sie werden am Zielort stationiert.",
+    "bombardHint": "Gib die Koordinaten einer Kolonie eines anderen Spielers ein (Heimatwelten können nicht angegriffen werden). Benötigt mindestens eine Orbitalbombe und eine Eskorte der Galaxie-Klasse. Ist das Ziel unverteidigt, hat die Bombe eine Erfolgschance von ca. 95%, den Planeten dauerhaft zu zerstören.",
+    "invadeHint": "Gib die Koordinaten einer Kolonie eines anderen Spielers ein (Heimatwelten können nicht angegriffen werden). Benötigt mindestens eine Invasionseinheit und eine Eskorte der Galaxie-Klasse. Ist das Ziel unverteidigt, hat die Invasion eine Erfolgschance von ca. 95%, den Planeten samt allem was sich darauf befindet zu erobern.",
+    "specialShipMutualExclusion": "Orbitalbomben und Invasionseinheiten können nicht zusammen entsandt werden.",
+    "specialShipNeedsEscort": "Orbitalbomben und Invasionseinheiten können nicht ohne Eskorte fliegen.",
+    "specialShipNeedsGalaxyClass": "Orbitalbomben und Invasionseinheiten benötigen mindestens eine Eskorte der Galaxie-Klasse.",
     "calculatingDriveOptions": "Berechne Antriebsoptionen…",
     "drive": "Antrieb",
     "driveLevel": "Stufe {{level}} · x{{speed}} Geschwindigkeit",
@@ -229,6 +236,7 @@
       "cargoFuel": "Ladung: {{cargo}} · Treibstoff: {{fuel}} Wasserstoff/Sprung",
       "qty": "Anzahl",
       "build": "Bauen",
+      "requires": "Benötigt {{label}} Stufe {{requiredLevel}} (aktuell {{currentLevel}})",
       "shipyardOrderFailed": "Werftauftrag fehlgeschlagen."
     }
   },
@@ -302,6 +310,9 @@
       "actions": "Aktionen",
       "colonize": "Kolonisieren",
       "attack": "Angreifen",
+      "bombard": "Bombardieren",
+      "invade": "Invasion",
+      "destroyed": "Zerstört",
       "couldNotDetermineStartingSystem": "Es konnte kein Startsystem ermittelt werden.",
       "systemNotFound": "System nicht gefunden."
     },
@@ -380,11 +391,31 @@
     "ships": {
       "light_fighter": {
         "name": "Leichter Jäger",
-        "description": "Schneller, günstiger Abfangjäger."
+        "description": "Schneller, günstiger Abfangjäger. Dünne Panzerung - setzt auf Geschwindigkeit und Anzahl statt Widerstandsfähigkeit."
+      },
+      "heavy_fighter": {
+        "name": "Schwerer Jäger",
+        "description": "Eine gepanzerte Weiterentwicklung des Leichten Jägers. Tauscht etwas Geschwindigkeit gegen deutlich dickere Panzerung."
+      },
+      "light_cruiser": {
+        "name": "Leichter Kreuzer",
+        "description": "Ein wendiger, offensiv ausgerichteter Kreuzer. Trifft hart für seine Größe, opfert dafür aber Panzerung."
       },
       "cruiser": {
         "name": "Kreuzer",
         "description": "Ausgewogenes Kriegsschiff der mittleren Klasse."
+      },
+      "heavy_cruiser": {
+        "name": "Schwerer Kreuzer",
+        "description": "Ein defensiv ausgerichteter Kreuzer, gebaut um Schaden zu absorbieren. Langsamer und schwächer im Angriff als der Leichte Kreuzer, aber deutlich schwerer zu zerstören."
+      },
+      "battlecruiser": {
+        "name": "Schlachtkreuzer",
+        "description": "Eine Glaskanone im Großkampfschiff-Format. Verheerende Feuerkraft für seine Kosten, aber die Panzerung bleibt weit hinter der Galaxie-Klasse zurück."
+      },
+      "galaxy_class": {
+        "name": "Galaxie-Klasse",
+        "description": "Das größte und stärkste Kriegsschiff der Flotte, gleichermaßen furchteinflößend in Angriff und Verteidigung. Seine Größe macht es zur zwingend erforderlichen Eskorte für Orbitalbomben und Invasionseinheiten."
       },
       "small_cargo": {
         "name": "Transportschiff",
@@ -397,6 +428,14 @@
       "espionage_probe": {
         "name": "Spionagesonde",
         "description": "Unbewaffnetes Aufklärungsschiff, das feindliche Sensoren umgehen soll, um Flotte und Ressourcen eines Planeten auszukundschaften."
+      },
+      "orbital_bomb": {
+        "name": "Orbitalbombe",
+        "description": "Unbewaffnetes Spezialschiff, das eine gegnerische Kolonie dauerhaft unbewohnbar machen kann. Benötigt eine Eskorte der Galaxie-Klasse und kann nicht zusammen mit Invasionseinheiten entsandt werden. Heimatwelten können nicht angegriffen werden."
+      },
+      "invasion_unit": {
+        "name": "Invasionseinheit",
+        "description": "Bodenangriffsschiff, das eine gegnerische Kolonie intakt übernehmen kann. Benötigt eine Eskorte der Galaxie-Klasse und kann nicht zusammen mit Orbitalbomben entsandt werden. Heimatwelten können nicht angegriffen werden."
       }
     },
     "technologies": {
@@ -435,6 +474,14 @@
       "hyperspace_drive": {
         "name": "Hyperraumantrieb",
         "description": "Faltet den Raum selbst und ermöglicht so Reisen zwischen Galaxien. Erfordert einen Zwischensystem-Antrieb mit mindestens Stufe 5."
+      },
+      "orbital_bombardment": {
+        "name": "Orbitalbombardierung",
+        "description": "Waffendoktrin des Endgames, die den Bau von Orbitalbomben ermöglicht, mit denen sich eine gegnerische Kolonie dauerhaft zerstören lässt."
+      },
+      "planetary_invasion_tactics": {
+        "name": "Invasionstaktik",
+        "description": "Bodenangriffsdoktrin des Endgames, die den Bau von Invasionseinheiten ermöglicht, mit denen sich eine gegnerische Kolonie übernehmen lässt."
       }
     },
     "defenses": {

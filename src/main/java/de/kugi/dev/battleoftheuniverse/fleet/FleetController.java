@@ -30,7 +30,7 @@ public class FleetController {
     @GetMapping
     public List<ShipyardView> list(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {
         requireOwnership(planetId, principal);
-        return fleetService.listForPlanet(planetId);
+        return fleetService.listForPlanet(planetId, principal.getId());
     }
 
     @PostMapping("/{key}/build")
@@ -38,7 +38,7 @@ public class FleetController {
                                         @Valid @RequestBody BuildShipsRequest request,
                                         @AuthenticationPrincipal AppUserPrincipal principal) {
         requireOwnership(planetId, principal);
-        return fleetService.queueShip(planetId, key, request.quantity());
+        return fleetService.queueShip(planetId, principal.getId(), key, request.quantity());
     }
 
     private void requireOwnership(Long planetId, AppUserPrincipal principal) {

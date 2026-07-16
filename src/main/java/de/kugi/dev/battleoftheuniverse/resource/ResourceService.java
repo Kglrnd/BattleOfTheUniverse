@@ -41,6 +41,12 @@ public class ResourceService {
         repository.deleteAll();
     }
 
+    /** Clears a single planet's resource ledger - used when a planet is destroyed. */
+    @Transactional
+    public void deleteAllForPlanet(Long planetId) {
+        repository.deleteAll(repository.findByPlanetId(planetId));
+    }
+
     /**
      * Credits whatever whole units of production have accrued since the resource's
      * {@code lastUpdate}, then advances {@code lastUpdate} only by the time that was

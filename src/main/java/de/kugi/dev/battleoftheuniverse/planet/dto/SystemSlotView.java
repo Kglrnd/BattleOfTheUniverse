@@ -9,6 +9,10 @@ public record SystemSlotView(
         return new SystemSlotView(position, SlotStatus.OCCUPIED, planet);
     }
 
+    public static SystemSlotView destroyed(int position, PlanetView planet) {
+        return new SystemSlotView(position, SlotStatus.DESTROYED, planet);
+    }
+
     public static SystemSlotView free(int position) {
         return new SystemSlotView(position, SlotStatus.FREE, null);
     }

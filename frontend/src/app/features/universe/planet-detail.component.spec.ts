@@ -19,7 +19,8 @@ function planetView(id: number): PlanetView {
     planetClass: 'TEMPERATE',
     homeworld: false,
     researchEfficiency: 100,
-    imageVariant: 0
+    imageVariant: 0,
+    destroyed: false
   };
 }
 

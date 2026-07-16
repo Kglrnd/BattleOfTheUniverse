@@ -180,6 +180,27 @@ public class PlanetService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Planet not found"));
     }
 
+    /**
+     * Marks a planet permanently destroyed after a successful orbital bombardment. The row is
+     * never deleted (so the coordinate stays a tombstone, never recolonizable) - callers are
+     * responsible for clearing the planet's buildings/resources/fleet/defenses elsewhere.
+     */
+    @Transactional
+    public void destroyPlanet(Long planetId) {
+        Planet planet = getById(planetId);
+        planet.setDestroyed(true);
+        planetRepository.save(planet);
+    }
+
+    /** Transfers ownership after a successful invasion; buildings/resources/fleet stay in place. */
+    @Transactional
+    public void reassignOwner(Long planetId, Long newOwnerId) {
+        Planet planet = getById(planetId);
+        planet.setOwnerId(newOwnerId);
+        planet.setResearchPlanet(false);
+        planetRepository.save(planet);
+    }
+
     public SystemView getSystemView(int galaxy, int system) {
         if (!SystemLayout.isInBounds(galaxy, system)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "System not found");
@@ -195,7 +216,9 @@ public class PlanetService {
             if (planet != null) {
                 // A planet actually sitting here always wins, even if the computed layout
                 // doesn't consider the position usable (e.g. it predates a layout change).
-                slots.add(SystemSlotView.occupied(position, planetMapper.toView(planet)));
+                slots.add(planet.isDestroyed()
+                        ? SystemSlotView.destroyed(position, planetMapper.toView(planet))
+                        : SystemSlotView.occupied(position, planetMapper.toView(planet)));
             } else if (!usable.contains(position)) {
                 slots.add(SystemSlotView.voidSlot(position));
             } else {

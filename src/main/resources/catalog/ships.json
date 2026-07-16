@@ -3,7 +3,7 @@
     {
       "key": "light_fighter",
       "name": "Light Fighter",
-      "description": "Fast, cheap interceptor.",
+      "description": "Fast, cheap interceptor. Thin armor - relies on speed and numbers, not resilience.",
       "attack": 50,
       "defense": 10,
       "speed": 12500,
@@ -11,7 +11,40 @@
       "hydrogenConsumption": 1,
       "baseCost": { "metal": 3000, "crystal": 1000, "deuterium": 0 },
       "baseBuildTimeSeconds": 300,
-      "points": 4
+      "points": 4,
+      "requirements": []
+    },
+    {
+      "key": "heavy_fighter",
+      "name": "Heavy Fighter",
+      "description": "An armored evolution of the Light Fighter. Trades some speed for significantly thicker plating.",
+      "attack": 90,
+      "defense": 160,
+      "speed": 9000,
+      "cargoCapacity": 15,
+      "hydrogenConsumption": 2,
+      "baseCost": { "metal": 5000, "crystal": 2000, "deuterium": 500 },
+      "baseBuildTimeSeconds": 600,
+      "points": 9,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 3 }
+      ]
+    },
+    {
+      "key": "light_cruiser",
+      "name": "Light Cruiser",
+      "description": "An agile, offense-focused cruiser. Hits hard for its size but sacrifices armor to do it.",
+      "attack": 320,
+      "defense": 150,
+      "speed": 17000,
+      "cargoCapacity": 40,
+      "hydrogenConsumption": 3,
+      "baseCost": { "metal": 14000, "crystal": 5000, "deuterium": 1000 },
+      "baseBuildTimeSeconds": 1200,
+      "points": 20,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 4 }
+      ]
     },
     {
       "key": "cruiser",
@@ -24,7 +57,60 @@
       "hydrogenConsumption": 4,
       "baseCost": { "metal": 20000, "crystal": 7000, "deuterium": 2000 },
       "baseBuildTimeSeconds": 1800,
-      "points": 29
+      "points": 29,
+      "requirements": []
+    },
+    {
+      "key": "heavy_cruiser",
+      "name": "Heavy Cruiser",
+      "description": "A defense-focused cruiser built to soak up damage. Slower and hits softer than the Light Cruiser, but far harder to bring down.",
+      "attack": 550,
+      "defense": 850,
+      "speed": 9000,
+      "cargoCapacity": 70,
+      "hydrogenConsumption": 6,
+      "baseCost": { "metal": 40000, "crystal": 14000, "deuterium": 4000 },
+      "baseBuildTimeSeconds": 3000,
+      "points": 60,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 6 },
+        { "type": "TECHNOLOGY", "key": "energy_technology", "level": 3 }
+      ]
+    },
+    {
+      "key": "battlecruiser",
+      "name": "Battlecruiser",
+      "description": "A capital-scale glass cannon. Devastating firepower for its cost, but armor plating lags well behind the Galaxy Class.",
+      "attack": 1200,
+      "defense": 600,
+      "speed": 13000,
+      "cargoCapacity": 100,
+      "hydrogenConsumption": 8,
+      "baseCost": { "metal": 70000, "crystal": 25000, "deuterium": 8000 },
+      "baseBuildTimeSeconds": 5400,
+      "points": 105,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 8 },
+        { "type": "TECHNOLOGY", "key": "laser_technology", "level": 4 }
+      ]
+    },
+    {
+      "key": "galaxy_class",
+      "name": "Galaxy Class",
+      "description": "The largest and strongest warship in the fleet, equally formidable in attack and defense. Its size makes it the mandatory escort for Orbital Bombs and Invasion Units.",
+      "attack": 1800,
+      "defense": 1800,
+      "speed": 8000,
+      "cargoCapacity": 300,
+      "hydrogenConsumption": 12,
+      "baseCost": { "metal": 150000, "crystal": 60000, "deuterium": 20000 },
+      "baseBuildTimeSeconds": 10800,
+      "points": 220,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 10 },
+        { "type": "TECHNOLOGY", "key": "hyperspace_drive", "level": 1 },
+        { "type": "TECHNOLOGY", "key": "shielding_technology", "level": 5 }
+      ]
     },
     {
       "key": "small_cargo",
@@ -37,7 +123,8 @@
       "hydrogenConsumption": 3,
       "baseCost": { "metal": 2000, "crystal": 2000, "deuterium": 0 },
       "baseBuildTimeSeconds": 600,
-      "points": 0
+      "points": 0,
+      "requirements": []
     },
     {
       "key": "colony_ship",
@@ -50,7 +137,8 @@
       "hydrogenConsumption": 6,
       "baseCost": { "metal": 10000, "crystal": 20000, "deuterium": 10000 },
       "baseBuildTimeSeconds": 3600,
-      "points": 0
+      "points": 0,
+      "requirements": []
     },
     {
       "key": "espionage_probe",
@@ -63,7 +151,42 @@
       "hydrogenConsumption": 1,
       "baseCost": { "metal": 1000, "crystal": 500, "deuterium": 0 },
       "baseBuildTimeSeconds": 120,
-      "points": 2
+      "points": 2,
+      "requirements": []
+    },
+    {
+      "key": "orbital_bomb",
+      "name": "Orbital Bomb",
+      "description": "Unarmed, single-purpose ordnance capable of rendering an enemy colony permanently uninhabitable. Requires a Galaxy Class escort and cannot be sent alongside Invasion Units. Homeworlds cannot be targeted.",
+      "attack": 0,
+      "defense": 1,
+      "speed": 6000,
+      "cargoCapacity": 0,
+      "hydrogenConsumption": 15,
+      "baseCost": { "metal": 300000, "crystal": 150000, "deuterium": 80000 },
+      "baseBuildTimeSeconds": 21600,
+      "points": 300,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 20 },
+        { "type": "TECHNOLOGY", "key": "orbital_bombardment", "level": 1 }
+      ]
+    },
+    {
+      "key": "invasion_unit",
+      "name": "Invasion Unit",
+      "description": "Ground-assault vessel capable of seizing control of an enemy colony intact. Requires a Galaxy Class escort and cannot be sent alongside Orbital Bombs. Homeworlds cannot be targeted.",
+      "attack": 0,
+      "defense": 1,
+      "speed": 6000,
+      "cargoCapacity": 0,
+      "hydrogenConsumption": 15,
+      "baseCost": { "metal": 250000, "crystal": 150000, "deuterium": 60000 },
+      "baseBuildTimeSeconds": 18000,
+      "points": 260,
+      "requirements": [
+        { "type": "BUILDING", "key": "shipyard", "level": 20 },
+        { "type": "TECHNOLOGY", "key": "planetary_invasion_tactics", "level": 1 }
+      ]
     }
   ]
 }

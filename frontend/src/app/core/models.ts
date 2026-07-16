@@ -28,6 +28,7 @@ export interface PlanetView {
   homeworld: boolean;
   researchEfficiency: number;
   imageVariant: number;
+  destroyed: boolean;
 }
 
 export interface AdminPlanetView {
@@ -41,6 +42,7 @@ export interface AdminPlanetView {
   coordinates: string;
   planetClass: string;
   homeworld: boolean;
+  destroyed: boolean;
   createdAt: string;
 }
 
@@ -96,6 +98,8 @@ export interface ShipyardView {
   buildActive: boolean;
   buildingQuantity: number | null;
   buildEndsAt: string | null;
+  unlocked: boolean;
+  missingRequirements: LockedRequirement[];
 }
 
 export interface ShipyardBuildResponse {
@@ -157,7 +161,7 @@ export interface ResearchPlanetOption {
   active: boolean;
 }
 
-export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK' | 'ESPIONAGE' | 'TRANSPORT';
+export type FleetMissionType = 'COLONIZE' | 'STATION' | 'ATTACK' | 'ESPIONAGE' | 'TRANSPORT' | 'BOMBARD' | 'INVADE';
 
 export interface ShipQuantity {
   shipKey: string;
@@ -247,7 +251,7 @@ export interface UnreadCountView {
   count: number;
 }
 
-export type SlotStatus = 'OCCUPIED' | 'FREE' | 'VOID';
+export type SlotStatus = 'OCCUPIED' | 'FREE' | 'VOID' | 'DESTROYED';
 
 export interface SystemSlotView {
   position: number;

@@ -1,5 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.catalog;
 
+import java.util.List;
+
 public record ShipDefinition(
         String key,
         String name,
@@ -11,6 +13,7 @@ public record ShipDefinition(
         int hydrogenConsumption,
         ResourceCost baseCost,
         int baseBuildTimeSeconds,
-        int points
+        int points,
+        List<Requirement> requirements
 ) {
 }

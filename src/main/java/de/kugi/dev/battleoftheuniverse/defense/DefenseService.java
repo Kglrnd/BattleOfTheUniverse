@@ -122,6 +122,13 @@ public class DefenseService {
         towerRepository.deleteAll();
     }
 
+    /** Clears a single planet's towers and any in-progress defense order - used when a planet is destroyed. */
+    @Transactional
+    public void deleteAllForPlanet(Long planetId) {
+        jobRepository.findByPlanetId(planetId).ifPresent(jobRepository::delete);
+        towerRepository.deleteAll(towerRepository.findByPlanetId(planetId));
+    }
+
     private int ownedQuantity(Long planetId, String towerKey) {
         return towerRepository.findByPlanetIdAndTowerKey(planetId, towerKey)
                 .map(Tower::getQuantity)

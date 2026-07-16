@@ -7,7 +7,15 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown } from '../../core/countdown';
-import { formatCargo, formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
+import {
+  BOMB_SHIP_KEY,
+  formatCargo,
+  formatShipManifest,
+  GALAXY_CLASS_SHIP_KEY,
+  INVASION_SHIP_KEY,
+  isAttackMission,
+  missionLabel
+} from '../../core/fleet-mission';
 import { GameAssetPipe } from '../../core/game-asset.pipe';
 import { ImgFallbackDirective } from '../../core/img-fallback.directive';
 import {
@@ -130,7 +138,15 @@ export class FleetComponent {
     }
   }
 
-  private static readonly MISSION_TYPES: FleetMissionType[] = ['COLONIZE', 'STATION', 'ATTACK', 'ESPIONAGE', 'TRANSPORT'];
+  private static readonly MISSION_TYPES: FleetMissionType[] = [
+    'COLONIZE',
+    'STATION',
+    'ATTACK',
+    'ESPIONAGE',
+    'TRANSPORT',
+    'BOMBARD',
+    'INVADE'
+  ];
 
   /** Prefills mission type + target coordinates when arriving via a system-view "Attack"/"Colonize" link. */
   private applyRequestedTarget(params: ParamMap): void {
@@ -200,6 +216,31 @@ export class FleetComponent {
     return Object.entries(this.manifestQuantities())
       .filter(([, quantity]) => quantity > 0)
       .map(([shipKey, quantity]) => ({ shipKey, quantity }));
+  }
+
+  /**
+   * Client-side mirror of the server's manifest-composition rules for Orbital Bombs/Invasion
+   * Units (mutual exclusion, no flying alone, mandatory Galaxy Class escort) - purely a UX
+   * hint so the dispatch button can disable early; the server remains authoritative.
+   */
+  protected specialShipCompositionError(): string | null {
+    const manifest = this.currentManifest();
+    const hasBomb = manifest.some((s) => s.shipKey === BOMB_SHIP_KEY);
+    const hasInvasionUnit = manifest.some((s) => s.shipKey === INVASION_SHIP_KEY);
+    if (!hasBomb && !hasInvasionUnit) {
+      return null;
+    }
+    if (hasBomb && hasInvasionUnit) {
+      return this.transloco.translate('fleet.specialShipMutualExclusion');
+    }
+    if (manifest.length === 1) {
+      return this.transloco.translate('fleet.specialShipNeedsEscort');
+    }
+    const hasGalaxyClassEscort = manifest.some((s) => s.shipKey === GALAXY_CLASS_SHIP_KEY);
+    if (!hasGalaxyClassEscort) {
+      return this.transloco.translate('fleet.specialShipNeedsGalaxyClass');
+    }
+    return null;
   }
 
   protected currentCargo(): ResourceQuantity[] {

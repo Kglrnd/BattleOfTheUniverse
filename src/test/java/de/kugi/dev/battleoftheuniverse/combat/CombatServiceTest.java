@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.combat;
 
+import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DefenseDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
@@ -7,7 +8,10 @@ import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
 import de.kugi.dev.battleoftheuniverse.defense.DefenseService;
 import de.kugi.dev.battleoftheuniverse.fleet.AttackArrived;
+import de.kugi.dev.battleoftheuniverse.fleet.BombardArrived;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetService;
+import de.kugi.dev.battleoftheuniverse.fleet.InvadeArrived;
+import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.resource.PlanetResource;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
@@ -49,22 +53,36 @@ class CombatServiceTest {
     @Mock
     private ResourceService resourceService;
     @Mock
+    private PlanetService planetService;
+    @Mock
+    private BuildingService buildingService;
+    @Mock
     private ApplicationEventPublisher events;
 
     private CombatService service;
 
     private final ShipDefinition cruiser = new ShipDefinition(
-            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4, new ResourceCost(20000, 7000, 2000), 1800, 29);
+            "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4, new ResourceCost(20000, 7000, 2000), 1800, 29, List.of());
     private final ShipDefinition lightFighter = new ShipDefinition(
-            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, 1, new ResourceCost(3000, 1000, 0), 60, 4);
+            "light_fighter", "Light Fighter", "desc", 50, 10, 12500, 50, 1, new ResourceCost(3000, 1000, 0), 60, 4, List.of());
+    private final ShipDefinition galaxyClass = new ShipDefinition(
+            "galaxy_class", "Galaxy Class", "desc", 1800, 1800, 8000, 300, 12, new ResourceCost(150000, 60000, 20000), 10800, 220, List.of());
+    private final ShipDefinition orbitalBomb = new ShipDefinition(
+            "orbital_bomb", "Orbital Bomb", "desc", 0, 1, 6000, 0, 15, new ResourceCost(300000, 150000, 80000), 21600, 300, List.of());
+    private final ShipDefinition invasionUnit = new ShipDefinition(
+            "invasion_unit", "Invasion Unit", "desc", 0, 1, 6000, 0, 15, new ResourceCost(250000, 150000, 60000), 18000, 260, List.of());
     private final DefenseDefinition lightTower = new DefenseDefinition(
             "light_defense_tower", "Light Defense Tower", "desc", 50, new ResourceCost(2000, 500, 0), 300, 3, List.of());
 
     @BeforeEach
     void setUp() {
-        service = new CombatService(fleetService, defenseService, catalogService, researchService, resourceService, events);
+        service = new CombatService(fleetService, defenseService, catalogService, researchService, resourceService,
+                planetService, buildingService, events);
         lenient().when(catalogService.ship("cruiser")).thenReturn(cruiser);
         lenient().when(catalogService.ship("light_fighter")).thenReturn(lightFighter);
+        lenient().when(catalogService.ship("galaxy_class")).thenReturn(galaxyClass);
+        lenient().when(catalogService.ship("orbital_bomb")).thenReturn(orbitalBomb);
+        lenient().when(catalogService.ship("invasion_unit")).thenReturn(invasionUnit);
         lenient().when(catalogService.defense("light_defense_tower")).thenReturn(lightTower);
         lenient().when(researchService.levelOf(any(), any())).thenReturn(0);
         lenient().when(resourceService.raw(any())).thenReturn(List.of());
@@ -142,7 +160,7 @@ class CombatServiceTest {
     void aFleetWithNoAttackPowerIsANoOp() {
         // colony_ship-only "attack" (attack stat 0) - shouldn't normally happen but must degrade gracefully.
         ShipDefinition colonyShip = new ShipDefinition(
-                "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, 6, new ResourceCost(10000, 20000, 10000), 3600, 0);
+                "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 7500, 6, new ResourceCost(10000, 20000, 10000), 3600, 0, List.of());
         when(catalogService.ship("colony_ship")).thenReturn(colonyShip);
         when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 5));
         when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
@@ -223,5 +241,58 @@ class CombatServiceTest {
         ArgumentCaptor<BattleReport> reportCaptor = ArgumentCaptor.forClass(BattleReport.class);
         verify(events).publishEvent(reportCaptor.capture());
         assertThat(reportCaptor.getValue().resourcesLooted()).isEqualTo(ResourceCost.ZERO);
+    }
+
+    @Test
+    void bombardUndefendedPlanetSkipsCombatEntirely() {
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of());
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+
+        service.on(new BombardArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target",
+                Map.of("orbital_bomb", 1, "galaxy_class", 1)));
+
+        // Undefended - combat is skipped entirely, so no losses on either side.
+        verify(defenseService, never()).applyLosses(any(), any());
+        verify(fleetService, never()).applyLosses(any(), any());
+
+        // The 95% success roll itself isn't deterministically testable without a randomness seam
+        // (same as the existing espionage-chance roll elsewhere in this codebase) - either outcome
+        // is valid here, but the galaxy_class escort always survives and always comes home.
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Integer>> survivorsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(fleetService).creditShips(eq(ORIGIN_ID), survivorsCaptor.capture());
+        Map<String, Integer> credited = survivorsCaptor.getValue();
+        assertThat(credited).containsEntry("galaxy_class", 1);
+        assertThat(credited.getOrDefault("orbital_bomb", 0)).isIn(0, 1);
+    }
+
+    @Test
+    void bombardDefendedPlanetWhereTheBombIsDestroyedInCombatNeverTriggersTheEffect() {
+        // attackPower = 1*1800 (galaxy_class) + 1*0 (orbital_bomb) = 1800; towerPower = 40*50 = 2000 exceeds it,
+        // so powerTraded = attackPower and every attacking ship - including the bomb - takes 100% losses.
+        // The bomb dying in combat must make the destroy effect unreachable regardless of the success roll.
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 40));
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+
+        service.on(new BombardArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target",
+                Map.of("orbital_bomb", 1, "galaxy_class", 1)));
+
+        verify(planetService, never()).destroyPlanet(any());
+        verify(buildingService, never()).deleteAllForPlanet(any());
+        verify(fleetService).creditShips(ORIGIN_ID, Map.of());
+    }
+
+    @Test
+    void invadeDefendedPlanetWhereTheInvasionUnitIsDestroyedInCombatNeverTriggersTheEffect() {
+        // Same shape as the bombard equivalent above: the invasion unit dying in combat must make
+        // the ownership-transfer effect unreachable regardless of the success roll.
+        when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of("light_defense_tower", 40));
+        when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+
+        service.on(new InvadeArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target",
+                Map.of("invasion_unit", 1, "galaxy_class", 1)));
+
+        verify(planetService, never()).reassignOwner(any(), any());
+        verify(fleetService).creditShips(ORIGIN_ID, Map.of());
     }
 }

@@ -96,6 +96,22 @@
   border-color: var(--color-border);
 }
 
+.slot-destroyed {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  cursor: not-allowed;
+}
+
+.slot-tag-destroyed {
+  background: var(--color-danger);
+  color: var(--color-accent-contrast);
+}
+
+.slot-planet-name-destroyed {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
 .slot-menu-trigger {
   align-self: flex-start;
   margin-top: auto;

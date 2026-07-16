@@ -12,6 +12,7 @@ public record PlanetView(
         PlanetClass planetClass,
         boolean homeworld,
         double researchEfficiency,
-        int imageVariant
+        int imageVariant,
+        boolean destroyed
 ) {
 }

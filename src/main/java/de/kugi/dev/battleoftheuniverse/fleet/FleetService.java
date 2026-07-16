@@ -3,6 +3,8 @@ package de.kugi.dev.battleoftheuniverse.fleet;
 import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
+import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
@@ -12,6 +14,7 @@ import de.kugi.dev.battleoftheuniverse.fleet.dto.DriveOptionsRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementMapper;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.FleetMovementView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.IncomingMovementView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.LockedRequirement;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ResourceQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,6 +68,15 @@ public class FleetService {
     /** Only this ship can run an espionage mission - matches the "espionage_probe" catalog entry. */
     private static final String PROBE_SHIP_KEY = "espionage_probe";
 
+    /** Mandatory escort for BOMBARD/INVADE - matches the "galaxy_class" catalog entry. */
+    private static final String GALAXY_CLASS_KEY = "galaxy_class";
+
+    /** Only this ship can bombard a planet - matches the "orbital_bomb" catalog entry. */
+    private static final String BOMB_KEY = "orbital_bomb";
+
+    /** Only this ship can invade a planet - matches the "invasion_unit" catalog entry. */
+    private static final String INVASION_KEY = "invasion_unit";
+
     /** Espionage success chance at technology level 0, before any per-level bonus. */
     private static final double ESPIONAGE_BASE_CHANCE = 0.5;
     private static final double ESPIONAGE_CHANCE_PER_LEVEL = 0.05;
@@ -82,7 +95,7 @@ public class FleetService {
     private final FleetMovementMapper fleetMovementMapper;
     private final ResourceMapper resourceMapper;
 
-    public List<ShipyardView> listForPlanet(Long planetId) {
+    public List<ShipyardView> listForPlanet(Long planetId, Long ownerId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
         int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
 
@@ -90,6 +103,7 @@ public class FleetService {
                 .map(definition -> {
                     int owned = ownedQuantity(planetId, definition.key());
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getShipKey().equals(definition.key());
+                    List<LockedRequirement> missing = missingRequirements(planetId, ownerId, definition.requirements());
                     return new ShipyardView(
                             definition.key(),
                             definition.name(),
@@ -101,19 +115,24 @@ public class FleetService {
                             unitBuildTimeSeconds(definition, shipyardLevel),
                             isBeingBuilt,
                             isBeingBuilt ? activeJob.get().getQuantity() : null,
-                            isBeingBuilt ? activeJob.get().getEndsAt() : null
+                            isBeingBuilt ? activeJob.get().getEndsAt() : null,
+                            missing.isEmpty(),
+                            missing
                     );
                 })
                 .toList();
     }
 
     @Transactional
-    public ShipyardBuildResponse queueShip(Long planetId, String shipKey, int quantity) {
+    public ShipyardBuildResponse queueShip(Long planetId, Long ownerId, String shipKey, int quantity) {
         if (jobRepository.findByPlanetId(planetId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A shipyard order is already in progress on this planet");
         }
 
         ShipDefinition definition = catalogService.ship(shipKey);
+        if (!missingRequirements(planetId, ownerId, definition.requirements()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Requirements not met for ship: " + shipKey);
+        }
 
         ResourceCost cost = definition.baseCost().scaled(quantity);
         resourceService.debit(planetId, cost);
@@ -124,6 +143,29 @@ public class FleetService {
         jobRepository.save(new ShipyardJob(planetId, shipKey, quantity, startedAt, endsAt));
 
         return new ShipyardBuildResponse(shipKey, quantity, endsAt);
+    }
+
+    /**
+     * Unlike {@code BuildingService}'s own (building-only) helper, ships can be gated by both
+     * building level (checked on this specific planet - the shipyard is planet-local) and
+     * technology level (checked account-wide) - mirrors {@code ResearchService.missingRequirements}'s
+     * shape, which already handles both types.
+     */
+    private List<LockedRequirement> missingRequirements(Long planetId, Long ownerId, List<Requirement> requirements) {
+        List<LockedRequirement> missing = new ArrayList<>();
+        for (Requirement requirement : requirements) {
+            int currentLevel = switch (requirement.type()) {
+                case BUILDING -> buildingService.levelOf(planetId, requirement.key());
+                case TECHNOLOGY -> researchService.levelOf(ownerId, requirement.key());
+            };
+            if (currentLevel < requirement.level()) {
+                String label = requirement.type() == RequirementType.TECHNOLOGY
+                        ? catalogService.technology(requirement.key()).name()
+                        : catalogService.building(requirement.key()).name();
+                missing.add(new LockedRequirement(label, requirement.level(), currentLevel));
+            }
+        }
+        return missing;
     }
 
     /** Each shipyard level speeds up construction (level 0 - no shipyard yet - is baseline speed). */
@@ -159,6 +201,13 @@ public class FleetService {
         movementRepository.deleteAll();
         jobRepository.deleteAll();
         shipRepository.deleteAll();
+    }
+
+    /** Wipes a single planet's stationed fleet and any pending shipyard order - used when a planet is destroyed. */
+    @Transactional
+    public void wipeAllShipsAndOrders(Long planetId) {
+        shipRepository.deleteAll(shipRepository.findByPlanetId(planetId));
+        jobRepository.findByPlanetId(planetId).ifPresent(jobRepository::delete);
     }
 
     @Transactional(readOnly = true)
@@ -213,8 +262,11 @@ public class FleetService {
                 && origin.getPosition() == request.targetPosition()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target must differ from the origin planet");
         }
-        validateMissionTarget(ownerId, request);
+        // Manifest-only checks first - cheap, no DB lookups, and fail fast before we even
+        // bother resolving the target.
         validateNoDuplicateShipKeys(request.ships());
+        validateSpecialShipComposition(request.ships());
+        validateMissionTarget(ownerId, request);
 
         // Validate every ship type has enough stock before debiting any of them, so a fleet
         // with one under-stocked ship class fails cleanly instead of partially departing.
@@ -277,6 +329,29 @@ public class FleetService {
         }
     }
 
+    /**
+     * Manifest-wide composition rules for the two "weapon of last resort" ships - checked
+     * regardless of mission type, since these are properties of the fleet itself, not of
+     * where it's headed.
+     */
+    private void validateSpecialShipComposition(List<ShipQuantity> ships) {
+        boolean hasBomb = ships.stream().anyMatch(s -> BOMB_KEY.equals(s.shipKey()) && s.quantity() > 0);
+        boolean hasInvasionUnit = ships.stream().anyMatch(s -> INVASION_KEY.equals(s.shipKey()) && s.quantity() > 0);
+        if (!hasBomb && !hasInvasionUnit) {
+            return;
+        }
+        if (hasBomb && hasInvasionUnit) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Orbital Bombs and Invasion Units cannot be sent together");
+        }
+        if (ships.size() == 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Orbital Bombs and Invasion Units cannot fly without an escort");
+        }
+        boolean hasGalaxyClassEscort = ships.stream().anyMatch(s -> GALAXY_CLASS_KEY.equals(s.shipKey()) && s.quantity() > 0);
+        if (!hasGalaxyClassEscort) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Orbital Bombs and Invasion Units require at least one Galaxy Class escort");
+        }
+    }
+
     /** A fleet travels at the speed of its slowest ship. */
     private int slowestShipSpeed(List<ShipQuantity> ships) {
         return ships.stream()
@@ -297,6 +372,8 @@ public class FleetService {
                     stationShips(movement);
                     deliverCargo(movement);
                 }
+                case BOMBARD -> handleBombardArrival(movement);
+                case INVADE -> handleInvadeArrival(movement);
             }
             movementRepository.delete(movement);
         }
@@ -358,6 +435,7 @@ public class FleetService {
             case STATION -> {
                 Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                requireNotDestroyed(target);
                 if (!target.getOwnerId().equals(ownerId)) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Can only station fleets at your own planets");
                 }
@@ -365,6 +443,7 @@ public class FleetService {
             case ATTACK -> {
                 Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                requireNotDestroyed(target);
                 if (target.getOwnerId().equals(ownerId)) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot attack your own planet");
                 }
@@ -377,6 +456,7 @@ public class FleetService {
                 }
                 Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                requireNotDestroyed(target);
                 if (target.getOwnerId().equals(ownerId)) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot spy on your own planet");
                 }
@@ -384,6 +464,7 @@ public class FleetService {
             case TRANSPORT -> {
                 Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+                requireNotDestroyed(target);
                 if (!target.getOwnerId().equals(ownerId)) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Can only transport resources to your own planets");
                 }
@@ -400,6 +481,31 @@ public class FleetService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fleet cargo capacity exceeded");
                 }
             }
+            case BOMBARD -> validateSpecialMissionTarget(ownerId, request, BOMB_KEY, "An orbital bombardment needs at least one Orbital Bomb in the fleet");
+            case INVADE -> validateSpecialMissionTarget(ownerId, request, INVASION_KEY, "An invasion needs at least one Invasion Unit in the fleet");
+        }
+    }
+
+    /** Shared target validation for BOMBARD/INVADE: needs the special ship, a real enemy colony (never a homeworld, never already destroyed). */
+    private void validateSpecialMissionTarget(Long ownerId, DispatchRequest request, String requiredShipKey, String missingShipMessage) {
+        boolean hasRequiredShip = request.ships().stream().anyMatch(s -> requiredShipKey.equals(s.shipKey()));
+        if (!hasRequiredShip) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, missingShipMessage);
+        }
+        Planet target = planetService.findAtPosition(request.targetGalaxy(), request.targetSystem(), request.targetPosition())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No planet at target coordinates"));
+        requireNotDestroyed(target);
+        if (target.getOwnerId().equals(ownerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot target your own planet");
+        }
+        if (target.isHomeworld()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Homeworlds cannot be bombarded or invaded");
+        }
+    }
+
+    private void requireNotDestroyed(Planet target) {
+        if (target.isDestroyed()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Target planet has been destroyed");
         }
     }
 
@@ -431,6 +537,38 @@ public class FleetService {
         Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
                 .orElseThrow(() -> new IllegalStateException("Attack target planet no longer exists"));
         events.publishEvent(new AttackArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
+                target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
+    }
+
+    /**
+     * Hands the bombarding fleet off to {@code combat} - see {@link BombardArrived}. If the
+     * target was already destroyed (e.g. by a different fleet that arrived first), the mission
+     * is a no-op and the whole fleet simply returns home.
+     */
+    private void handleBombardArrival(FleetMovement movement) {
+        Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
+                .orElseThrow(() -> new IllegalStateException("Bombard target planet no longer exists"));
+        if (target.isDestroyed()) {
+            returnFleetToOrigin(movement);
+            return;
+        }
+        events.publishEvent(new BombardArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
+                target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
+    }
+
+    /**
+     * Hands the invading fleet off to {@code combat} - see {@link InvadeArrived}. If the target
+     * was already destroyed or is no longer enemy-owned (e.g. already invaded by someone else),
+     * the mission is a no-op and the whole fleet simply returns home.
+     */
+    private void handleInvadeArrival(FleetMovement movement) {
+        Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
+                .orElseThrow(() -> new IllegalStateException("Invade target planet no longer exists"));
+        if (target.isDestroyed() || target.getOwnerId().equals(movement.getOwnerId())) {
+            returnFleetToOrigin(movement);
+            return;
+        }
+        events.publishEvent(new InvadeArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
                 target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
     }
 

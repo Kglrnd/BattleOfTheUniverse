@@ -187,6 +187,8 @@
     "missionStation": "Station",
     "missionAttack": "Attack",
     "missionTransport": "Transport",
+    "missionBombard": "Bombard",
+    "missionInvade": "Invade",
     "noShipsOnPlanet": "No ships available on this planet yet.",
     "manifestShipInfo": "owned: {{owned}} · cargo: {{cargo}} · fuel: {{fuel}}/hop",
     "targetPlanet": "Target planet",
@@ -201,6 +203,11 @@
     "systemView": "System view",
     "attackHint": "Enter the coordinates of another player's planet. On arrival the fleet battles the target's defenses; survivors return home and both sides receive a battle report.",
     "transportHint": "Delivers the loaded cargo to one of your own planets. Ships are not consumed - they're stationed at the destination.",
+    "bombardHint": "Enter the coordinates of another player's colony (homeworlds cannot be targeted). Requires at least one Orbital Bomb and a Galaxy Class escort. If undefended, the bomb has a ~95% chance to permanently destroy the planet.",
+    "invadeHint": "Enter the coordinates of another player's colony (homeworlds cannot be targeted). Requires at least one Invasion Unit and a Galaxy Class escort. If undefended, the invasion has a ~95% chance to capture the planet along with everything on it.",
+    "specialShipMutualExclusion": "Orbital Bombs and Invasion Units cannot be sent together.",
+    "specialShipNeedsEscort": "Orbital Bombs and Invasion Units cannot fly without an escort.",
+    "specialShipNeedsGalaxyClass": "Orbital Bombs and Invasion Units require at least one Galaxy Class escort.",
     "calculatingDriveOptions": "Calculating drive options…",
     "drive": "Drive",
     "driveLevel": "Level {{level}} · x{{speed}} speed",
@@ -229,6 +236,7 @@
       "cargoFuel": "Cargo: {{cargo}} · Fuel: {{fuel}} hydrogen/hop",
       "qty": "Qty",
       "build": "Build",
+      "requires": "Requires {{label}} level {{requiredLevel}} (currently {{currentLevel}})",
       "shipyardOrderFailed": "Shipyard order failed."
     }
   },
@@ -302,6 +310,9 @@
       "actions": "Actions",
       "colonize": "Colonize",
       "attack": "Attack",
+      "bombard": "Bombard",
+      "invade": "Invade",
+      "destroyed": "Destroyed",
       "couldNotDetermineStartingSystem": "Could not determine a starting system.",
       "systemNotFound": "System not found."
     },
@@ -380,11 +391,31 @@
     "ships": {
       "light_fighter": {
         "name": "Light Fighter",
-        "description": "Fast, cheap interceptor."
+        "description": "Fast, cheap interceptor. Thin armor - relies on speed and numbers, not resilience."
+      },
+      "heavy_fighter": {
+        "name": "Heavy Fighter",
+        "description": "An armored evolution of the Light Fighter. Trades some speed for significantly thicker plating."
+      },
+      "light_cruiser": {
+        "name": "Light Cruiser",
+        "description": "An agile, offense-focused cruiser. Hits hard for its size but sacrifices armor to do it."
       },
       "cruiser": {
         "name": "Cruiser",
         "description": "Balanced mid-tier warship."
+      },
+      "heavy_cruiser": {
+        "name": "Heavy Cruiser",
+        "description": "A defense-focused cruiser built to soak up damage. Slower and hits softer than the Light Cruiser, but far harder to bring down."
+      },
+      "battlecruiser": {
+        "name": "Battlecruiser",
+        "description": "A capital-scale glass cannon. Devastating firepower for its cost, but armor plating lags well behind the Galaxy Class."
+      },
+      "galaxy_class": {
+        "name": "Galaxy Class",
+        "description": "The largest and strongest warship in the fleet, equally formidable in attack and defense. Its size makes it the mandatory escort for Orbital Bombs and Invasion Units."
       },
       "small_cargo": {
         "name": "Transport Ship",
@@ -397,6 +428,14 @@
       "espionage_probe": {
         "name": "Espionage Probe",
         "description": "Unarmed reconnaissance ship built to slip past enemy sensors and report back on a planet's fleet and resources."
+      },
+      "orbital_bomb": {
+        "name": "Orbital Bomb",
+        "description": "Unarmed, single-purpose ordnance capable of rendering an enemy colony permanently uninhabitable. Requires a Galaxy Class escort and cannot be sent alongside Invasion Units. Homeworlds cannot be targeted."
+      },
+      "invasion_unit": {
+        "name": "Invasion Unit",
+        "description": "Ground-assault vessel capable of seizing control of an enemy colony intact. Requires a Galaxy Class escort and cannot be sent alongside Orbital Bombs. Homeworlds cannot be targeted."
       }
     },
     "technologies": {
@@ -435,6 +474,14 @@
       "hyperspace_drive": {
         "name": "Hyperspace Drive",
         "description": "Folds space itself, enabling travel between galaxies. Requires an inter-system drive researched to at least level 5."
+      },
+      "orbital_bombardment": {
+        "name": "Orbital Bombardment",
+        "description": "End-game weapons doctrine that enables the construction of Orbital Bombs, capable of permanently destroying an enemy colony."
+      },
+      "planetary_invasion_tactics": {
+        "name": "Planetary Invasion Tactics",
+        "description": "End-game ground-assault doctrine that enables the construction of Invasion Units, capable of seizing control of an enemy colony."
       }
     },
     "defenses": {

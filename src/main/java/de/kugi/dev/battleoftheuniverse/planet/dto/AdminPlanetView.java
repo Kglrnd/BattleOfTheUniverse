@@ -15,6 +15,7 @@ public record AdminPlanetView(
         String coordinates,
         PlanetClass planetClass,
         boolean homeworld,
+        boolean destroyed,
         Instant createdAt
 ) {
 }

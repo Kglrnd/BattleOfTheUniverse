@@ -20,7 +20,8 @@ function planet(id: number, homeworld = false): PlanetView {
     planetClass: 'TEMPERATE',
     homeworld,
     researchEfficiency: 100,
-    imageVariant: 0
+    imageVariant: 0,
+    destroyed: false
   };
 }
 

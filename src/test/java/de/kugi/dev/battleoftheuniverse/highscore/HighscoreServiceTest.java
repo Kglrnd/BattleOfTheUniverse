@@ -40,15 +40,15 @@ class HighscoreServiceTest {
 
     private static final ShipDefinition CRUISER = new ShipDefinition(
             "cruiser", "Cruiser", "desc", 400, 200, 15000, 50, 4,
-            new ResourceCost(20000, 7000, 2000), 1800, 29);
+            new ResourceCost(20000, 7000, 2000), 1800, 29, List.of());
 
     private static final ShipDefinition COLONY_SHIP = new ShipDefinition(
             "colony_ship", "Colony Ship", "desc", 0, 100, 2500, 1000, 6,
-            new ResourceCost(10000, 20000, 10000), 3600, 0);
+            new ResourceCost(10000, 20000, 10000), 3600, 0, List.of());
 
     private static final ShipDefinition TRANSPORT = new ShipDefinition(
             "small_cargo", "Transport Ship", "desc", 5, 10, 10000, 25000, 3,
-            new ResourceCost(2000, 2000, 0), 600, 0);
+            new ResourceCost(2000, 2000, 0), 600, 0, List.of());
 
     private static final DefenseDefinition LIGHT_TOWER = new DefenseDefinition(
             "light_defense_tower", "Light Defense Tower", "desc", 50,

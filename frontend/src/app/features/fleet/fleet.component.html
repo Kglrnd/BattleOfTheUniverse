@@ -53,7 +53,26 @@
           >
             {{ t('missionTransport') }}
           </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="missionType() === 'BOMBARD'"
+            (click)="setMissionType('BOMBARD')"
+          >
+            {{ t('missionBombard') }}
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="missionType() === 'INVADE'"
+            (click)="setMissionType('INVADE')"
+          >
+            {{ t('missionInvade') }}
+          </button>
         </div>
+        @if (specialShipCompositionError(); as compositionError) {
+          <p class="field-error">{{ compositionError }}</p>
+        }
       </div>
 
       <div class="field">
@@ -189,6 +208,10 @@
           </p>
         } @else if (missionType() === 'TRANSPORT') {
           <p class="field-hint">{{ t('transportHint') }}</p>
+        } @else if (missionType() === 'BOMBARD') {
+          <p class="field-hint">{{ t('bombardHint') }}</p>
+        } @else if (missionType() === 'INVADE') {
+          <p class="field-hint">{{ t('invadeHint') }}</p>
         }
       </div>
 
@@ -225,7 +248,7 @@
       <button
         type="button"
         class="btn btn-primary"
-        [disabled]="dispatching() || currentManifest().length === 0 || !selectedDriveKey()"
+        [disabled]="dispatching() || currentManifest().length === 0 || !selectedDriveKey() || !!specialShipCompositionError()"
         (click)="dispatch(targetGalaxy.valueAsNumber, targetSystem.valueAsNumber, targetPosition.valueAsNumber)"
       >
         {{ t('dispatch') }}

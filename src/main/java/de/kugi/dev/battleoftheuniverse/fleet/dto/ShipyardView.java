@@ -3,6 +3,7 @@ package de.kugi.dev.battleoftheuniverse.fleet.dto;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 
 import java.time.Instant;
+import java.util.List;
 
 public record ShipyardView(
         String key,
@@ -15,6 +16,8 @@ public record ShipyardView(
         long unitBuildTimeSeconds,
         boolean buildActive,
         Integer buildingQuantity,
-        Instant buildEndsAt
+        Instant buildEndsAt,
+        boolean unlocked,
+        List<LockedRequirement> missingRequirements
 ) {
 }

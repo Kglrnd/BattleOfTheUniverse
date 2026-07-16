@@ -121,18 +121,24 @@ export class SystemViewComponent {
       this.colonize(galaxy, system, position);
     } else if (action === 'attack') {
       this.attack(galaxy, system, position);
+    } else if (action === 'bombard') {
+      this.dispatchTo('BOMBARD', galaxy, system, position);
+    } else if (action === 'invade') {
+      this.dispatchTo('INVADE', galaxy, system, position);
     }
   }
 
   attack(galaxy: number, system: number, position: number): void {
-    this.router.navigate(['/fleet'], {
-      queryParams: { mission: 'ATTACK', targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
-    });
+    this.dispatchTo('ATTACK', galaxy, system, position);
   }
 
   colonize(galaxy: number, system: number, position: number): void {
+    this.dispatchTo('COLONIZE', galaxy, system, position);
+  }
+
+  private dispatchTo(mission: string, galaxy: number, system: number, position: number): void {
     this.router.navigate(['/fleet'], {
-      queryParams: { mission: 'COLONIZE', targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
+      queryParams: { mission, targetGalaxy: galaxy, targetSystem: system, targetPosition: position }
     });
   }
 

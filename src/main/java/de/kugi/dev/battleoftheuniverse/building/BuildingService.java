@@ -147,6 +147,13 @@ public class BuildingService {
         buildingRepository.deleteAll();
     }
 
+    /** Clears a single planet's buildings and any in-progress construction - used when a planet is destroyed. */
+    @Transactional
+    public void deleteAllForPlanet(Long planetId) {
+        jobRepository.findByPlanetId(planetId).ifPresent(jobRepository::delete);
+        buildingRepository.deleteAll(buildingRepository.findByPlanetId(planetId));
+    }
+
     /** Backfills a level-1 command center on any planet that predates the main-building requirement system. */
     @Transactional
     public void backfillMainBuilding() {

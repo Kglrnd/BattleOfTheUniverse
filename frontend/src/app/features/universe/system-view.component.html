@@ -30,6 +30,13 @@
               <span class="slot-status-label">{{ t('free') }}</span>
               <span class="slot-coordinates">[{{ s.galaxy }}:{{ s.system }}:{{ slot.position }}]</span>
             </div>
+          } @else if (slot.status === 'DESTROYED') {
+            <div class="slot-body">
+              <span class="slot-tag slot-tag-destroyed">{{ t('destroyed') }}</span>
+              @if (slot.planet; as destroyedPlanet) {
+                <div class="slot-planet-name slot-planet-name-destroyed">{{ destroyedPlanet.name }}</div>
+              }
+            </div>
           } @else if (slot.planet; as planet) {
             <div class="slot-body">
               <img class="card-icon" [src]="planet.imageVariant | gameAsset: 'planets'" alt="" appImgFallback />
@@ -59,8 +66,12 @@
               <ng-template ngMenuContent>
                 @if (slot.status === 'FREE') {
                   <div ngMenuItem value="colonize" class="slot-menu-item">{{ t('colonize') }}</div>
-                } @else if (slot.planet) {
+                } @else if (slot.planet; as targetPlanet) {
                   <div ngMenuItem value="attack" class="slot-menu-item">{{ t('attack') }}</div>
+                  @if (!targetPlanet.homeworld) {
+                    <div ngMenuItem value="bombard" class="slot-menu-item">{{ t('bombard') }}</div>
+                    <div ngMenuItem value="invade" class="slot-menu-item">{{ t('invade') }}</div>
+                  }
                 }
               </ng-template>
             </div>

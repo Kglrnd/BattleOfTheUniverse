@@ -131,6 +131,40 @@
         { "type": "TECHNOLOGY", "key": "impulse_drive", "level": 5 },
         { "type": "TECHNOLOGY", "key": "energy_technology", "level": 5 }
       ]
+    },
+    {
+      "key": "orbital_bombardment",
+      "name": "Orbital Bombardment",
+      "description": "End-game weapons doctrine that enables the construction of Orbital Bombs, capable of permanently destroying an enemy colony.",
+      "baseCost": { "metal": 50000, "crystal": 40000, "deuterium": 30000 },
+      "costGrowthFactor": 1.25,
+      "baseResearchTimeSeconds": 25200,
+      "driveScope": "NONE",
+      "baseSpeedMultiplier": 1.0,
+      "driveSpeedBonusPerLevel": 0.0,
+      "requirements": [
+        { "type": "BUILDING", "key": "research_lab", "level": 12 },
+        { "type": "TECHNOLOGY", "key": "energy_technology", "level": 8 },
+        { "type": "TECHNOLOGY", "key": "laser_technology", "level": 8 },
+        { "type": "TECHNOLOGY", "key": "shielding_technology", "level": 6 }
+      ]
+    },
+    {
+      "key": "planetary_invasion_tactics",
+      "name": "Planetary Invasion Tactics",
+      "description": "End-game ground-assault doctrine that enables the construction of Invasion Units, capable of seizing control of an enemy colony.",
+      "baseCost": { "metal": 60000, "crystal": 45000, "deuterium": 35000 },
+      "costGrowthFactor": 1.25,
+      "baseResearchTimeSeconds": 32400,
+      "driveScope": "NONE",
+      "baseSpeedMultiplier": 1.0,
+      "driveSpeedBonusPerLevel": 0.0,
+      "requirements": [
+        { "type": "BUILDING", "key": "research_lab", "level": 12 },
+        { "type": "TECHNOLOGY", "key": "espionage_technology", "level": 8 },
+        { "type": "TECHNOLOGY", "key": "shielding_technology", "level": 6 },
+        { "type": "TECHNOLOGY", "key": "orbital_bombardment", "level": 1 }
+      ]
     }
   ]
 }

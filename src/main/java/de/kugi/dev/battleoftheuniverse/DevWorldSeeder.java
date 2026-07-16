@@ -43,7 +43,15 @@ public class DevWorldSeeder implements ApplicationRunner {
     private static final int MAX_LEVEL = 20;
     private static final int SHIP_QUANTITY = 500;
     private static final long HYDROGEN_STOCKPILE = 1_000_000;
-    private static final int PLANETS_PER_ENEMY = 3;
+    private static final int PLANETS_PER_ENEMY = 5;
+    /**
+     * Garrison on every defended enemy planet. {@code stockAllShips} stocks every catalog ship
+     * type uniformly, including top-tier ones - even a small quantity of each stacks into a lot
+     * of total defense power, so this is deliberately low to stay beatable by the bare-minimum
+     * legal BOMBARD/INVADE escort (one Orbital Bomb/Invasion Unit + one Galaxy Class, 1800 attack
+     * power total) as well as by a modest ATTACK fleet.
+     */
+    private static final int ENEMY_SHIP_QUANTITY = 5;
     private static final String ENEMY_PASSWORD = "enemy1234";
 
     private static final List<DevAccountsProperties.Account> ENEMIES = List.of(
@@ -84,6 +92,18 @@ public class DevWorldSeeder implements ApplicationRunner {
         }
         for (int i = 1; i < PLANETS_PER_ENEMY; i++) {
             planetService.createColonyPlanet(ownerId, account.username() + " Colony " + i);
+        }
+
+        // Stock a defensive garrison on every one of this enemy's planets except the very last
+        // colony, which is deliberately left undefended - a guaranteed easy target for testing
+        // the undefended BOMBARD/INVADE path, alongside the defended homeworld/other colonies
+        // for testing the "escort dies in combat" path.
+        List<Planet> planets = planetService.listMine(ownerId);
+        for (int i = 0; i < planets.size(); i++) {
+            if (i == planets.size() - 1) {
+                continue;
+            }
+            fleetService.stockAllShips(planets.get(i).getId(), ENEMY_SHIP_QUANTITY);
         }
     }
 

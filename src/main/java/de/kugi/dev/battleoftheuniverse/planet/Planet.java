@@ -51,6 +51,9 @@ public class Planet {
 
     private boolean researchPlanet = false;
 
+    /** Set by a successful orbital bombardment. Permanent - the slot can never be recolonized. */
+    private boolean destroyed = false;
+
     public Planet(String name, Long ownerId, int galaxy, int system, int position, PlanetClass planetClass) {
         this.name = name;
         this.ownerId = ownerId;
