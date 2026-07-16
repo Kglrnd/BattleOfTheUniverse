@@ -5,7 +5,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { map } from 'rxjs';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
-import { formatCountdown } from '../../core/countdown';
+import { formatCountdown, progressPercent } from '../../core/countdown';
 import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
 import { GameAssetPipe } from '../../core/game-asset.pipe';
 import { ImgFallbackDirective } from '../../core/img-fallback.directive';
@@ -75,5 +75,10 @@ export class PlanetDetailComponent {
   remainingMovementLabel(movement: FleetMovementView | IncomingMovementView): string {
     this.clockTick();
     return formatCountdown(movement.arrivesAt);
+  }
+
+  movementProgress(movement: FleetMovementView | IncomingMovementView): number {
+    this.clockTick();
+    return progressPercent(movement.departedAt, movement.arrivesAt);
   }
 }

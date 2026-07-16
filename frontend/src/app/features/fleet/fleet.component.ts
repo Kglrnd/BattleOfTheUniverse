@@ -6,7 +6,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { CurrentPlanetService } from '../../core/current-planet.service';
-import { formatCountdown } from '../../core/countdown';
+import { formatCountdown, progressPercent } from '../../core/countdown';
 import {
   BOMB_SHIP_KEY,
   formatCargo,
@@ -374,6 +374,11 @@ export class FleetComponent {
 
   remainingMovementLabel(movement: FleetMovementView): string {
     return this.countdown(movement.arrivesAt);
+  }
+
+  movementProgress(movement: FleetMovementView): number {
+    this.clockTick();
+    return progressPercent(movement.departedAt, movement.arrivesAt);
   }
 
   private resetDriveOptions(): void {

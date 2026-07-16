@@ -4,7 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
-import { formatCountdown } from '../../core/countdown';
+import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
 import { GameAssetPipe } from '../../core/game-asset.pipe';
 import { ImgFallbackDirective } from '../../core/img-fallback.directive';
 import { BuildingView } from '../../core/models';
@@ -75,5 +75,10 @@ export class BuildingListComponent {
   remainingLabel(building: BuildingView): string {
     this.clockTick();
     return formatCountdown(building.constructionEndsAt);
+  }
+
+  progress(building: BuildingView): number {
+    this.clockTick();
+    return progressPercentFromDuration(building.constructionEndsAt, building.nextLevelBuildTimeSeconds);
   }
 }

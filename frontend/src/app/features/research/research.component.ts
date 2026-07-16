@@ -4,6 +4,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
+import { progressPercentFromDuration } from '../../core/countdown';
 import { ResearchPlanetOption, TechnologyView } from '../../core/models';
 import { ResearchApiService } from './research-api.service';
 
@@ -101,5 +102,10 @@ export class ResearchComponent {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  progress(tech: TechnologyView): number {
+    this.clockTick();
+    return progressPercentFromDuration(tech.researchEndsAt, tech.nextLevelResearchTimeSeconds);
   }
 }

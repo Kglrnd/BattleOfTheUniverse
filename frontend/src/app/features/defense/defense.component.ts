@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
-import { formatCountdown } from '../../core/countdown';
+import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
 import { TowerView } from '../../core/models';
 import { DefenseApiService } from './defense-api.service';
 
@@ -72,5 +72,10 @@ export class DefenseComponent {
   remainingLabel(tower: TowerView): string {
     this.clockTick();
     return formatCountdown(tower.buildEndsAt);
+  }
+
+  progress(tower: TowerView): number {
+    this.clockTick();
+    return progressPercentFromDuration(tower.buildEndsAt, tower.unitBuildTimeSeconds * (tower.buildingQuantity ?? 1));
   }
 }

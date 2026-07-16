@@ -25,7 +25,7 @@
               }
             </ul>
           } @else if (building.constructionActive) {
-            <div class="progress progress-indeterminate"></div>
+            <div class="progress"><div class="progress-fill" [style.width.%]="progress(building)"></div></div>
             <p class="countdown">{{ t('upgradingToLevel', { level: building.level + 1, time: remainingLabel(building) }) }}</p>
           } @else {
             <p class="cost">

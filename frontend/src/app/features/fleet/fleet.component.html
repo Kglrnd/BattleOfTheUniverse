@@ -281,7 +281,7 @@
             @if (movement.cargo.length > 0) {
               <p class="cost">{{ t('cargoLine', { cargo: formatCargo(movement.cargo) }) }}</p>
             }
-            <div class="progress progress-indeterminate"></div>
+            <div class="progress"><div class="progress-fill" [style.width.%]="movementProgress(movement)"></div></div>
             <p class="countdown">{{ t('arrivingIn', { remaining: remainingMovementLabel(movement) }) }}</p>
           </div>
         </div>

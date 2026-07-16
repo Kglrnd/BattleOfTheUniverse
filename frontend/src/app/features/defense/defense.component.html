@@ -19,7 +19,7 @@
             }
           </ul>
         } @else if (tower.buildActive) {
-          <div class="progress progress-indeterminate"></div>
+          <div class="progress"><div class="progress-fill" [style.width.%]="progress(tower)"></div></div>
           <p class="countdown">{{ t('buildingProgress', { quantity: tower.buildingQuantity, remaining: remainingLabel(tower) }) }}</p>
         } @else {
           <p class="cost">

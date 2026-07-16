@@ -179,6 +179,8 @@ a {
 
 .card-actions {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
@@ -192,23 +194,11 @@ a {
   overflow: hidden;
 }
 
-.progress-indeterminate::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: var(--color-accent);
+.progress-fill {
+  height: 100%;
   border-radius: 999px;
-  animation: progress-indeterminate 1.2s ease-in-out infinite;
-}
-
-@keyframes progress-indeterminate {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(350%);
-  }
+  background: var(--color-accent);
+  transition: width 1s linear;
 }
 
 /* Shared page fragments (card grids, status text) reused across planet/research/fleet views */

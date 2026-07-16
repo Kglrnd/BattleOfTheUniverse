@@ -65,7 +65,7 @@
               }
             </ul>
           } @else if (tech.researchActive) {
-            <div class="progress progress-indeterminate"></div>
+            <div class="progress"><div class="progress-fill" [style.width.%]="progress(tech)"></div></div>
             <p class="countdown">{{ t('researchingLevel') }} {{ tech.researchTargetLevel }} — {{ remainingLabel(tech) }}</p>
           } @else {
             <p class="cost">

@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
-import { formatCountdown } from '../../core/countdown';
+import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
 import { GameAssetPipe } from '../../core/game-asset.pipe';
 import { ImgFallbackDirective } from '../../core/img-fallback.directive';
 import { ShipyardView } from '../../core/models';
@@ -74,5 +74,10 @@ export class ShipyardComponent {
   remainingLabel(ship: ShipyardView): string {
     this.clockTick();
     return formatCountdown(ship.buildEndsAt);
+  }
+
+  progress(ship: ShipyardView): number {
+    this.clockTick();
+    return progressPercentFromDuration(ship.buildEndsAt, ship.unitBuildTimeSeconds * (ship.buildingQuantity ?? 1));
   }
 }
