@@ -6,6 +6,10 @@
 /out-tsc
 /bazel-out
 
+# Mutation testing (Stryker)
+/reports
+.stryker-tmp/
+
 # Node
 /node_modules
 npm-debug.log

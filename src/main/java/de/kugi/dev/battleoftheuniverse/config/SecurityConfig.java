@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .exceptionHandling(handling -> handling.authenticationEntryPoint(this::onAuthenticationRequired))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
@@ -73,6 +74,18 @@ public class SecurityConfig {
     private void onLoginFailure(HttpServletRequest request, HttpServletResponse response,
                                  org.springframework.security.core.AuthenticationException exception) throws IOException {
         writeJson(response, HttpStatus.UNAUTHORIZED, new ApiError(HttpStatus.UNAUTHORIZED.value(), "Invalid username or password"));
+    }
+
+    /**
+     * Without this, an unauthenticated request to a protected endpoint falls back to Spring
+     * Security's default {@code formLogin} behavior: a 302 redirect to a login *page* that
+     * doesn't exist on this API-only backend (the SPA's login route is client-side). A pure
+     * JSON API needs a clean 401 instead - e.g. so the frontend can detect "session expired"
+     * and redirect to /login itself, rather than the fetch/XHR call choking on an HTML response.
+     */
+    private void onAuthenticationRequired(HttpServletRequest request, HttpServletResponse response,
+                                           org.springframework.security.core.AuthenticationException exception) throws IOException {
+        writeJson(response, HttpStatus.UNAUTHORIZED, new ApiError(HttpStatus.UNAUTHORIZED.value(), "Authentication required"));
     }
 
     private void writeJson(HttpServletResponse response, HttpStatus status, Object body) throws IOException {

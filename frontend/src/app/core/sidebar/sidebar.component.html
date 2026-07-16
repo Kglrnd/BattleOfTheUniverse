@@ -1,4 +1,4 @@
-<nav class="sidebar-tree" [attr.aria-label]="t('mainMenu')" *transloco="let t; prefix: 'nav'">
+<nav class="sidebar-tree" [attr.aria-label]="t('mainMenu')" *transloco="let t; prefix: 'nav'" (click)="mobileNav.close()">
   @if (isAdminArea()) {
     @if (canAccessAdmin()) {
       <div class="tree-node">

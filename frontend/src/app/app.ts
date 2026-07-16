@@ -7,6 +7,7 @@ import { filter, map } from 'rxjs';
 import { AppFooterComponent } from './core/app-footer/app-footer.component';
 import { AuthService } from './core/auth.service';
 import { LanguageSwitcherComponent } from './core/language-switcher/language-switcher.component';
+import { MobileNavService } from './core/mobile-nav.service';
 import { SidebarComponent } from './core/sidebar/sidebar.component';
 import { ResourceBarComponent } from './features/universe/resource-bar.component';
 
@@ -27,6 +28,7 @@ import { ResourceBarComponent } from './features/universe/resource-bar.component
 })
 export class App {
   protected readonly auth = inject(AuthService);
+  protected readonly mobileNav = inject(MobileNavService);
   private readonly router = inject(Router);
 
   private readonly currentUrl = toSignal(

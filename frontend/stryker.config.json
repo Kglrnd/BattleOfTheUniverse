@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Uses the 'command' runner (not a Vitest-specific one) because Angular 22's native @angular/build:unit-test builder owns Vitest internally and doesn't expose a standalone vitest.config.ts for Stryker's coverage-analysis runners to drive directly - see stryker-mutator.io's Angular guide, which only documents Karma/Jest. The command runner is slower (no per-mutant test filtering, every mutant re-runs the whole suite via `npm test`) but works reliably regardless of the underlying test builder. This is opt-in, release-gate tooling - run explicitly (`npm run test:mutation`), not part of every `npm test`.",
+  "packageManager": "npm",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "npm test -- --watch=false"
+  },
+  "coverageAnalysis": "off",
+  "mutate": ["src/app/**/*.ts", "!src/app/**/*.spec.ts", "!src/main.ts", "!src/app/core/models.ts"],
+  "concurrency": 3,
+  "timeoutMS": 30000,
+  "timeoutFactor": 3,
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  }
+}

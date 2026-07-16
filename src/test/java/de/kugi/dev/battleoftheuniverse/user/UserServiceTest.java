@@ -1,9 +1,11 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.AdminUserView;
+import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -15,6 +17,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,5 +94,58 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> service.updatePreferredLanguage(99L, "de"))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void registerCreatesAUserPublishesAnEventAndReturnsAView() {
+        when(userRepository.existsByUsername("alice")).thenReturn(false);
+        when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("secret123")).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            u.setId(7L);
+            return u;
+        });
+
+        UserView view = service.register(new RegisterRequest("alice", "alice@example.com", "secret123", "de"));
+
+        assertThat(view.id()).isEqualTo(7L);
+        assertThat(view.username()).isEqualTo("alice");
+        var eventCaptor = ArgumentCaptor.forClass(UserRegistered.class);
+        verify(events).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().userId()).isEqualTo(7L);
+    }
+
+    @Test
+    void registerThreeArgConvenienceOverloadDelegatesWithNoPreferredLanguage() {
+        when(userRepository.existsByUsername("bob")).thenReturn(false);
+        when(userRepository.existsByEmail("bob@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("secret123")).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserView view = service.register("bob", "bob@example.com", "secret123");
+
+        assertThat(view.username()).isEqualTo("bob");
+    }
+
+    @Test
+    void registerRejectsAnAlreadyTakenUsername() {
+        when(userRepository.existsByUsername("alice")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.register(new RegisterRequest("alice", "new@example.com", "secret123", null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Username already taken");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerRejectsAnAlreadyRegisteredEmail() {
+        when(userRepository.existsByUsername("alice")).thenReturn(false);
+        when(userRepository.existsByEmail("alice@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.register(new RegisterRequest("alice", "alice@example.com", "secret123", null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Email already registered");
+        verify(userRepository, never()).save(any());
     }
 }

@@ -11,6 +11,8 @@ import de.kugi.dev.battleoftheuniverse.fleet.AttackArrived;
 import de.kugi.dev.battleoftheuniverse.fleet.BombardArrived;
 import de.kugi.dev.battleoftheuniverse.fleet.FleetService;
 import de.kugi.dev.battleoftheuniverse.fleet.InvadeArrived;
+import de.kugi.dev.battleoftheuniverse.planet.Planet;
+import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.research.ResearchService;
 import de.kugi.dev.battleoftheuniverse.resource.PlanetResource;
@@ -247,6 +249,9 @@ class CombatServiceTest {
     void bombardUndefendedPlanetSkipsCombatEntirely() {
         when(defenseService.stationedTowers(TARGET_PLANET_ID)).thenReturn(Map.of());
         when(fleetService.stationedShips(TARGET_PLANET_ID)).thenReturn(Map.of());
+        // Only consulted on a successful destroy roll (~95% of runs) - stubbed leniently since the outcome is random.
+        lenient().when(planetService.getById(TARGET_PLANET_ID))
+                .thenReturn(new Planet("Target", DEFENDER_ID, 2, 5, 9, PlanetClass.TEMPERATE));
 
         service.on(new BombardArrived(ATTACKER_ID, ORIGIN_ID, DEFENDER_ID, TARGET_PLANET_ID, "Target",
                 Map.of("orbital_bomb", 1, "galaxy_class", 1)));

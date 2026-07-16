@@ -93,6 +93,15 @@
   width: 4.5rem;
 }
 
+/* Below this width there isn't room for icon+name+owned-info+qty on one line without
+   truncating the name to a useless fragment - let owned-info/qty wrap to their own line
+   instead, so the name always gets to render in full. */
+@media (max-width: 480px) {
+  .manifest-row {
+    flex-wrap: wrap;
+  }
+}
+
 .drive-options {
   display: flex;
   flex-direction: column;

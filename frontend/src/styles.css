@@ -296,3 +296,16 @@ a {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Below this, touch is the primary input - bump tap targets toward the ~44px recommended minimum. */
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.75rem 1.1rem;
+  }
+
+  .input,
+  .select {
+    padding: 0.75rem 0.7rem;
+    font-size: 16px; /* prevents iOS Safari from auto-zooming on focus when a field's font is under 16px */
+  }
+}

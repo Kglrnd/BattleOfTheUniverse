@@ -8,6 +8,7 @@
   },
   "header": {
     "brand": "Battle of the Universe",
+    "menu": "Menu",
     "playerView": "Player view",
     "adminView": "Admin view",
     "logout": "Log out",

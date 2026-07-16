@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject } from '@angular/core';
+import { Component, DestroyRef, HostBinding, computed, inject } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -6,6 +6,7 @@ import { filter, map } from 'rxjs';
 
 import { AuthService } from '../auth.service';
 import { CurrentPlanetService } from '../current-planet.service';
+import { MobileNavService } from '../mobile-nav.service';
 import { MessagesApiService } from '../../features/messages/messages-api.service';
 
 @Component({
@@ -20,6 +21,13 @@ export class SidebarComponent {
   private readonly messagesApi = inject(MessagesApiService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly mobileNav = inject(MobileNavService);
+
+  /** Slides the drawer into view on narrow viewports; a no-op class above the collapse breakpoint. */
+  @HostBinding('class.open')
+  protected get isOpen(): boolean {
+    return this.mobileNav.isOpen();
+  }
 
   protected readonly isAdmin = this.auth.isAdmin;
   protected readonly canAccessAdmin = this.auth.canAccessAdmin;

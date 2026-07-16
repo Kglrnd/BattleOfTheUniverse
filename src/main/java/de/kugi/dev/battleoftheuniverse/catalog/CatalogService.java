@@ -6,6 +6,7 @@ import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,10 @@ public class CatalogService {
 
     private final JsonSchemaService jsonSchemaService;
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
-    private final Path catalogDir = Path.of("config", "catalog");
+    /** Configurable so tests can point it at a throwaway directory instead of the real, gitignored ./config/catalog a dev server also uses. */
+    @Value("${game.catalog.dir:config/catalog}")
+    private String catalogDirPath;
+    private Path catalogDir;
 
     private final Map<CatalogType, JsonNode> rawData = new ConcurrentHashMap<>();
     private final Map<String, BuildingDefinition> buildingsByKey = new ConcurrentHashMap<>();
@@ -45,6 +49,7 @@ public class CatalogService {
 
     @PostConstruct
     void loadAll() {
+        catalogDir = Path.of(catalogDirPath);
         for (CatalogType type : CatalogType.values()) {
             reload(type);
         }
@@ -127,15 +132,22 @@ public class CatalogService {
         return rawData.get(type);
     }
 
+    /**
+     * Schema validation alone isn't enough to guarantee {@code newData} can actually become the
+     * target record type (e.g. a schema-optional field can still be a required Java primitive) -
+     * {@link #applyToMemory} is called *before* writing to disk specifically so a payload that
+     * passes the schema but fails deserialization is rejected as a clean 400 instead of being
+     * persisted to the live catalog file and only failing on the next server restart.
+     */
     public synchronized void save(CatalogType type, JsonNode newData) {
         validate(type, newData);
+        applyToMemory(type, newData);
         try {
             Files.createDirectories(catalogDir);
             Files.writeString(catalogDir.resolve(type.fileName()), newData.toPrettyString());
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not persist catalog", e);
         }
-        reload(type);
     }
 
     private void reload(CatalogType type) {
@@ -153,26 +165,34 @@ public class CatalogService {
             throw new IllegalStateException("Could not load catalog " + type, e);
         }
         validate(type, data);
-        rawData.put(type, data);
+        applyToMemory(type, data);
+    }
 
-        switch (type) {
-            case BUILDINGS -> {
-                BuildingCatalog catalog = jsonMapper.treeToValue(data, BuildingCatalog.class);
-                replaceAll(buildingsByKey, catalog.buildings(), BuildingDefinition::key);
+    /** Deserializes into the target record type and swaps it into the in-memory maps, or throws a 400 if the shape doesn't fit. */
+    private void applyToMemory(CatalogType type, JsonNode data) {
+        try {
+            switch (type) {
+                case BUILDINGS -> {
+                    BuildingCatalog catalog = jsonMapper.treeToValue(data, BuildingCatalog.class);
+                    replaceAll(buildingsByKey, catalog.buildings(), BuildingDefinition::key);
+                }
+                case SHIPS -> {
+                    ShipCatalog catalog = jsonMapper.treeToValue(data, ShipCatalog.class);
+                    replaceAll(shipsByKey, catalog.ships(), ShipDefinition::key);
+                }
+                case TECHNOLOGIES -> {
+                    TechnologyCatalog catalog = jsonMapper.treeToValue(data, TechnologyCatalog.class);
+                    replaceAll(technologiesByKey, catalog.technologies(), TechnologyDefinition::key);
+                }
+                case DEFENSES -> {
+                    DefenseCatalog catalog = jsonMapper.treeToValue(data, DefenseCatalog.class);
+                    replaceAll(defensesByKey, catalog.defenses(), DefenseDefinition::key);
+                }
             }
-            case SHIPS -> {
-                ShipCatalog catalog = jsonMapper.treeToValue(data, ShipCatalog.class);
-                replaceAll(shipsByKey, catalog.ships(), ShipDefinition::key);
-            }
-            case TECHNOLOGIES -> {
-                TechnologyCatalog catalog = jsonMapper.treeToValue(data, TechnologyCatalog.class);
-                replaceAll(technologiesByKey, catalog.technologies(), TechnologyDefinition::key);
-            }
-            case DEFENSES -> {
-                DefenseCatalog catalog = jsonMapper.treeToValue(data, DefenseCatalog.class);
-                replaceAll(defensesByKey, catalog.defenses(), DefenseDefinition::key);
-            }
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid catalog data for " + type + ": " + e.getMessage());
         }
+        rawData.put(type, data);
     }
 
     private <T> void replaceAll(Map<String, T> target, List<T> values, java.util.function.Function<T, String> keyFn) {

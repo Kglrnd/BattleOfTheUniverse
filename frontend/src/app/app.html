@@ -1,5 +1,18 @@
 <header class="app-header" *transloco="let t; prefix: 'header'">
-  <a class="brand" routerLink="/universe">{{ t('brand') }}</a>
+  <div class="header-left">
+    @if (auth.isAuthenticated()) {
+      <button
+        type="button"
+        class="hamburger-btn"
+        [attr.aria-label]="t('menu')"
+        [attr.aria-expanded]="mobileNav.isOpen()"
+        (click)="mobileNav.toggle()"
+      >
+        <span></span><span></span><span></span>
+      </button>
+    }
+    <a class="brand" routerLink="/universe">{{ t('brand') }}</a>
+  </div>
   <nav>
     @if (auth.isAuthenticated()) {
       <span class="username">{{ auth.currentUser()?.username }}</span>
@@ -26,6 +39,9 @@
 
 <div class="app-shell">
   @if (auth.isAuthenticated()) {
+    @if (mobileNav.isOpen()) {
+      <div class="sidebar-backdrop" (click)="mobileNav.close()"></div>
+    }
     <app-sidebar />
   }
   <main>

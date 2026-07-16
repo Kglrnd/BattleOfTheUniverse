@@ -30,6 +30,11 @@
         <java.version>25</java.version>
         <spring-modulith.version>2.1.0</spring-modulith.version>
         <mapstruct.version>1.6.3</mapstruct.version>
+        <jacoco.version>0.8.13</jacoco.version>
+        <pitest.version>1.19.1</pitest.version>
+        <pitest-junit5.version>1.2.2</pitest-junit5.version>
+        <!-- Enforced by the jacoco:check goal bound to verify (see below); bump alongside real coverage gains. -->
+        <jacoco.instruction.minimum>0.80</jacoco.instruction.minimum>
     </properties>
     <dependencies>
         <dependency>
@@ -106,6 +111,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Spring Boot 4's modularization moved MockMvc test-slice support (@AutoConfigureMockMvc)
+             out of spring-boot-test-autoconfigure into its own per-web-stack starter. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -185,7 +197,123 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!--
+              Coverage. `lombok.config` (repo root) makes Lombok tag generated getters/setters
+              with @Generated, which JaCoCo excludes automatically - without that, boilerplate
+              accessors on the many @Getter/@Setter entities would dilute the ratio with noise
+              that no test could meaningfully "cover" beyond exercising the field once.
+              `mvn verify` runs the check; `target/site/jacoco/index.html` is the human report.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <excludes>
+                                        <exclude>de.kugi.dev.battleoftheuniverse.BattleOfTheUniverseApplication</exclude>
+                                        <exclude>de.kugi.dev.battleoftheuniverse.*.dto.*MapperImpl</exclude>
+                                        <!-- Dev-profile-only NPC/account seeding convenience, never runs in prod; not business logic. -->
+                                        <exclude>de.kugi.dev.battleoftheuniverse.DevWorldSeeder</exclude>
+                                        <exclude>de.kugi.dev.battleoftheuniverse.user.DevAccountSeeder</exclude>
+                                        <exclude>de.kugi.dev.battleoftheuniverse.user.DevAccountsProperties</exclude>
+                                        <exclude>de.kugi.dev.battleoftheuniverse.user.DevAccountsProperties.*</exclude>
+                                    </excludes>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.instruction.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              Mutation testing ("does the test suite actually catch bugs, or just execute lines").
+              Scoped to *Service/*Scheduler/business-logic classes rather than the whole codebase -
+              mutating generated mappers, DTOs, and Lombok accessors produces only noise/equivalent
+              mutants. Not bound to a lifecycle phase - it's slow, so it's an opt-in gate (e.g. in CI
+              or before a release), not part of every `mvn verify`. Report: target/pit-reports/index.html.
+
+              Run via the `mutation-testing` profile below, NOT plain `mvn org.pitest:pitest-maven:mutationCoverage`:
+                mvn -Pmutation-testing clean test-compile org.pitest:pitest-maven:mutationCoverage
+              pitest-maven 1.19.1 (April 2025) is the newest release published to Maven Central - the
+              upstream project has kept tagging releases on GitHub (ASM bumped to 9.10.1, Java 25-aware,
+              by 1.25.6) but hasn't published a newer jar to Central since, so 1.19.1's bundled ASM
+              doesn't recognize this project's Java 25 (class file 69) bytecode. The profile recompiles
+              at release 23 just for this run so PIT has bytecode it can read; mutation analysis
+              operates on ordinary constructs (conditionals, arithmetic, boundaries), not Java-25-specific
+              class file features, so this doesn't weaken what's being tested. Drop the profile once
+              Maven Central has a pitest-maven release built against a Java-25-aware ASM.
+            -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>${pitest.version}</version>
+                <configuration>
+                    <targetClasses>
+                        <param>de.kugi.dev.battleoftheuniverse.*.*Service</param>
+                        <param>de.kugi.dev.battleoftheuniverse.*.*Scheduler</param>
+                        <param>de.kugi.dev.battleoftheuniverse.*.CombatService</param>
+                        <param>de.kugi.dev.battleoftheuniverse.*.SystemLayout</param>
+                        <param>de.kugi.dev.battleoftheuniverse.catalog.ResourceCost</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>de.kugi.dev.battleoftheuniverse.*</param>
+                    </targetTests>
+                    <mutators>
+                        <mutator>DEFAULTS</mutator>
+                    </mutators>
+                    <timestampedReports>false</timestampedReports>
+                    <threads>4</threads>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>${pitest-junit5.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- See the pitest-maven plugin comment above for why this exists. -->
+        <profile>
+            <id>mutation-testing</id>
+            <properties>
+                <java.version>23</java.version>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
