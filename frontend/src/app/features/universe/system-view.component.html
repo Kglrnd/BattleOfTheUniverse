@@ -39,7 +39,7 @@
             </div>
           } @else if (slot.planet; as planet) {
             <div class="slot-body">
-              <img class="card-icon" [src]="planet.imageVariant | gameAsset: 'planets'" alt="" appImgFallback />
+              <app-game-icon kind="planet" [variant]="planet.imageVariant" [size]="32" />
               <div class="slot-planet-name">{{ planet.name }}</div>
               <span class="class-badge">{{ planet.planetClass }}</span>
               @if (planet.homeworld) {

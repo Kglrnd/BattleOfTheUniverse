@@ -6,66 +6,71 @@
   @if ((shipsResource.value() ?? []).length === 0) {
     <p>{{ t('noShipsYet') }}</p>
   } @else {
-    <div class="card-grid">
-      @for (ship of shipsResource.value() ?? []; track ship.key) {
-        <div class="card building-card" [class.card-locked]="!ship.unlocked">
-          <div class="card-icon-row">
-            <img class="card-icon" [src]="ship.key | gameAsset: 'ships'" alt="" appImgFallback />
-            <div class="card-header">
-              <div class="card-title">{{ shipName(ship) }}</div>
-              <div class="card-subtitle">{{ t('owned', { value: ship.owned }) }}</div>
-            </div>
-          </div>
-          <div class="card-content">
-            <p>{{ shipDescription(ship) }}</p>
-            @if (!ship.unlocked) {
-              <ul class="requirement-list">
-                @for (requirement of ship.missingRequirements; track requirement.label) {
-                  <li>{{ t('requires', { label: requirement.label, requiredLevel: requirement.requiredLevel, currentLevel: requirement.currentLevel }) }}</li>
+    @for (section of shipSections(); track section.labelKey) {
+      @if (section.ships.length > 0) {
+        <h2>{{ t(section.labelKey) }}</h2>
+        <div class="card-grid">
+          @for (ship of section.ships; track ship.key) {
+            <div class="card building-card" [class.card-locked]="!ship.unlocked">
+              <div class="card-icon-row">
+                <app-game-icon kind="ship" [key]="ship.key" [size]="48" />
+                <div class="card-header">
+                  <div class="card-title">{{ shipName(ship) }}</div>
+                  <div class="card-subtitle">{{ t('owned', { value: ship.owned }) }}</div>
+                </div>
+              </div>
+              <div class="card-content">
+                <p>{{ shipDescription(ship) }}</p>
+                @if (!ship.unlocked) {
+                  <ul class="requirement-list">
+                    @for (requirement of ship.missingRequirements; track requirement.label) {
+                      <li>{{ t('requires', { label: requirement.label, requiredLevel: requirement.requiredLevel, currentLevel: requirement.currentLevel }) }}</li>
+                    }
+                  </ul>
+                } @else if (ship.buildActive) {
+                  <div class="progress"><div class="progress-fill" [style.width.%]="progress(ship)"></div></div>
+                  <p class="countdown">
+                    {{ t('buildingProgress', { quantity: ship.buildingQuantity, remaining: remainingLabel(ship) }) }}
+                  </p>
+                } @else {
+                  <p class="cost">
+                    {{
+                      t('unitCost', {
+                        metal: ship.unitCost.metal,
+                        crystal: ship.unitCost.crystal,
+                        deuterium: ship.unitCost.deuterium,
+                        seconds: ship.unitBuildTimeSeconds
+                      })
+                    }}
+                  </p>
                 }
-              </ul>
-            } @else if (ship.buildActive) {
-              <div class="progress"><div class="progress-fill" [style.width.%]="progress(ship)"></div></div>
-              <p class="countdown">
-                {{ t('buildingProgress', { quantity: ship.buildingQuantity, remaining: remainingLabel(ship) }) }}
-              </p>
-            } @else {
-              <p class="cost">
-                {{
-                  t('unitCost', {
-                    metal: ship.unitCost.metal,
-                    crystal: ship.unitCost.crystal,
-                    deuterium: ship.unitCost.deuterium,
-                    seconds: ship.unitBuildTimeSeconds
-                  })
-                }}
-              </p>
-            }
-            <p class="field-hint">{{ t('cargoFuel', { cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption }) }}</p>
-          </div>
-          <div class="card-actions">
-            <label class="qty-label" [for]="'ship-qty-' + ship.key">{{ t('qty') }}</label>
-            <input
-              [id]="'ship-qty-' + ship.key"
-              #qty
-              type="number"
-              class="input"
-              min="1"
-              value="1"
-              style="width: 4rem"
-              [disabled]="!ship.unlocked"
-            />
-            <button
-              type="button"
-              class="btn btn-primary"
-              [disabled]="!ship.unlocked || ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
-              (click)="build(ship, qty.valueAsNumber)"
-            >
-              {{ t('build') }}
-            </button>
-          </div>
+                <p class="field-hint">{{ t('cargoFuel', { cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption }) }}</p>
+              </div>
+              <div class="card-actions">
+                <label class="qty-label" [for]="'ship-qty-' + ship.key">{{ t('qty') }}</label>
+                <input
+                  [id]="'ship-qty-' + ship.key"
+                  #qty
+                  type="number"
+                  class="input"
+                  min="1"
+                  value="1"
+                  style="width: 4rem"
+                  [disabled]="!ship.unlocked"
+                />
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="!ship.unlocked || ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
+                  (click)="build(ship, qty.valueAsNumber)"
+                >
+                  {{ t('build') }}
+                </button>
+              </div>
+            </div>
+          }
         </div>
       }
-    </div>
+    }
   }
 </ng-container>

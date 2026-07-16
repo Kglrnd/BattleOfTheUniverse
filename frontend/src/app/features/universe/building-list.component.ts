@@ -5,14 +5,13 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
-import { GameAssetPipe } from '../../core/game-asset.pipe';
-import { ImgFallbackDirective } from '../../core/img-fallback.directive';
+import { GameIconComponent } from '../../core/game-icon/game-icon.component';
 import { BuildingView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-building-list',
-  imports: [DecimalPipe, TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
+  imports: [DecimalPipe, TranslocoDirective, GameIconComponent],
   templateUrl: './building-list.component.html',
   styleUrl: './building-list.component.css'
 })

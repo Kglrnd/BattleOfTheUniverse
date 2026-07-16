@@ -1,0 +1,409 @@
+:host {
+  display: contents;
+}
+
+/* --- badge shell (buildings / ships / defense) --- */
+.gicon {
+  --s: 48px;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 20%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 120% at 32% 22%, #1e293b 0%, #0b1017 72%);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow:
+    inset 0 10px 16px -12px rgba(255, 255, 255, 0.18),
+    inset 0 -14px 20px -12px rgba(0, 0, 0, 0.6),
+    0 0 16px -6px var(--glow, #7dd3fc);
+  overflow: hidden;
+  flex: none;
+}
+.gicon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.08) 50%, transparent 58%);
+  pointer-events: none;
+}
+.glyph {
+  width: 56%;
+  height: 56%;
+  position: relative;
+}
+.glyph-generic {
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #e2e8f0, #94a3b8 55%, #334155 100%);
+}
+
+/* --- buildings --- */
+.glyph-hq {
+  width: 58%;
+  height: 58%;
+  position: relative;
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  background: linear-gradient(155deg, #cdeefd, #7dd3fc 45%, #0ea5e9 100%);
+}
+.glyph-hq::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24%;
+  height: 24%;
+  background: #0b1620;
+  border-radius: 50%;
+}
+.glyph-ore {
+  width: 58%;
+  height: 58%;
+  clip-path: polygon(18% 100%, 0% 52%, 22% 18%, 55% 0%, 86% 22%, 100% 62%, 76% 100%);
+  background: linear-gradient(160deg, #fde68a, #f59e0b 55%, #92400e 100%);
+}
+.glyph-crystal {
+  width: 56%;
+  height: 56%;
+  position: relative;
+  clip-path: polygon(50% 0%, 88% 34%, 74% 100%, 26% 100%, 12% 34%);
+  background: linear-gradient(150deg, #ecfeff, #67e8f9 40%, #0e7490 100%);
+}
+.glyph-crystal::after {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: 40%;
+  width: 2px;
+  height: 55%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: rotate(8deg);
+}
+.glyph-drop {
+  width: 54%;
+  height: 54%;
+  border-radius: 50% 50% 50% 4%;
+  transform: rotate(45deg);
+  background: linear-gradient(160deg, #bae6fd, #7dd3fc 55%, #0369a1 100%);
+}
+.glyph-sun-wrap {
+  position: relative;
+  width: 56%;
+  height: 56%;
+}
+.glyph-sun-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -35%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(251, 191, 36, 0.55) 0deg 5deg, transparent 5deg 30deg);
+  mask: radial-gradient(circle, transparent 56%, black 60%);
+  -webkit-mask: radial-gradient(circle, transparent 56%, black 60%);
+}
+.glyph-sun {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fef3c7, #f59e0b 60%, #b45309 100%);
+}
+.glyph-atom {
+  position: relative;
+  width: 56%;
+  height: 56%;
+}
+.glyph-atom .ring {
+  position: absolute;
+  inset: 6%;
+  border: 1.5px solid #7dd3fc;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+.glyph-atom .ring:nth-child(1) {
+  transform: scaleY(0.42) rotate(0deg);
+}
+.glyph-atom .ring:nth-child(2) {
+  transform: scaleY(0.42) rotate(60deg);
+}
+.glyph-atom .ring:nth-child(3) {
+  transform: scaleY(0.42) rotate(120deg);
+}
+.glyph-atom .core {
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: #7dd3fc;
+  box-shadow: 0 0 8px 2px rgba(125, 211, 252, 0.8);
+}
+.glyph-rocket {
+  width: 52%;
+  height: 60%;
+  clip-path: polygon(50% 0%, 68% 22%, 68% 72%, 88% 100%, 50% 82%, 12% 100%, 32% 72%, 32% 22%);
+  background: linear-gradient(160deg, #e2e8f0, #7dd3fc 45%, #1e40af 100%);
+}
+.glyph-shield {
+  width: 54%;
+  height: 58%;
+  clip-path: polygon(50% 0%, 100% 20%, 100% 55%, 50% 100%, 0% 55%, 0% 20%);
+  background: linear-gradient(160deg, #fecaca, #f87171 50%, #7f1d1d 100%);
+}
+.glyph-tower {
+  position: relative;
+  width: 36%;
+  height: 60%;
+  border-radius: 3px 3px 6px 6px;
+  background: linear-gradient(160deg, #e9d5ff, #a78bfa 50%, #5b21b6 100%);
+}
+.glyph-tower::before,
+.glyph-tower::after {
+  content: '';
+  position: absolute;
+  left: -22%;
+  right: -22%;
+  height: 9%;
+  background: rgba(11, 22, 32, 0.55);
+}
+.glyph-tower::before {
+  top: 26%;
+}
+.glyph-tower::after {
+  top: 58%;
+}
+
+/* --- ships: shared jet silhouette, tiered by class --- */
+.glyph-jet {
+  width: 46%;
+  height: 46%;
+  position: relative;
+  clip-path: polygon(50% 0%, 100% 78%, 74% 64%, 74% 100%, 58% 82%, 42% 82%, 26% 100%, 26% 64%, 0% 78%);
+  background: linear-gradient(165deg, #e0f2fe, #7dd3fc 55%, #0369a1 100%);
+}
+.ship-heavy_fighter {
+  width: 52%;
+  height: 52%;
+  background: linear-gradient(165deg, #dbe4ee, #7dd3fc 50%, #1e3a8a 100%);
+}
+.ship-heavy_fighter::after {
+  content: '';
+  position: absolute;
+  inset: -12%;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 50%;
+}
+.ship-light_cruiser {
+  width: 50%;
+  height: 56%;
+  background: linear-gradient(165deg, #ffedd5, #7dd3fc 45%, #0369a1 100%);
+}
+.ship-cruiser {
+  width: 54%;
+  height: 54%;
+  background: linear-gradient(165deg, #dbe4ee, #64748b 50%, #1e293b 100%);
+}
+.ship-heavy_cruiser {
+  width: 58%;
+  height: 58%;
+  background: linear-gradient(165deg, #dbe4ee, #64748b 55%, #1e293b 100%);
+}
+.ship-battlecruiser {
+  width: 56%;
+  height: 56%;
+  background: linear-gradient(165deg, #fecaca, #f87171 50%, #7f1d1d 100%);
+}
+.ship-galaxy_class {
+  width: 62%;
+  height: 62%;
+  background: linear-gradient(165deg, #fde68a, #7dd3fc 45%, #1e3a8a 100%);
+}
+.ship-galaxy_class::after {
+  content: '';
+  position: absolute;
+  inset: -16%;
+  border: 1px dashed rgba(251, 191, 36, 0.6);
+  border-radius: 50%;
+}
+
+/* --- ships: utility silhouettes --- */
+.glyph-cargo {
+  width: 60%;
+  height: 44%;
+  border-radius: 4px;
+  position: relative;
+  background: linear-gradient(160deg, #fde68a, #f59e0b 60%, #78350f 100%);
+}
+.glyph-cargo::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 46%;
+  height: 2px;
+  background: rgba(11, 22, 32, 0.5);
+}
+.glyph-colony {
+  width: 44%;
+  height: 58%;
+  border-radius: 50% 50% 30% 30%;
+  background: linear-gradient(165deg, #d1fae5, #34d399 55%, #065f46 100%);
+}
+.glyph-probe {
+  position: relative;
+  width: 42%;
+  height: 42%;
+}
+.glyph-probe .ring {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(125, 211, 252, 0.7);
+  border-radius: 50%;
+}
+.glyph-probe .dot {
+  position: absolute;
+  inset: 36%;
+  border-radius: 50%;
+  background: #7dd3fc;
+  box-shadow: 0 0 6px 2px rgba(125, 211, 252, 0.85);
+}
+.glyph-bomb {
+  width: 32%;
+  height: 56%;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  transform: rotate(180deg);
+  background: linear-gradient(160deg, #374151, #7f1d1d 70%, #450a0a 100%);
+}
+.glyph-dropship {
+  width: 58%;
+  height: 40%;
+  border-radius: 4px;
+  position: relative;
+  background: linear-gradient(160deg, #fed7aa, #f97316 60%, #7c2d12 100%);
+}
+.glyph-dropship::before {
+  content: '';
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: -32%;
+  height: 40%;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+}
+
+/* --- defense towers --- */
+.glyph-turret {
+  position: relative;
+  width: 56%;
+  height: 56%;
+}
+.glyph-turret .base {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 0;
+  height: 44%;
+  border-radius: 3px 3px 6px 6px;
+  background: linear-gradient(160deg, #cbd5e1, #64748b 60%, #1e293b 100%);
+}
+.glyph-turret .barrel {
+  position: absolute;
+  left: 38%;
+  width: 24%;
+  bottom: 32%;
+  height: 55%;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #e2e8f0, #7dd3fc 60%, #0369a1 100%);
+}
+.tower-light .barrel {
+  width: 18%;
+  left: 41%;
+}
+.tower-heavy {
+  transform: scale(1.08);
+}
+.tower-heavy .base {
+  background: linear-gradient(160deg, #cbd5e1, #64748b 55%, #0f172a 100%);
+}
+.tower-heavy .barrel {
+  width: 22%;
+  left: 26%;
+  background: linear-gradient(180deg, #fecaca, #f87171 60%, #7f1d1d 100%);
+}
+.tower-heavy::after {
+  content: '';
+  position: absolute;
+  left: 52%;
+  width: 22%;
+  bottom: 32%;
+  height: 45%;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fecaca, #f87171 60%, #7f1d1d 100%);
+}
+
+/* --- planets --- */
+.gplanet {
+  --s: 48px;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  position: relative;
+  flex: none;
+}
+.gplanet::before {
+  content: '';
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 60%, var(--halo, rgba(125, 211, 252, 0.25)) 67%, transparent 74%);
+}
+.gplanet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 68% 72%, rgba(0, 0, 0, 0.55), transparent 60%);
+}
+.gplanet .body {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.gplanet .bands {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  opacity: 0.5;
+  background: repeating-linear-gradient(4deg, rgba(51, 32, 110, 0.5) 0 10%, transparent 10% 20%);
+}
+.planet-0 {
+  background: radial-gradient(circle at 32% 28%, #cdf7db 0%, #3fae6a 32%, #1f6f47 58%, #0d3d29 100%);
+}
+.planet-1 {
+  background: radial-gradient(circle at 32% 28%, #ffe3b0 0%, #e08a3c 32%, #9c4a1d 58%, #4a1f0c 100%);
+}
+.planet-2 {
+  background: radial-gradient(circle at 32% 28%, #eaf6ff 0%, #9fd3ec 32%, #4f8fb0 58%, #1c3f52 100%);
+}
+.planet-3 {
+  background: radial-gradient(circle at 32% 28%, #dfe4ea 0%, #9aa3ad 32%, #5b6572 58%, #262b32 100%);
+}
+.planet-4 {
+  background: radial-gradient(circle at 32% 28%, #baf3ea 0%, #2fa393 32%, #146a5f 58%, #08322c 100%);
+}
+.planet-5 {
+  background: radial-gradient(circle at 32% 28%, #ede1ff 0%, #a78bfa 32%, #6d43c9 58%, #33206e 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .glyph-sun {
+    animation: game-icon-pulse 3.4s ease-in-out infinite;
+  }
+}
+@keyframes game-icon-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.18);
+  }
+}

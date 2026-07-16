@@ -164,14 +164,6 @@ a {
   margin-bottom: 0;
 }
 
-.card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--color-surface-alt);
-}
 
 .card-content {
   color: var(--color-text);

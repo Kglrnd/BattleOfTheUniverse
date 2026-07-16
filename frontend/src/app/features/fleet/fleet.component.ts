@@ -14,10 +14,10 @@ import {
   GALAXY_CLASS_SHIP_KEY,
   INVASION_SHIP_KEY,
   isAttackMission,
-  missionLabel
+  missionLabel,
+  shipCategory
 } from '../../core/fleet-mission';
-import { GameAssetPipe } from '../../core/game-asset.pipe';
-import { ImgFallbackDirective } from '../../core/img-fallback.directive';
+import { GameIconComponent } from '../../core/game-icon/game-icon.component';
 import {
   DriveOptionView,
   FleetMissionType,
@@ -33,9 +33,14 @@ import { FleetApiService } from './fleet-api.service';
 
 const TRANSPORTABLE_RESOURCES: ResourceKey[] = ['METAL', 'CRYSTAL', 'DEUTERIUM', 'HYDROGEN'];
 
+interface ShipSection {
+  readonly labelKey: string;
+  readonly ships: ShipyardView[];
+}
+
 @Component({
   selector: 'app-fleet',
-  imports: [RouterLink, FormsModule, TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
+  imports: [RouterLink, FormsModule, TranslocoDirective, GameIconComponent],
   templateUrl: './fleet.component.html',
   styleUrl: './fleet.component.css'
 })
@@ -58,6 +63,14 @@ export class FleetComponent {
     stream: ({ params }) => this.api.getShips(params.originId)
   });
   protected readonly ships = computed(() => this.shipsResource.value() ?? []);
+  protected readonly shipSections = computed<ShipSection[]>(() => {
+    const ships = this.ships();
+    return [
+      { labelKey: 'manifestCombatShips', ships: ships.filter((s) => shipCategory(s.key) === 'COMBAT') },
+      { labelKey: 'manifestUtilityShips', ships: ships.filter((s) => shipCategory(s.key) === 'UTILITY') },
+      { labelKey: 'manifestSpecialShips', ships: ships.filter((s) => shipCategory(s.key) === 'SPECIAL') }
+    ];
+  });
 
   private readonly resourcesResource = rxResource({
     params: () => {

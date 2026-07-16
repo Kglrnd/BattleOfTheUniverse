@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
+import { GameIconComponent } from '../../core/game-icon/game-icon.component';
 import { DriveOptionView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 import { FleetApiService } from '../fleet/fleet-api.service';
@@ -12,7 +13,7 @@ const PROBE_SHIP_KEY = 'espionage_probe';
 
 @Component({
   selector: 'app-espionage',
-  imports: [FormsModule, RouterLink, TranslocoDirective],
+  imports: [FormsModule, RouterLink, TranslocoDirective, GameIconComponent],
   templateUrl: './espionage.component.html',
   styleUrl: './espionage.component.css'
 })
@@ -22,6 +23,7 @@ export class EspionageComponent {
   private readonly transloco = inject(TranslocoService);
 
   readonly planetId = input.required<number>();
+  protected readonly probeShipKey = PROBE_SHIP_KEY;
 
   private readonly shipsResource = rxResource({
     params: () => ({ planetId: this.planetId() }),

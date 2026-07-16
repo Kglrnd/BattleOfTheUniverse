@@ -1,17 +1,22 @@
-import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
-import { GameAssetPipe } from '../../core/game-asset.pipe';
-import { ImgFallbackDirective } from '../../core/img-fallback.directive';
+import { shipCategory } from '../../core/fleet-mission';
+import { GameIconComponent } from '../../core/game-icon/game-icon.component';
 import { ShipyardView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 
+interface ShipSection {
+  readonly labelKey: string;
+  readonly ships: ShipyardView[];
+}
+
 @Component({
   selector: 'app-shipyard',
-  imports: [TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
+  imports: [TranslocoDirective, GameIconComponent],
   templateUrl: './shipyard.component.html',
   styleUrl: './shipyard.component.css'
 })
@@ -25,6 +30,14 @@ export class ShipyardComponent {
   protected readonly shipsResource = rxResource({
     params: () => ({ planetId: this.planetId() }),
     stream: ({ params }) => this.api.getShips(params.planetId)
+  });
+  protected readonly shipSections = computed<ShipSection[]>(() => {
+    const ships = this.shipsResource.value() ?? [];
+    return [
+      { labelKey: 'combatShips', ships: ships.filter((s) => shipCategory(s.key) === 'COMBAT') },
+      { labelKey: 'utilityShips', ships: ships.filter((s) => shipCategory(s.key) === 'UTILITY') },
+      { labelKey: 'specialShips', ships: ships.filter((s) => shipCategory(s.key) === 'SPECIAL') }
+    ];
   });
   protected readonly queuingShip = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);

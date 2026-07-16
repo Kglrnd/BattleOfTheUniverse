@@ -80,35 +80,40 @@
         @if (ships().length === 0) {
           <p class="field-hint">{{ t('noShipsOnPlanet') }}</p>
         } @else {
-          <div class="fleet-manifest">
-            @for (ship of ships(); track ship.key) {
-              <div class="manifest-row">
-                <img class="card-icon manifest-icon" [src]="ship.key | gameAsset: 'ships'" alt="" appImgFallback />
-                <span class="manifest-ship-name">{{ shipName(ship) }}</span>
-                <span class="manifest-ship-owned">{{
-                  t('manifestShipInfo', { owned: ship.owned, cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption })
-                }}</span>
-                <input
-                  [id]="'manifest-qty-' + ship.key"
-                  type="number"
-                  class="input manifest-qty-input"
-                  min="0"
-                  [max]="ship.owned"
-                  [value]="manifestQuantities()[ship.key] ?? 0"
-                  [disabled]="ship.owned === 0"
-                  (change)="
-                    updateManifestQuantity(
-                      ship.key,
-                      $event,
-                      targetGalaxy.valueAsNumber,
-                      targetSystem.valueAsNumber,
-                      targetPosition.valueAsNumber
-                    )
-                  "
-                />
+          @for (section of shipSections(); track section.labelKey) {
+            @if (section.ships.length > 0) {
+              <span class="manifest-section-label">{{ t(section.labelKey) }}</span>
+              <div class="fleet-manifest">
+                @for (ship of section.ships; track ship.key) {
+                  <div class="manifest-row">
+                    <app-game-icon kind="ship" [key]="ship.key" [size]="24" />
+                    <span class="manifest-ship-name">{{ shipName(ship) }}</span>
+                    <span class="manifest-ship-owned">{{
+                      t('manifestShipInfo', { owned: ship.owned, cargo: ship.cargoCapacity, fuel: ship.hydrogenConsumption })
+                    }}</span>
+                    <input
+                      [id]="'manifest-qty-' + ship.key"
+                      type="number"
+                      class="input manifest-qty-input"
+                      min="0"
+                      [max]="ship.owned"
+                      [value]="manifestQuantities()[ship.key] ?? 0"
+                      [disabled]="ship.owned === 0"
+                      (change)="
+                        updateManifestQuantity(
+                          ship.key,
+                          $event,
+                          targetGalaxy.valueAsNumber,
+                          targetSystem.valueAsNumber,
+                          targetPosition.valueAsNumber
+                        )
+                      "
+                    />
+                  </div>
+                }
               </div>
             }
-          </div>
+          }
         }
       </div>
 

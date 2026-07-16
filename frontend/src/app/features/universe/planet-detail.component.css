@@ -1,6 +1,6 @@
 .coordinates {
   color: #94a3b8;
-  margin-top: -0.5rem;
+  margin-top: 0.5rem;
 }
 
 .planet-header {
@@ -11,14 +11,5 @@
 
 .planet-header h1 {
   margin: 0;
-}
-
-.planet-header-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--color-surface-alt);
 }
 

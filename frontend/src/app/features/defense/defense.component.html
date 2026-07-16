@@ -6,9 +6,12 @@
 <div class="card-grid">
   @for (tower of towersResource.value() ?? []; track tower.key) {
     <div class="card" [class.card-locked]="!tower.unlocked">
-      <div class="card-header">
-        <div class="card-title">{{ towerName(tower) }}</div>
-        <div class="card-subtitle">{{ t('owned', { value: tower.owned }) }} · {{ t('defenseValue', { value: tower.defense }) }}</div>
+      <div class="card-icon-row">
+        <app-game-icon kind="defense" [key]="tower.key" [size]="48" />
+        <div class="card-header">
+          <div class="card-title">{{ towerName(tower) }}</div>
+          <div class="card-subtitle">{{ t('owned', { value: tower.owned }) }} · {{ t('defenseValue', { value: tower.defense }) }}</div>
+        </div>
       </div>
       <div class="card-content">
         <p>{{ towerDescription(tower) }}</p>

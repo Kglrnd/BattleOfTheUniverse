@@ -4,12 +4,13 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
+import { GameIconComponent } from '../../core/game-icon/game-icon.component';
 import { TowerView } from '../../core/models';
 import { DefenseApiService } from './defense-api.service';
 
 @Component({
   selector: 'app-defense',
-  imports: [TranslocoDirective],
+  imports: [TranslocoDirective, GameIconComponent],
   templateUrl: './defense.component.html',
   styleUrl: './defense.component.css'
 })

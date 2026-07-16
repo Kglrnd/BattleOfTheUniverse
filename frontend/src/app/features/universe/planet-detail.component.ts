@@ -7,8 +7,7 @@ import { map } from 'rxjs';
 import { CurrentPlanetService } from '../../core/current-planet.service';
 import { formatCountdown, progressPercent } from '../../core/countdown';
 import { formatShipManifest, isAttackMission, missionLabel } from '../../core/fleet-mission';
-import { GameAssetPipe } from '../../core/game-asset.pipe';
-import { ImgFallbackDirective } from '../../core/img-fallback.directive';
+import { GameIconComponent } from '../../core/game-icon/game-icon.component';
 import { FleetMovementView, IncomingMovementView } from '../../core/models';
 import { FleetApiService } from '../fleet/fleet-api.service';
 import { BuildingListComponent } from './building-list.component';
@@ -16,7 +15,7 @@ import { UniverseApiService } from './universe-api.service';
 
 @Component({
   selector: 'app-planet-detail',
-  imports: [RouterLink, BuildingListComponent, TranslocoDirective, GameAssetPipe, ImgFallbackDirective],
+  imports: [RouterLink, BuildingListComponent, TranslocoDirective, GameIconComponent],
   templateUrl: './planet-detail.component.html',
   styleUrl: './planet-detail.component.css'
 })

@@ -1,0 +1,83 @@
+@if (kind() === 'planet') {
+  <div class="gplanet" [style.--s.px]="size()" [style.--halo]="halo()">
+    <div class="body" [class]="planetClass()"></div>
+    @if (variant() === 5) {
+      <div class="bands"></div>
+    }
+  </div>
+} @else {
+  <div class="gicon" [style.--s.px]="size()" [style.--glow]="glow()">
+    @switch (kind()) {
+      @case ('building') {
+        @switch (itemKey()) {
+          @case ('main_building') {
+            <div class="glyph glyph-hq"></div>
+          }
+          @case ('metal_mine') {
+            <div class="glyph glyph-ore"></div>
+          }
+          @case ('crystal_mine') {
+            <div class="glyph glyph-crystal"></div>
+          }
+          @case ('deuterium_synthesizer') {
+            <div class="glyph glyph-drop"></div>
+          }
+          @case ('solar_plant') {
+            <div class="glyph glyph-sun-wrap"><div class="glyph-sun"></div></div>
+          }
+          @case ('research_lab') {
+            <div class="glyph glyph-atom">
+              <div class="ring"></div>
+              <div class="ring"></div>
+              <div class="ring"></div>
+              <div class="core"></div>
+            </div>
+          }
+          @case ('shipyard') {
+            <div class="glyph glyph-rocket"></div>
+          }
+          @case ('defense_facility') {
+            <div class="glyph glyph-shield"></div>
+          }
+          @case ('refinery') {
+            <div class="glyph glyph-tower"></div>
+          }
+          @default {
+            <div class="glyph glyph-generic"></div>
+          }
+        }
+      }
+      @case ('ship') {
+        @switch (itemKey()) {
+          @case ('small_cargo') {
+            <div class="glyph glyph-cargo"></div>
+          }
+          @case ('colony_ship') {
+            <div class="glyph glyph-colony"></div>
+          }
+          @case ('espionage_probe') {
+            <div class="glyph glyph-probe">
+              <div class="ring"></div>
+              <div class="dot"></div>
+            </div>
+          }
+          @case ('orbital_bomb') {
+            <div class="glyph glyph-bomb"></div>
+          }
+          @case ('invasion_unit') {
+            <div class="glyph glyph-dropship"></div>
+          }
+          @default {
+            <div class="glyph glyph-jet" [class]="shipClass()"></div>
+          }
+        }
+      }
+      @case ('defense') {
+        <div class="glyph glyph-turret" [class]="towerClass()">
+          <div class="base"></div>
+          <div class="barrel"></div>
+        </div>
+      }
+    }
+  </div>
+}

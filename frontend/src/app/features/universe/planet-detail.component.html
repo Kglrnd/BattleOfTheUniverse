@@ -1,7 +1,7 @@
 <ng-container *transloco="let t; prefix: 'universe.planetDetail'">
   @if (planet(); as p) {
     <div class="planet-header">
-      <img class="planet-header-icon" [src]="p.imageVariant | gameAsset: 'planets'" alt="" appImgFallback />
+      <app-game-icon kind="planet" [variant]="p.imageVariant" [size]="64" />
       <h1>{{ p.name }}</h1>
     </div>
     <p class="coordinates">

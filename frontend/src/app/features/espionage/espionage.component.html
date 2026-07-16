@@ -1,8 +1,11 @@
 <ng-container *transloco="let t; prefix: 'espionage.espionage'">
 <div class="card espionage-card">
-  <div class="card-header">
-    <div class="card-title">{{ t('cardTitle') }}</div>
-    <div class="card-subtitle">{{ t('probesOwned', { value: probesOwned() }) }}</div>
+  <div class="card-icon-row">
+    <app-game-icon kind="ship" [key]="probeShipKey" [size]="48" />
+    <div class="card-header">
+      <div class="card-title">{{ t('cardTitle') }}</div>
+      <div class="card-subtitle">{{ t('probesOwned', { value: probesOwned() }) }}</div>
+    </div>
   </div>
   <div class="card-content">
     @if (probesOwned() === 0) {
