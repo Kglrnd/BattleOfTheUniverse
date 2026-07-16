@@ -333,6 +333,10 @@
     "planetDetail": {
       "viewSystem": "System ansehen",
       "manageFleet": "Flotte verwalten",
+      "rename": "Umbenennen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "renameFailed": "Umbenennen fehlgeschlagen.",
       "incomingFleets": "Ankommende Flotten",
       "arrivingIn": "Ankunft in {{time}}",
       "outgoingFleets": "Ausgehende Flotten",

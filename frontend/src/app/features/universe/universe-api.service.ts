@@ -32,6 +32,10 @@ export class UniverseApiService {
     return this.http.get<PlanetView[]>(`/api/planets/by-owner/${ownerId}`);
   }
 
+  renamePlanet(planetId: number, name: string): Observable<PlanetView> {
+    return this.http.patch<PlanetView>(`/api/planets/${planetId}/name`, { name });
+  }
+
   getSystem(galaxy: number, system: number): Observable<SystemView> {
     return this.http.get<SystemView>(`/api/systems/${galaxy}/${system}`);
   }

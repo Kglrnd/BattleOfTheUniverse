@@ -154,6 +154,25 @@ class PlanetServiceTest {
     }
 
     @Test
+    void renameUpdatesTheNameOfAnOwnedPlanetAndTrimsWhitespace() {
+        Planet planet = new Planet("Old Name", 1L, 1, 1, 1, PlanetClass.TEMPERATE);
+        when(planetRepository.findByIdAndOwnerId(5L, 1L)).thenReturn(Optional.of(planet));
+        when(planetRepository.save(any(Planet.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Planet renamed = service.rename(5L, 1L, "  New Name  ");
+
+        assertThat(renamed.getName()).isEqualTo("New Name");
+    }
+
+    @Test
+    void renameRejectsAPlanetNotOwnedByTheCaller() {
+        when(planetRepository.findByIdAndOwnerId(5L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.rename(5L, 1L, "New Name"))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
     void listAllForAdminResolvesOwnerUsernamesAndFallsBackForUnknownOwners() {
         Planet ownedPlanet = new Planet("Owned", 1L, 1, 1, 1, PlanetClass.TEMPERATE);
         Planet orphanedPlanet = new Planet("Orphaned", 99L, 1, 1, 2, PlanetClass.TEMPERATE);

@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { map } from 'rxjs';
 
 import { CurrentPlanetService } from '../../core/current-planet.service';
@@ -25,6 +25,7 @@ export class PlanetDetailComponent {
   private readonly currentPlanet = inject(CurrentPlanetService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly transloco = inject(TranslocoService);
 
   /**
    * Angular reuses this component instance when navigating between /universe/:id
@@ -53,6 +54,10 @@ export class PlanetDetailComponent {
   /** Bumped every second purely to force the countdown text to re-render. */
   protected readonly clockTick = signal(0);
 
+  protected readonly renaming = signal(false);
+  protected readonly renamePending = signal(false);
+  protected readonly renameError = signal<string | null>(null);
+
   protected readonly missionLabel = missionLabel;
   protected readonly isAttackMission = isAttackMission;
   protected readonly formatShipManifest = formatShipManifest;
@@ -79,5 +84,36 @@ export class PlanetDetailComponent {
   movementProgress(movement: FleetMovementView | IncomingMovementView): number {
     this.clockTick();
     return progressPercent(movement.departedAt, movement.arrivesAt);
+  }
+
+  startRename(): void {
+    this.renameError.set(null);
+    this.renaming.set(true);
+  }
+
+  cancelRename(): void {
+    this.renaming.set(false);
+    this.renameError.set(null);
+  }
+
+  submitRename(input: HTMLInputElement, planetId: number): void {
+    const name = input.value.trim();
+    if (!name || this.renamePending()) {
+      return;
+    }
+    this.renamePending.set(true);
+    this.renameError.set(null);
+    this.api.renamePlanet(planetId, name).subscribe({
+      next: () => {
+        this.renamePending.set(false);
+        this.renaming.set(false);
+        this.planetResource.reload();
+        this.currentPlanet.reload();
+      },
+      error: (err) => {
+        this.renamePending.set(false);
+        this.renameError.set(err.error?.message ?? this.transloco.translate('universe.planetDetail.renameFailed'));
+      }
+    });
   }
 }

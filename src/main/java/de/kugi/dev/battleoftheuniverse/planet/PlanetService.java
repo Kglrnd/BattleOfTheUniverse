@@ -144,6 +144,13 @@ public class PlanetService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Planet not found"));
     }
 
+    @Transactional
+    public Planet rename(Long planetId, Long ownerId, String name) {
+        Planet planet = getOwned(planetId, ownerId);
+        planet.setName(name.trim());
+        return planetRepository.save(planet);
+    }
+
     public Planet getHome(Long ownerId) {
         return planetRepository.findByOwnerIdAndHomeworldTrue(ownerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Home planet not found"));

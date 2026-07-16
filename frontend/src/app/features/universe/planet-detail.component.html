@@ -2,8 +2,30 @@
   @if (planet(); as p) {
     <div class="planet-header">
       <app-game-icon kind="planet" [variant]="p.imageVariant" [size]="64" />
-      <h1>{{ p.name }}</h1>
+      @if (renaming()) {
+        <div class="rename-form">
+          <input
+            #nameInput
+            type="text"
+            class="input"
+            maxlength="50"
+            [value]="p.name"
+            (keydown.enter)="submitRename(nameInput, p.id)"
+            (keydown.escape)="cancelRename()"
+          />
+          <button type="button" class="btn btn-primary" [disabled]="renamePending()" (click)="submitRename(nameInput, p.id)">
+            {{ t('save') }}
+          </button>
+          <button type="button" class="btn" [disabled]="renamePending()" (click)="cancelRename()">{{ t('cancel') }}</button>
+        </div>
+      } @else {
+        <h1>{{ p.name }}</h1>
+        <button type="button" class="btn" (click)="startRename()">{{ t('rename') }}</button>
+      }
     </div>
+    @if (renameError()) {
+      <p class="error">{{ renameError() }}</p>
+    }
     <p class="coordinates">
       {{ p.coordinates }} · {{ p.planetClass }} ·
       <a [routerLink]="['/universe/system', p.galaxy, p.system]">{{ t('viewSystem') }}</a> ·
