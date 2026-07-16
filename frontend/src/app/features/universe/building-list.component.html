@@ -10,14 +10,19 @@
           <app-game-icon kind="building" [key]="building.key" [size]="48" />
           <div class="card-header">
             <div class="card-title">{{ buildingName(building) }}</div>
-            <div class="card-subtitle">{{ t('level', { level: building.level }) }}</div>
+            <div class="card-subtitle">
+              {{ t('level', { level: building.level }) }}
+              @if (building.researchEfficiency !== null) {
+                ({{ building.researchEfficiency | number: '1.2-2' }}%)
+              }
+              @if (building.productionEfficiency !== null) {
+                ({{ building.productionEfficiency | number: '1.2-2' }}%)
+              }
+            </div>
           </div>
         </div>
         <div class="card-content">
           <p>{{ buildingDescription(building) }}</p>
-          @if (building.researchEfficiency !== null) {
-            <p class="research-efficiency">{{ t('researchEfficiency', { value: (building.researchEfficiency | number: '1.2-2') }) }}</p>
-          }
           @if (!building.unlocked) {
             <ul class="requirement-list">
               @for (requirement of building.missingRequirements; track requirement.label) {

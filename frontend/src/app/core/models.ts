@@ -78,6 +78,7 @@ export interface BuildingView {
   unlocked: boolean;
   missingRequirements: LockedRequirement[];
   researchEfficiency: number | null;
+  productionEfficiency: number | null;
 }
 
 export interface UpgradeResponse {

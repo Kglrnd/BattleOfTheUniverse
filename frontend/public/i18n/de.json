@@ -345,7 +345,6 @@
     },
     "buildingList": {
       "level": "Stufe {{level}}",
-      "researchEfficiency": "Forschungseffizienz: {{value}}%",
       "requires": "Erfordert {{label}} Stufe {{requiredLevel}} (aktuell {{currentLevel}})",
       "upgradingToLevel": "Ausbau auf Stufe {{level}} — {{time}}",
       "nextLevelCost": "Nächste Stufe: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{seconds}}s)",

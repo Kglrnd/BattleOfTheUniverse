@@ -394,7 +394,9 @@ public class FleetService {
                 creditShips(colony.getId(), shipKey, quantity);
             }
         });
-        events.publishEvent(new ColonyFounded(colony.getOwnerId(), colony.getId(), colony.getName(), colony.getResearchEfficiency()));
+        Map<String, Double> productionEfficiencies = buildingService.initializeProducingBuildings(colony.getId());
+        events.publishEvent(new ColonyFounded(colony.getOwnerId(), colony.getId(), colony.getName(),
+                colony.getResearchEfficiency(), productionEfficiencies));
     }
 
     /**

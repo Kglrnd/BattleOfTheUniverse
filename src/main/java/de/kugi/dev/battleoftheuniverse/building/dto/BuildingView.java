@@ -16,6 +16,7 @@ public record BuildingView(
         Instant constructionEndsAt,
         boolean unlocked,
         List<LockedRequirement> missingRequirements,
-        Double researchEfficiency
+        Double researchEfficiency,
+        Double productionEfficiency
 ) {
 }

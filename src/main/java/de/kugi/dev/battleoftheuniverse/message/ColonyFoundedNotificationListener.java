@@ -6,6 +6,8 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -15,9 +17,18 @@ public class ColonyFoundedNotificationListener {
 
     @ApplicationModuleListener
     void on(ColonyFounded event) {
-        String efficiency = String.format(Locale.ROOT, "%.2f%%", event.researchEfficiency());
-        messageService.sendSystemMessage(event.ownerId(),
-                "message.colonyFounded.subject", new Object[0],
-                "message.colonyFounded.body", new Object[] { event.planetName(), efficiency });
+        Locale locale = messageService.resolveLocale(event.ownerId());
+        String researchEfficiency = String.format(Locale.ROOT, "%.2f%%", event.researchEfficiency());
+        String body = messageService.translate(locale, "message.colonyFounded.intro", event.planetName())
+                + "\n\n" + messageService.translate(locale, "message.colonyFounded.researchEfficiency") + " " + researchEfficiency
+                + "\n\n" + messageService.translate(locale, "message.colonyFounded.productionEfficiency") + "\n"
+                + productionEfficiencyLines(event.productionEfficiencies());
+        messageService.sendSystemMessage(event.ownerId(), "message.colonyFounded.subject", new Object[0], body);
+    }
+
+    private String productionEfficiencyLines(Map<String, Double> productionEfficiencies) {
+        return productionEfficiencies.entrySet().stream()
+                .map(e -> e.getKey() + ": " + String.format(Locale.ROOT, "%.2f%%", e.getValue()))
+                .collect(Collectors.joining("\n"));
     }
 }

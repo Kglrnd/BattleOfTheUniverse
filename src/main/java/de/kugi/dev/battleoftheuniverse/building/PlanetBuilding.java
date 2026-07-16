@@ -27,6 +27,9 @@ public class PlanetBuilding {
 
     private int level;
 
+    /** Fixed once the building is first constructed, 85.00-109.99; only meaningful for resource-producing buildings. */
+    private double productionEfficiency = 100.0;
+
     public PlanetBuilding(Long planetId, String buildingKey, int level) {
         this.planetId = planetId;
         this.buildingKey = buildingKey;

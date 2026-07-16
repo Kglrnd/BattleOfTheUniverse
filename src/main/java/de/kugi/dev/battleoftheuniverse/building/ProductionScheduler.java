@@ -29,7 +29,8 @@ public class ProductionScheduler {
             if (definition.producesResource() == ResourceKey.NONE) {
                 continue;
             }
-            double hourlyRate = catalogService.productionPerHour(definition, building.getLevel());
+            double hourlyRate = catalogService.productionPerHour(definition, building.getLevel())
+                    * (building.getProductionEfficiency() / 100.0);
             resourceService.applyProduction(building.getPlanetId(), definition.producesResource(), hourlyRate);
         }
     }

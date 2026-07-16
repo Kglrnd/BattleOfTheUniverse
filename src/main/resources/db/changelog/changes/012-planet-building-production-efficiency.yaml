@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-add-planet-building-production-efficiency
+      author: kugi
+      changes:
+        - addColumn:
+            tableName: planet_buildings
+            columns:
+              - column:
+                  name: production_efficiency
+                  type: DOUBLE
+                  defaultValueNumeric: 100.0
+                  constraints:
+                    nullable: false

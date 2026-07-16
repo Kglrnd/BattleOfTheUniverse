@@ -45,13 +45,13 @@ class MessageServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(recipient));
 
         service.sendSystemMessage(1L, "message.colonyFounded.subject", new Object[0],
-                "message.colonyFounded.body", new Object[] { "Kolonie A", "99,50%" });
+                "message.colonyFounded.intro", new Object[] { "Kolonie A" });
 
         ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
         verify(messageRepository).save(captor.capture());
         Message saved = captor.getValue();
         assertThat(saved.getSubject()).isEqualTo("Neue Kolonie gegründet");
-        assertThat(saved.getBody()).contains("Kolonie A").contains("Forschungseffizienz");
+        assertThat(saved.getBody()).contains("Kolonie A");
     }
 
     @Test
@@ -62,7 +62,7 @@ class MessageServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(recipient));
 
         service.sendSystemMessage(2L, "message.colonyFounded.subject", new Object[0],
-                "message.colonyFounded.body", new Object[] { "Colony A", "99.50%" });
+                "message.colonyFounded.intro", new Object[] { "Colony A" });
 
         ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
         verify(messageRepository).save(captor.capture());
@@ -74,7 +74,7 @@ class MessageServiceTest {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         service.sendSystemMessage(99L, "message.colonyFounded.subject", new Object[0],
-                "message.colonyFounded.body", new Object[] { "Colony A", "99.50%" });
+                "message.colonyFounded.intro", new Object[] { "Colony A" });
 
         ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
         verify(messageRepository).save(captor.capture());

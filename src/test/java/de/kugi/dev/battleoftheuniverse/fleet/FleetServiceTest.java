@@ -344,12 +344,20 @@ class FleetServiceTest {
         when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
         Planet colony = new Planet("Colony", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
         colony.setId(30L);
+        colony.setResearchEfficiency(97.5);
         when(planetService.createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9))).thenReturn(colony);
+        when(buildingService.initializeProducingBuildings(30L)).thenReturn(Map.of("metal_mine", 92.1));
 
         service.completeDueMissions();
 
         verify(planetService).createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9));
         verify(movementRepository).delete(movement);
+
+        var eventCaptor = org.mockito.ArgumentCaptor.forClass(ColonyFounded.class);
+        verify(events).publishEvent(eventCaptor.capture());
+        ColonyFounded published = eventCaptor.getValue();
+        assertThat(published.researchEfficiency()).isEqualTo(97.5);
+        assertThat(published.productionEfficiencies()).containsEntry("metal_mine", 92.1);
     }
 
     @Test
