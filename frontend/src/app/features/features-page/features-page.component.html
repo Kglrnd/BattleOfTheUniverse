@@ -1,0 +1,26 @@
+<ng-container *transloco="let t; prefix: 'featuresPage'">
+  <h1>{{ t('title') }}</h1>
+  <p class="field-hint">{{ t('intro') }}</p>
+
+  <h2>{{ t('implementedHeading') }}</h2>
+  <ul class="feature-list">
+    @for (key of implementedKeys; track key) {
+      <li>{{ t('implemented.' + key) }}</li>
+    }
+  </ul>
+
+  <h2>{{ t('plannedHeading') }}</h2>
+  <p class="field-hint">{{ t('plannedIntro') }}</p>
+  <div class="card-grid">
+    @for (key of plannedKeys; track key) {
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">{{ t('planned.' + key + '.title') }}</div>
+        </div>
+        <div class="card-content">
+          <p>{{ t('planned.' + key + '.description') }}</p>
+        </div>
+      </div>
+    }
+  </div>
+</ng-container>

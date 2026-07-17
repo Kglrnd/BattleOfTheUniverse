@@ -70,6 +70,10 @@
     </div>
 
     <div class="tree-node">
+      <a class="tree-toggle" routerLink="/features" routerLinkActive="active">{{ t('features') }}</a>
+    </div>
+
+    <div class="tree-node">
       <div class="tree-select-item">
         <label class="tree-select-label" for="jump-to-planet-select">{{ t('jumpToPlanet') }}</label>
         <select id="jump-to-planet-select" class="select tree-select" (change)="goToPlanet($event)">

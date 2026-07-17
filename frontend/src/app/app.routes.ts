@@ -73,6 +73,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/highscore/highscore.component').then((m) => m.HighscoreComponent)
   },
   {
+    path: 'features',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/features-page/features-page.component').then((m) => m.FeaturesPageComponent)
+  },
+  {
     path: 'admin/catalog/:type',
     canActivate: [staffGuard],
     loadComponent: () => import('./features/admin/catalog-editor.component').then((m) => m.CatalogEditorComponent)

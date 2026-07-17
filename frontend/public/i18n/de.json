@@ -34,6 +34,7 @@
     "messages": "Nachrichten",
     "galaxy": "Galaxie",
     "highscore": "Bestenliste",
+    "features": "Features",
     "jumpToPlanet": "Zu Planet springen",
     "jumpToPlanetPlaceholder": "Zu Planet springen…"
   },
@@ -274,6 +275,46 @@
     "rankHintPrefix": "Du bist auf Platz",
     "rankHintSuffix": "Häng dich rein, um in die Top 100 aufzusteigen!",
     "failedToLoad": "Bestenliste konnte nicht geladen werden."
+  },
+  "featuresPage": {
+    "title": "Features",
+    "intro": "Ein Überblick über das, was Battle of the Universe bereits kann – und was als Nächstes kommt.",
+    "implementedHeading": "Bereits umgesetzt",
+    "implemented": {
+      "planets": "Planetenverwaltung: Heimatwelt, Kolonisierung, Umbenennen und dauerhafte Zerstörung eroberter oder bombardierter Planeten",
+      "resources": "Ressourcen: Metall, Kristall, Deuterium, Wasserstoff und Energie – mit individueller Produktionseffizienz je Gebäude",
+      "buildings": "9 Gebäudetypen von der Kommandozentrale bis zur Raffinerie",
+      "research": "Technologiebaum mit planetenspezifischer Forschungseffizienz",
+      "fleet": "12 Schiffstypen (Kampf-, Zivil- und Spezialschiffe) und 7 Missionsarten: Kolonisieren, Stationieren, Angreifen, Transport, Bombardieren, Invasion, Spionage",
+      "defense": "Verteidigungstürme zum Schutz der eigenen Planeten",
+      "combat": "Kampfsystem mit Kampfberichten, orbitaler Bombardierung und planetarer Invasion",
+      "galaxy": "Galaxie- und Systemansicht mit vollständiger Slot-Übersicht",
+      "messages": "Nachrichtensystem für System- und Spielernachrichten",
+      "highscore": "Bestenliste aller Spieler",
+      "adminCatalog": "Admin-Katalogeditor zur Anpassung der Spielbalance direkt im Browser",
+      "accounts": "Benutzerkonten mit Rollen (Spieler/Moderator/Admin) und Spracheinstellung",
+      "mobile": "Vollständig mobil spielbar"
+    },
+    "plannedHeading": "Geplant",
+    "plannedIntro": "Diese Features sind noch nicht umgesetzt, aber als Nächstes vorgesehen.",
+    "planned": {
+      "multiPlanetBuild": {
+        "title": "Multi-Planeten-Bau",
+        "description": "Eine Tabellenübersicht aller eigenen Planeten eines Systems, mit der sich Bauaufträge einfacher verteilen lassen – zum Beispiel können alle Planeten gleichzeitig ein Sonnenkraftwerk bauen, oder einzelne Planeten abweichende Aufträge erhalten. Ein Hinweis warnt, wenn auf einem Planeten nicht genug Rohstoffe für den gewählten Bauauftrag vorhanden sind."
+      },
+      "tradingPost": {
+        "title": "Handelsbasis",
+        "description": "Eine Handelsbasis, an der Raumschiffe gegen maximal zwei Rohstoffarten verkauft werden können. Feste Ober- und Untergrenzen für die Preise verhindern, dass sich einzelne Spieler dadurch übermäßig bevorteilen können."
+      },
+      "clans": {
+        "title": "Clans",
+        "description": "Die Möglichkeit, gemeinsam mit anderen Spielern einem Clan beizutreten und als Gemeinschaft zu spielen."
+      },
+      "recycling": {
+        "title": "Wiederverwertung",
+        "description": "Eine erforschbare Technologie: Nach einem verlorenen Gefecht können die Wracks zerstörter Schiffe – der eigenen wie der gegnerischen – über einen gewissen Zeitraum wiederverwertet werden und liefern so zusätzliche Rohstoffe auf dem Planeten."
+      }
+    }
   },
   "research": {
     "title": "Forschung",

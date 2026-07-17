@@ -34,6 +34,7 @@
     "messages": "Messages",
     "galaxy": "Galaxy",
     "highscore": "Highscore",
+    "features": "Features",
     "jumpToPlanet": "Jump to planet",
     "jumpToPlanetPlaceholder": "Jump to planet…"
   },
@@ -274,6 +275,46 @@
     "rankHintPrefix": "You are ranked",
     "rankHintSuffix": "Keep going to climb into the Top 100!",
     "failedToLoad": "Failed to load highscore."
+  },
+  "featuresPage": {
+    "title": "Features",
+    "intro": "An overview of what Battle of the Universe can already do - and what's coming next.",
+    "implementedHeading": "Already live",
+    "implemented": {
+      "planets": "Planet management: homeworld, colonization, renaming, and permanent destruction of conquered or bombarded planets",
+      "resources": "Resources: Metal, Crystal, Deuterium, Hydrogen and Energy - with an individual production efficiency per building",
+      "buildings": "9 building types from the Command Center to the Refinery",
+      "research": "Technology tree with per-planet research efficiency",
+      "fleet": "12 ship types (combat, civilian and special ships) and 7 mission types: Colonize, Station, Attack, Transport, Bombard, Invade, Espionage",
+      "defense": "Defense towers to protect your planets",
+      "combat": "Combat system with battle reports, orbital bombardment and planetary invasion",
+      "galaxy": "Galaxy and system view with a full slot overview",
+      "messages": "Messaging system for system and player messages",
+      "highscore": "Highscore leaderboard for all players",
+      "adminCatalog": "Admin catalog editor to tune game balance directly in the browser",
+      "accounts": "User accounts with roles (Player/Moderator/Admin) and language preference",
+      "mobile": "Fully playable on mobile"
+    },
+    "plannedHeading": "Planned",
+    "plannedIntro": "These features aren't built yet, but are next up.",
+    "planned": {
+      "multiPlanetBuild": {
+        "title": "Multi-planet construction",
+        "description": "A table overview of all your planets in a system, making it easier to distribute build orders - for example, all planets can build a solar plant at once, or individual planets can get different orders. A warning appears if a planet doesn't have enough resources for the chosen build order."
+      },
+      "tradingPost": {
+        "title": "Trading post",
+        "description": "A trading post where ships can be sold for at most two resource types. Fixed upper and lower price bounds prevent any single player from gaining an outsized advantage from it."
+      },
+      "clans": {
+        "title": "Clans",
+        "description": "The ability to join a clan with other players and play together as a community."
+      },
+      "recycling": {
+        "title": "Recycling",
+        "description": "A researchable technology: after losing a battle, the wrecks of destroyed ships - both yours and the enemy's - can be slowly recycled over a period of time, yielding extra resources on the planet."
+      }
+    }
   },
   "research": {
     "title": "Research",
