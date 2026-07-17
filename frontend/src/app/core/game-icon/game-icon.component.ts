@@ -55,6 +55,8 @@ const HALO_BY_VARIANT: Record<number, string> = {
 export class GameIconComponent {
   readonly kind = input.required<GameIconKind>();
   /** Catalog key; ignored for kind="planet". */
+  // Stryker disable next-line all: input()'s options object must stay a statically-analyzable
+  // literal for Angular's compiler (mutating it breaks every component that imports this one).
   readonly itemKey = input<string | null>(null, { alias: 'key' });
   /** PlanetView.imageVariant; ignored for every other kind. */
   readonly variant = input<number | null>(null);

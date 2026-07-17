@@ -1,0 +1,16 @@
+/*
+ * Used only by `npm run test:mutation` (Stryker). Stryker instruments source files by wrapping
+ * mutated expressions in runtime `condition ? mutant : original` switches; when a mutation
+ * narrows/widens the inferred type of a value that flows into a template binding (e.g. removing
+ * a `?? []` fallback), Angular's strict template type-checker rejects the resulting union type as
+ * a compile error before Stryker ever gets to run a single test. Turning off strictTemplates here
+ * (regular `npm test`/builds are unaffected - they use tsconfig.spec.json/tsconfig.app.json)
+ * relaxes that check so mutated code still compiles; the mutants are still exercised by the real
+ * test assertions exactly as before.
+ */
+{
+  "extends": "./tsconfig.spec.json",
+  "angularCompilerOptions": {
+    "strictTemplates": false
+  }
+}

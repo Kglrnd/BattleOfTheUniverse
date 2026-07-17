@@ -22,12 +22,14 @@ export class HighscoreComponent {
   private readonly transloco = inject(TranslocoService);
 
   private readonly highscoreResource = rxResource({ stream: () => this.api.get() });
-  protected readonly data = computed(() => this.highscoreResource.value() ?? null);
   protected readonly loading = this.highscoreResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.highscoreResource.error() as HttpErrorResponse | undefined;
     return error ? (error.error?.message ?? this.transloco.translate('highscore.failedToLoad')) : null;
   });
+  // Reading .value() on an errored resource with no prior successful value throws, so this
+  // must check for an error first rather than let the template call .value() unconditionally.
+  protected readonly data = computed(() => (this.errorMessage() ? null : (this.highscoreResource.value() ?? null)));
 
   protected readonly currentUsername = this.auth.currentUser()?.username ?? null;
 

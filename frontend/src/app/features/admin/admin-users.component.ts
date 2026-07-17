@@ -22,7 +22,9 @@ export class AdminUsersComponent {
   protected readonly roles: Role[] = ['PLAYER', 'MODERATOR', 'ADMIN'];
 
   private readonly usersResource = rxResource({ stream: () => this.api.list() });
-  protected readonly users = computed(() => this.usersResource.value() ?? []);
+  // Reading .value() on an errored resource with no prior successful value throws, so this
+  // must check for an error first rather than let the template call .value() unconditionally.
+  protected readonly users = computed(() => (this.usersResource.error() ? [] : (this.usersResource.value() ?? [])));
   protected readonly loading = this.usersResource.isLoading;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly savingUserId = signal<number | null>(null);

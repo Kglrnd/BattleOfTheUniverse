@@ -70,6 +70,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
+            "runnerConfig": true,
             "coverage": true,
             "coverageReporters": ["text-summary", "html", "lcov"],
             "coverageExclude": ["src/main.ts", "src/**/*.spec.ts", "src/**/models.ts"]
@@ -82,6 +83,10 @@
                 "functions": 80,
                 "lines": 80
               }
+            },
+            "mutation": {
+              "tsConfig": "tsconfig.spec.mutation.json",
+              "coverage": false
             }
           }
         },

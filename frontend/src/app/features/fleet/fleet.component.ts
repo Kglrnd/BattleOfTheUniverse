@@ -108,10 +108,19 @@ export class FleetComponent {
   protected readonly formatCargo = formatCargo;
   protected readonly transportableResources = TRANSPORTABLE_RESOURCES;
 
+  /**
+   * Guards the initial "?origin=" snapshot application below to run at most once - without
+   * it, any later change detection tick that re-evaluates this effect (e.g. after the user
+   * picks a different origin from the dropdown) would silently re-apply the page's original
+   * URL param and revert their choice, since `route.snapshot` never changes.
+   */
+  private readonly initialOriginApplied = signal(false);
+
   constructor() {
     effect(() => {
-      if (this.currentPlanet.planets().length > 0) {
+      if (!this.initialOriginApplied() && this.currentPlanet.planets().length > 0) {
         this.applyRequestedOrigin(this.route.snapshot.queryParamMap.get('origin'));
+        this.initialOriginApplied.set(true);
       }
     });
 
