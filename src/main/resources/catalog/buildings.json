@@ -83,6 +83,20 @@
       ]
     },
     {
+      "key": "construction_hub",
+      "name": "Construction Hub",
+      "description": "Coordinates construction crews across the colony, speeding up every other building's construction by 1.5% per level. Its own upgrades are not accelerated by itself. Costs grow especially steeply at higher levels.",
+      "baseCost": { "metal": 150, "crystal": 100, "deuterium": 50 },
+      "costGrowthFactor": 1.35,
+      "baseBuildTimeSeconds": 90,
+      "producesResource": "NONE",
+      "baseProductionPerLevel": 0,
+      "points": 45,
+      "requirements": [
+        { "type": "BUILDING", "key": "main_building", "level": 1 }
+      ]
+    },
+    {
       "key": "shipyard",
       "name": "Shipyard",
       "description": "Constructs and repairs ships.",

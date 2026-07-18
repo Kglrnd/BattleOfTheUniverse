@@ -57,6 +57,9 @@ class BuildingServiceTest {
     private static final BuildingDefinition RESEARCH_LAB = new BuildingDefinition(
             "research_lab", "Research Lab", "desc",
             new ResourceCost(200, 400, 200), 2.0, 300, ResourceKey.NONE, 0, 10, List.of());
+    private static final BuildingDefinition CONSTRUCTION_HUB = new BuildingDefinition(
+            "construction_hub", "Construction Hub", "desc",
+            new ResourceCost(150, 100, 50), 1.35, 90, ResourceKey.NONE, 0, 45, List.of());
 
     @BeforeEach
     void setUp() {
@@ -88,6 +91,100 @@ class BuildingServiceTest {
                 .hasMessageContaining("already in progress");
 
         verify(resourceService, never()).debit(any(), any());
+    }
+
+    @Test
+    void upgradeSpeedsUpOtherBuildingsByOnePointFivePercentPerConstructionHubLevel() {
+        when(jobRepository.findByPlanetId(PLANET_ID)).thenReturn(Optional.empty());
+        when(catalogService.building("metal_mine")).thenReturn(METAL_MINE);
+        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "metal_mine")).thenReturn(Optional.empty());
+        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "construction_hub"))
+                .thenReturn(Optional.of(new PlanetBuilding(PLANET_ID, "construction_hub", 10)));
+        when(catalogService.costFor(METAL_MINE, 1)).thenReturn(new ResourceCost(60, 15, 0));
+        when(catalogService.buildTimeFor(METAL_MINE, 1)).thenReturn(Duration.ofSeconds(1000));
+
+        service.upgrade(PLANET_ID, "metal_mine");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(ConstructionJob.class);
+        verify(jobRepository).save(captor.capture());
+        ConstructionJob saved = captor.getValue();
+        // Hub level 10 -> 10 * 1.5% = 15% off: 1000s * 0.85 = 850s.
+        assertThat(Duration.between(saved.getStartedAt(), saved.getEndsAt()).toSeconds()).isEqualTo(850);
+    }
+
+    @Test
+    void upgradeDoesNotSpeedUpTheConstructionHubsOwnUpgrade() {
+        when(jobRepository.findByPlanetId(PLANET_ID)).thenReturn(Optional.empty());
+        when(catalogService.building("construction_hub")).thenReturn(CONSTRUCTION_HUB);
+        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "construction_hub"))
+                .thenReturn(Optional.of(new PlanetBuilding(PLANET_ID, "construction_hub", 10)));
+        when(catalogService.costFor(CONSTRUCTION_HUB, 11)).thenReturn(new ResourceCost(1, 1, 1));
+        when(catalogService.buildTimeFor(CONSTRUCTION_HUB, 11)).thenReturn(Duration.ofSeconds(1000));
+
+        service.upgrade(PLANET_ID, "construction_hub");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(ConstructionJob.class);
+        verify(jobRepository).save(captor.capture());
+        ConstructionJob saved = captor.getValue();
+        assertThat(Duration.between(saved.getStartedAt(), saved.getEndsAt()).toSeconds()).isEqualTo(1000);
+    }
+
+    @Test
+    void adjustedBuildTimeNeverCutsMoreThanNinetyPercentEvenAtAnExtremeHubLevel() {
+        when(jobRepository.findByPlanetId(PLANET_ID)).thenReturn(Optional.empty());
+        when(catalogService.building("metal_mine")).thenReturn(METAL_MINE);
+        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "metal_mine")).thenReturn(Optional.empty());
+        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "construction_hub"))
+                .thenReturn(Optional.of(new PlanetBuilding(PLANET_ID, "construction_hub", 100)));
+        when(catalogService.costFor(METAL_MINE, 1)).thenReturn(new ResourceCost(60, 15, 0));
+        when(catalogService.buildTimeFor(METAL_MINE, 1)).thenReturn(Duration.ofSeconds(1000));
+
+        service.upgrade(PLANET_ID, "metal_mine");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(ConstructionJob.class);
+        verify(jobRepository).save(captor.capture());
+        ConstructionJob saved = captor.getValue();
+        // Uncapped, level 100 would be -150% (nonsensical) - clamped to the 90%-off floor: 1000s * 0.1 = 100s.
+        assertThat(Duration.between(saved.getStartedAt(), saved.getEndsAt()).toSeconds()).isEqualTo(100);
+    }
+
+    @Test
+    void listForPlanetExposesBuildTimeReductionOnlyForTheConstructionHubOnceBuilt() {
+        Planet planet = new Planet("Home", 9L, 1, 1, 1, PlanetClass.TEMPERATE);
+        when(planetService.getById(PLANET_ID)).thenReturn(planet);
+        when(jobRepository.findByPlanetId(PLANET_ID)).thenReturn(Optional.empty());
+        when(catalogService.buildings()).thenReturn(List.of(METAL_MINE, CONSTRUCTION_HUB));
+
+        PlanetBuilding hubRow = new PlanetBuilding(PLANET_ID, "construction_hub", 4);
+        when(buildingRepository.findByPlanetId(PLANET_ID)).thenReturn(List.of(hubRow));
+        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "construction_hub")).thenReturn(Optional.of(hubRow));
+        when(catalogService.costFor(any(BuildingDefinition.class), any(Integer.class))).thenReturn(new ResourceCost(1, 1, 1));
+        when(catalogService.buildTimeFor(any(BuildingDefinition.class), any(Integer.class))).thenReturn(Duration.ofSeconds(100));
+
+        List<BuildingView> views = service.listForPlanet(PLANET_ID);
+
+        BuildingView hubView = views.stream().filter(v -> v.key().equals("construction_hub")).findFirst().orElseThrow();
+        assertThat(hubView.buildTimeReductionPercent()).isEqualTo(6.0);
+
+        BuildingView metalMineView = views.stream().filter(v -> v.key().equals("metal_mine")).findFirst().orElseThrow();
+        assertThat(metalMineView.buildTimeReductionPercent()).isNull();
+        // 4 hub levels * 1.5% = 6% off: 100s * 0.94 = 94s.
+        assertThat(metalMineView.nextLevelBuildTimeSeconds()).isEqualTo(94);
+    }
+
+    @Test
+    void listForPlanetLeavesBuildTimeReductionNullForAnUnbuiltConstructionHub() {
+        Planet planet = new Planet("Home", 9L, 1, 1, 1, PlanetClass.TEMPERATE);
+        when(planetService.getById(PLANET_ID)).thenReturn(planet);
+        when(jobRepository.findByPlanetId(PLANET_ID)).thenReturn(Optional.empty());
+        when(catalogService.buildings()).thenReturn(List.of(CONSTRUCTION_HUB));
+        when(buildingRepository.findByPlanetId(PLANET_ID)).thenReturn(List.of());
+        when(catalogService.costFor(any(BuildingDefinition.class), any(Integer.class))).thenReturn(new ResourceCost(1, 1, 1));
+        when(catalogService.buildTimeFor(any(BuildingDefinition.class), any(Integer.class))).thenReturn(Duration.ofSeconds(100));
+
+        List<BuildingView> views = service.listForPlanet(PLANET_ID);
+
+        assertThat(views.getFirst().buildTimeReductionPercent()).isNull();
     }
 
     @Test

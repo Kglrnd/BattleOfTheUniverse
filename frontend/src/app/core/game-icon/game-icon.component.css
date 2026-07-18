@@ -169,6 +169,27 @@
 .glyph-tower::after {
   top: 58%;
 }
+.glyph-hub {
+  position: relative;
+  width: 54%;
+  height: 54%;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #fef3c7, #fbbf24 55%, #92400e 100%);
+}
+.glyph-hub::before {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  background: #0b1620;
+}
+.glyph-hub::after {
+  content: '';
+  position: absolute;
+  inset: -18%;
+  border: 2px dashed rgba(251, 191, 36, 0.55);
+  border-radius: 50%;
+}
 
 /* --- ships: shared jet silhouette, tiered by class --- */
 .glyph-jet {

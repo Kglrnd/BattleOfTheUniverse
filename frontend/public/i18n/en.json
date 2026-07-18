@@ -284,7 +284,7 @@
     "implemented": {
       "planets": "Planet management: homeworld, colonization, renaming, and permanent destruction of conquered or bombarded planets",
       "resources": "Resources: Metal, Crystal, Deuterium, Hydrogen and Energy - with an individual production efficiency per building",
-      "buildings": "9 building types from the Command Center to the Refinery",
+      "buildings": "10 building types from the Command Center to the Construction Hub",
       "research": "Technology tree with per-planet research efficiency",
       "fleet": "12 ship types (combat, civilian and special ships) and 7 mission types: Colonize, Station, Attack, Transport, Bombard, Invade, Espionage",
       "defense": "Defense towers to protect your planets",
@@ -388,6 +388,7 @@
     },
     "buildingList": {
       "level": "Level {{level}}",
+      "buildTimeReduction": "-{{percent}}% build time",
       "requires": "Requires {{label}} level {{requiredLevel}} (currently {{currentLevel}})",
       "upgradingToLevel": "Upgrading to level {{level}} — {{time}}",
       "nextLevelCost": "Next level: {{metal}} metal, {{crystal}} crystal, {{deuterium}} deuterium ({{seconds}}s)",
@@ -434,6 +435,10 @@
       "refinery": {
         "name": "Refinery",
         "description": "Refines raw ice deposits into hydrogen fuel for ship propulsion."
+      },
+      "construction_hub": {
+        "name": "Construction Hub",
+        "description": "Coordinates construction crews across the colony, speeding up every other building's construction by 1.5% per level."
       },
       "solar_plant": {
         "name": "Solar Plant",

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,6 +41,12 @@ public class BuildingService {
     private static final String MAIN_BUILDING_KEY = "main_building";
     private static final Set<String> STARTER_BUILDINGS = Set.of(MAIN_BUILDING_KEY);
     private static final String RESEARCH_LAB_KEY = "research_lab";
+
+    /** Matches the "construction_hub" catalog entry. */
+    private static final String CONSTRUCTION_HUB_KEY = "construction_hub";
+    private static final double BUILD_TIME_REDUCTION_PER_HUB_LEVEL = 0.015;
+    /** However high the hub's level, a building's time is never cut by more than 90%. */
+    private static final double MIN_BUILD_TIME_MULTIPLIER = 0.1;
 
     private final PlanetBuildingRepository buildingRepository;
     private final ConstructionJobRepository jobRepository;
@@ -103,6 +110,26 @@ public class BuildingService {
         return EfficiencyRoll.roll(random);
     }
 
+    /**
+     * The catalog's base build time for this building/level, sped up by the planet's Construction
+     * Hub level - 1.5% per level, clamped so it can never be cut by more than
+     * {@value #MIN_BUILD_TIME_MULTIPLIER}'s complement. The Construction Hub speeds up every
+     * <i>other</i> building's construction, not its own - upgrading the hub itself always takes
+     * the plain catalog time.
+     */
+    private Duration adjustedBuildTime(Long planetId, BuildingDefinition definition, int targetLevel) {
+        Duration base = catalogService.buildTimeFor(definition, targetLevel);
+        if (definition.key().equals(CONSTRUCTION_HUB_KEY)) {
+            return base;
+        }
+        int hubLevel = levelOf(planetId, CONSTRUCTION_HUB_KEY);
+        if (hubLevel <= 0) {
+            return base;
+        }
+        double multiplier = Math.max(MIN_BUILD_TIME_MULTIPLIER, 1.0 - BUILD_TIME_REDUCTION_PER_HUB_LEVEL * hubLevel);
+        return Duration.ofSeconds(Math.round(base.toSeconds() * multiplier));
+    }
+
     public List<BuildingView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
         Planet planet = planetService.getById(planetId);
@@ -117,6 +144,7 @@ public class BuildingService {
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getBuildingKey().equals(definition.key());
                     List<LockedRequirement> missingRequirements = missingRequirements(planetId, definition.requirements());
                     boolean isResearchLab = definition.key().equals(RESEARCH_LAB_KEY);
+                    boolean isConstructionHub = definition.key().equals(CONSTRUCTION_HUB_KEY);
                     boolean producesResource = definition.producesResource() != ResourceKey.NONE;
                     return new BuildingView(
                             definition.key(),
@@ -124,13 +152,14 @@ public class BuildingService {
                             definition.description(),
                             currentLevel,
                             catalogService.costFor(definition, targetLevel),
-                            catalogService.buildTimeFor(definition, targetLevel).toSeconds(),
+                            adjustedBuildTime(planetId, definition, targetLevel).toSeconds(),
                             isBeingBuilt,
                             isBeingBuilt ? activeJob.get().getEndsAt() : null,
                             missingRequirements.isEmpty(),
                             missingRequirements,
                             isResearchLab ? planet.getResearchEfficiency() : null,
-                            producesResource && existing != null ? existing.getProductionEfficiency() : null
+                            producesResource && existing != null ? existing.getProductionEfficiency() : null,
+                            isConstructionHub && currentLevel > 0 ? currentLevel * BUILD_TIME_REDUCTION_PER_HUB_LEVEL * 100.0 : null
                     );
                 })
                 .toList();
@@ -185,7 +214,7 @@ public class BuildingService {
         resourceService.debit(planetId, cost);
 
         Instant startedAt = Instant.now();
-        Instant endsAt = startedAt.plus(catalogService.buildTimeFor(definition, targetLevel));
+        Instant endsAt = startedAt.plus(adjustedBuildTime(planetId, definition, targetLevel));
         try {
             jobRepository.save(new ConstructionJob(planetId, buildingKey, targetLevel, startedAt, endsAt));
         } catch (DataIntegrityViolationException e) {

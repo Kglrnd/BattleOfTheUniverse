@@ -17,6 +17,7 @@ public record BuildingView(
         boolean unlocked,
         List<LockedRequirement> missingRequirements,
         Double researchEfficiency,
-        Double productionEfficiency
+        Double productionEfficiency,
+        Double buildTimeReductionPercent
 ) {
 }

@@ -16,6 +16,9 @@ function building(overrides: Partial<BuildingView> = {}): BuildingView {
     nextLevelBuildTimeSeconds: 120,
     constructionActive: false,
     constructionEndsAt: null,
+    researchEfficiency: null,
+    productionEfficiency: null,
+    buildTimeReductionPercent: null,
     ...overrides
   } as BuildingView;
 }
@@ -118,6 +121,39 @@ describe('BuildingListComponent', () => {
   it('hasActiveConstruction is true when only some buildings are under construction (distinguishes .some from .every)', async () => {
     const fixture = await setup([building({ constructionActive: false }), building({ key: 'crystal_mine', constructionActive: true })]);
     expect(fixture.componentInstance.hasActiveConstruction()).toBe(true);
+  });
+
+  it('shows the build-time reduction percentage in the card subtitle when present (Construction Hub only)', async () => {
+    await TestBed.configureTestingModule({
+      imports: [
+        BuildingListComponent,
+        TranslocoTestingModule.forRoot({
+          langs: { en: { universe: { buildingList: { buildTimeReduction: '-{{percent}}% build time' } } } },
+          translocoConfig: { availableLangs: ['en'], defaultLang: 'en' }
+        })
+      ],
+      providers: [
+        {
+          provide: UniverseApiService,
+          useValue: {
+            getBuildings: vi.fn(() => of([building({ key: 'construction_hub', unlocked: true, buildTimeReductionPercent: 7.5 })])),
+            getResources: vi.fn(() => of(abundantResources())),
+            upgrade: vi.fn()
+          }
+        }
+      ]
+    }).compileComponents();
+    const fixture = TestBed.createComponent(BuildingListComponent);
+    fixture.componentRef.setInput('planetId', 1);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.card-subtitle').textContent).toContain('-7.5% build time');
+  });
+
+  it('does not show a build-time reduction for buildings other than the Construction Hub', async () => {
+    const fixture = await setup([building({ unlocked: true, buildTimeReductionPercent: null })]);
+
+    expect(fixture.nativeElement.querySelector('.card-subtitle').textContent).not.toContain('%)');
   });
 
   it('canAfford is false when any resource on the planet falls short of the next-level cost', async () => {

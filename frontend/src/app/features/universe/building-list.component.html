@@ -18,6 +18,9 @@
               @if (building.productionEfficiency !== null) {
                 ({{ building.productionEfficiency | number: '1.2-2' }}%)
               }
+              @if (building.buildTimeReductionPercent !== null) {
+                ({{ t('buildTimeReduction', { percent: (building.buildTimeReductionPercent | number: '1.1-1') }) }})
+              }
             </div>
           </div>
         </div>

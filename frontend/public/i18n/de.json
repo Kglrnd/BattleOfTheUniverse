@@ -284,7 +284,7 @@
     "implemented": {
       "planets": "Planetenverwaltung: Heimatwelt, Kolonisierung, Umbenennen und dauerhafte Zerstörung eroberter oder bombardierter Planeten",
       "resources": "Ressourcen: Metall, Kristall, Deuterium, Wasserstoff und Energie – mit individueller Produktionseffizienz je Gebäude",
-      "buildings": "9 Gebäudetypen von der Kommandozentrale bis zur Raffinerie",
+      "buildings": "10 Gebäudetypen von der Kommandozentrale bis zur Bauzentrale",
       "research": "Technologiebaum mit planetenspezifischer Forschungseffizienz",
       "fleet": "12 Schiffstypen (Kampf-, Zivil- und Spezialschiffe) und 7 Missionsarten: Kolonisieren, Stationieren, Angreifen, Transport, Bombardieren, Invasion, Spionage",
       "defense": "Verteidigungstürme zum Schutz der eigenen Planeten",
@@ -388,6 +388,7 @@
     },
     "buildingList": {
       "level": "Stufe {{level}}",
+      "buildTimeReduction": "-{{percent}}% Bauzeit",
       "requires": "Erfordert {{label}} Stufe {{requiredLevel}} (aktuell {{currentLevel}})",
       "upgradingToLevel": "Ausbau auf Stufe {{level}} — {{time}}",
       "nextLevelCost": "Nächste Stufe: {{metal}} Metall, {{crystal}} Kristall, {{deuterium}} Deuterium ({{seconds}}s)",
@@ -434,6 +435,10 @@
       "refinery": {
         "name": "Raffinerie",
         "description": "Verarbeitet rohe Eisvorkommen zu Wasserstofftreibstoff für den Schiffsantrieb."
+      },
+      "construction_hub": {
+        "name": "Bauzentrale",
+        "description": "Koordiniert Baukolonnen über die gesamte Kolonie hinweg und verkürzt die Bauzeit aller anderen Gebäude um 1.5% pro Stufe."
       },
       "solar_plant": {
         "name": "Solarkraftwerk",

@@ -27,6 +27,7 @@ describe('GameIconComponent', () => {
     shipyard: '#7dd3fc',
     defense_facility: '#f87171',
     refinery: '#a78bfa',
+    construction_hub: '#fbbf24',
     light_fighter: '#7dd3fc',
     heavy_fighter: '#7dd3fc',
     light_cruiser: '#fb923c',

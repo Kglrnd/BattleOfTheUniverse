@@ -14,6 +14,7 @@ const GLOW_BY_KEY: Record<string, string> = {
   shipyard: '#7dd3fc',
   defense_facility: '#f87171',
   refinery: '#a78bfa',
+  construction_hub: '#fbbf24',
   // ships
   light_fighter: '#7dd3fc',
   heavy_fighter: '#7dd3fc',

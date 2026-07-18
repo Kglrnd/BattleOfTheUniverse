@@ -79,6 +79,7 @@ export interface BuildingView {
   missingRequirements: LockedRequirement[];
   researchEfficiency: number | null;
   productionEfficiency: number | null;
+  buildTimeReductionPercent: number | null;
 }
 
 export interface UpgradeResponse {

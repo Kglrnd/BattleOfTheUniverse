@@ -45,6 +45,26 @@ class BuildingControllerIntegrationTest {
     }
 
     @Test
+    void constructionHubIsUnlockedFromTheStartAndUnaffectedByItsOwnLevel() throws Exception {
+        MockHttpSession session = registerAndLogin();
+        Long homeworldId = homeworldId(session);
+
+        // main_building starts at level 1, so the hub's only requirement is already met.
+        mockMvc.perform(get("/api/planets/" + homeworldId + "/buildings").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.key=='construction_hub')].level").value(org.hamcrest.Matchers.contains(0)))
+                .andExpect(jsonPath("$[?(@.key=='construction_hub')].unlocked").value(org.hamcrest.Matchers.contains(true)))
+                .andExpect(jsonPath("$[?(@.key=='construction_hub')].buildTimeReductionPercent").value(org.hamcrest.Matchers.contains((Object) null)));
+
+        mockMvc.perform(post("/api/planets/" + homeworldId + "/buildings/construction_hub/upgrade")
+                        .session(session)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.buildingKey").value("construction_hub"))
+                .andExpect(jsonPath("$.targetLevel").value(1));
+    }
+
+    @Test
     void rejectsListingBuildingsForAPlanetYouDoNotOwn() throws Exception {
         MockHttpSession ownerSession = registerAndLogin();
         Long homeworldId = homeworldId(ownerSession);
