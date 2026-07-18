@@ -1,5 +1,9 @@
 package de.kugi.dev.battleoftheuniverse.fleet;
 
+import de.kugi.dev.battleoftheuniverse.building.PlanetBuilding;
+import de.kugi.dev.battleoftheuniverse.building.PlanetBuildingRepository;
+import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
+import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,6 +31,10 @@ class FleetControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private PlanetBuildingRepository planetBuildingRepository;
+    @Autowired
+    private ResourceService resourceService;
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     @Test
@@ -62,6 +70,70 @@ class FleetControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonMapper.writeValueAsString(Map.of("quantity", 1))))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shipyardQueueIsHiddenForAFreshHomeworldBelowThePipelineUnlockLevel() throws Exception {
+        MockHttpSession session = registerAndLogin();
+        Long homeworldId = homeworldId(session);
+
+        mockMvc.perform(get("/api/planets/" + homeworldId + "/ships/queue").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxSize").value(0))
+                .andExpect(jsonPath("$.entries", org.hamcrest.Matchers.hasSize(0)));
+    }
+
+    @Test
+    void queueingASecondShipBelowThePipelineUnlockLevelIsRejectedWithTheUnchangedMessage() throws Exception {
+        MockHttpSession session = registerAndLogin();
+        Long homeworldId = homeworldId(session);
+        resourceService.credit(homeworldId, new ResourceCost(10000, 5000, 0));
+
+        mockMvc.perform(post("/api/planets/" + homeworldId + "/ships/light_fighter/build")
+                        .session(session)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(Map.of("quantity", 1))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/planets/" + homeworldId + "/ships/light_fighter/build")
+                        .session(session)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(Map.of("quantity", 1))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("A shipyard order is already in progress on this planet"));
+    }
+
+    @Test
+    void pipelineUnlocksAtShipyardLevelSixAndQueuesMultipleShipTypes() throws Exception {
+        MockHttpSession session = registerAndLogin();
+        Long homeworldId = homeworldId(session);
+        planetBuildingRepository.save(new PlanetBuilding(homeworldId, "shipyard", 6));
+        resourceService.credit(homeworldId, new ResourceCost(10000, 5000, 0));
+
+        mockMvc.perform(post("/api/planets/" + homeworldId + "/ships/light_fighter/build")
+                        .session(session)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(Map.of("quantity", 2))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/planets/" + homeworldId + "/ships/small_cargo/build")
+                        .session(session)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(Map.of("quantity", 1))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/planets/" + homeworldId + "/ships/queue").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxSize").value(15))
+                .andExpect(jsonPath("$.entries", org.hamcrest.Matchers.hasSize(2)))
+                .andExpect(jsonPath("$.entries[0].shipKey").value("light_fighter"))
+                .andExpect(jsonPath("$.entries[0].position").value(1))
+                .andExpect(jsonPath("$.entries[1].shipKey").value("small_cargo"))
+                .andExpect(jsonPath("$.entries[1].position").value(2));
     }
 
     @Test

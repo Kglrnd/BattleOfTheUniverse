@@ -128,6 +128,20 @@ export interface ShipyardBuildResponse {
   endsAt: string;
 }
 
+export interface ShipyardQueueEntryView {
+  shipKey: string;
+  shipName: string;
+  quantity: number;
+  position: number;
+  startedAt: string;
+  endsAt: string;
+}
+
+export interface ShipyardQueueView {
+  maxSize: number;
+  entries: ShipyardQueueEntryView[];
+}
+
 export interface TowerView {
   key: string;
   name: string;

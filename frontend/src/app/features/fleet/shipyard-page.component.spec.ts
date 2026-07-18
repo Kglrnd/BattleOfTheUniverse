@@ -38,7 +38,14 @@ describe('ShipyardPageComponent', () => {
           provide: CurrentPlanetService,
           useValue: { planets: () => planets, selectedPlanetId: () => selectedPlanetId, select }
         },
-        { provide: UniverseApiService, useValue: { getShips: vi.fn(() => of([] as ShipyardView[])), buildShips: vi.fn() } }
+        {
+          provide: UniverseApiService,
+          useValue: {
+            getShips: vi.fn(() => of([] as ShipyardView[])),
+            getShipyardQueue: vi.fn(() => of({ maxSize: 0, entries: [] })),
+            buildShips: vi.fn()
+          }
+        }
       ]
     }).compileComponents();
   }

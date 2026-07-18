@@ -18,6 +18,8 @@ import de.kugi.dev.battleoftheuniverse.fleet.dto.LockedRequirement;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ResourceQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipQuantity;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardQueueEntryView;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardQueueView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
@@ -30,7 +32,6 @@ import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -81,6 +83,10 @@ public class FleetService {
     /** Matches the "espionage_technology" entry in the technology catalog. */
     private static final String ESPIONAGE_TECH_KEY = "espionage_technology";
 
+    /** Below this shipyard level, only one order can ever be queued at a time - unchanged from before the pipeline existed. */
+    private static final int PIPELINE_UNLOCK_SHIPYARD_LEVEL = 6;
+    private static final int PIPELINE_MAX_QUEUE_SIZE = 15;
+
     /** Espionage success chance at technology level 0, before any per-level bonus. */
     private static final double ESPIONAGE_BASE_CHANCE = 0.5;
     private static final double ESPIONAGE_CHANCE_PER_LEVEL = 0.05;
@@ -100,7 +106,7 @@ public class FleetService {
     private final ResourceMapper resourceMapper;
 
     public List<ShipyardView> listForPlanet(Long planetId, Long ownerId) {
-        var activeJob = jobRepository.findByPlanetId(planetId);
+        List<ShipyardJob> queue = jobRepository.findByPlanetIdOrderByEndsAtAsc(planetId);
         int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
         Map<String, Integer> ownedByKey = shipRepository.findByPlanetId(planetId).stream()
                 .collect(Collectors.toMap(Ship::getShipKey, Ship::getQuantity));
@@ -108,7 +114,8 @@ public class FleetService {
         return catalogService.ships().stream()
                 .map(definition -> {
                     int owned = ownedByKey.getOrDefault(definition.key(), 0);
-                    boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getShipKey().equals(definition.key());
+                    ShipyardJob job = queue.stream().filter(j -> j.getShipKey().equals(definition.key())).findFirst().orElse(null);
+                    boolean isBeingBuilt = job != null;
                     List<LockedRequirement> missing = missingRequirements(planetId, ownerId, definition.requirements());
                     return new ShipyardView(
                             definition.key(),
@@ -120,8 +127,8 @@ public class FleetService {
                             definition.baseCost(),
                             unitBuildTimeSeconds(definition, shipyardLevel),
                             isBeingBuilt,
-                            isBeingBuilt ? activeJob.get().getQuantity() : null,
-                            isBeingBuilt ? activeJob.get().getEndsAt() : null,
+                            isBeingBuilt ? job.getQuantity() : null,
+                            isBeingBuilt ? job.getEndsAt() : null,
                             missing.isEmpty(),
                             missing
                     );
@@ -129,10 +136,25 @@ public class FleetService {
                 .toList();
     }
 
+    /**
+     * Queues a ship build. Below shipyard level {@value #PIPELINE_UNLOCK_SHIPYARD_LEVEL}, at most
+     * one order can ever be in progress at a time (unchanged since before the pipeline existed -
+     * the error message never differs, so nothing about the pipeline leaks before it's usable).
+     * At level {@value #PIPELINE_UNLOCK_SHIPYARD_LEVEL}+, up to {@value #PIPELINE_MAX_QUEUE_SIZE}
+     * orders can be queued back-to-back: each new order starts precisely when the current queue
+     * tail ends, so {@link #completeDueJobs} - which just completes whatever's due, in any order -
+     * still resolves them correctly one at a time without needing to track "which job is active".
+     */
     @Transactional
     public ShipyardBuildResponse queueShip(Long planetId, Long ownerId, String shipKey, int quantity) {
-        if (jobRepository.findByPlanetId(planetId).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A shipyard order is already in progress on this planet");
+        int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
+        int maxQueueSize = shipyardLevel >= PIPELINE_UNLOCK_SHIPYARD_LEVEL ? PIPELINE_MAX_QUEUE_SIZE : 1;
+        List<ShipyardJob> queue = jobRepository.findByPlanetIdOrderByEndsAtAsc(planetId);
+        if (queue.size() >= maxQueueSize) {
+            String message = maxQueueSize == 1
+                    ? "A shipyard order is already in progress on this planet"
+                    : "The shipyard's build queue is full";
+            throw new ResponseStatusException(HttpStatus.CONFLICT, message);
         }
 
         ShipDefinition definition = catalogService.ship(shipKey);
@@ -143,19 +165,34 @@ public class FleetService {
         ResourceCost cost = definition.baseCost().scaled(quantity);
         resourceService.debit(planetId, cost);
 
-        int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
-        Instant startedAt = Instant.now();
+        Instant startedAt = queue.isEmpty() ? Instant.now() : queue.get(queue.size() - 1).getEndsAt();
         Instant endsAt = startedAt.plusSeconds(unitBuildTimeSeconds(definition, shipyardLevel) * quantity);
-        try {
-            jobRepository.save(new ShipyardJob(planetId, shipKey, quantity, startedAt, endsAt));
-        } catch (DataIntegrityViolationException e) {
-            // The upfront isPresent() check passed, but a concurrent build request beat us to
-            // the insert - the unique constraint on shipyard_jobs(planet_id) is the actual
-            // backstop; fail the same way the check would, rolling back the debit above too.
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A shipyard order is already in progress on this planet");
-        }
+        jobRepository.save(new ShipyardJob(planetId, shipKey, quantity, startedAt, endsAt));
 
         return new ShipyardBuildResponse(shipKey, quantity, endsAt);
+    }
+
+    /**
+     * The planet's shipyard build pipeline. Below shipyard level
+     * {@value #PIPELINE_UNLOCK_SHIPYARD_LEVEL} this always returns an empty, zero-capacity queue
+     * regardless of the one order that might be in progress - the pipeline stays undiscoverable,
+     * not just unrendered, until the shipyard actually reaches that level.
+     */
+    @Transactional(readOnly = true)
+    public ShipyardQueueView shipyardQueue(Long planetId) {
+        int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
+        if (shipyardLevel < PIPELINE_UNLOCK_SHIPYARD_LEVEL) {
+            return new ShipyardQueueView(0, List.of());
+        }
+
+        List<ShipyardJob> queue = jobRepository.findByPlanetIdOrderByEndsAtAsc(planetId);
+        List<ShipyardQueueEntryView> entries = new ArrayList<>();
+        for (int i = 0; i < queue.size(); i++) {
+            ShipyardJob job = queue.get(i);
+            entries.add(new ShipyardQueueEntryView(job.getShipKey(), catalogService.ship(job.getShipKey()).name(),
+                    job.getQuantity(), i + 1, job.getStartedAt(), job.getEndsAt()));
+        }
+        return new ShipyardQueueView(PIPELINE_MAX_QUEUE_SIZE, entries);
     }
 
     /**
@@ -213,7 +250,7 @@ public class FleetService {
     @Transactional
     public void wipeAllShipsAndOrders(Long planetId) {
         shipRepository.deleteAll(shipRepository.findByPlanetId(planetId));
-        jobRepository.findByPlanetId(planetId).ifPresent(jobRepository::delete);
+        jobRepository.deleteAll(jobRepository.findByPlanetIdOrderByEndsAtAsc(planetId));
     }
 
     @Transactional(readOnly = true)

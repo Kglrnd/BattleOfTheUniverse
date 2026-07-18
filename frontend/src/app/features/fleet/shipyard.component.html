@@ -3,6 +3,33 @@
     <p class="error">{{ errorMessage() }}</p>
   }
 
+  @if (queueResource.value(); as queue) {
+    @if (queue.maxSize > 0) {
+      <div class="pipeline-section">
+        <h2>{{ t('pipelineTitle') }}</h2>
+        <p class="field-hint">{{ t('pipelineSlotsUsed', { used: queue.entries.length, max: queue.maxSize }) }}</p>
+        @if (queue.entries.length > 0) {
+          <ol class="pipeline-list">
+            @for (entry of queue.entries; track entry.position) {
+              <li>
+                {{
+                  t('pipelineEntry', {
+                    position: entry.position,
+                    quantity: entry.quantity,
+                    name: entry.shipName,
+                    remaining: remainingLabelForQueueEntry(entry)
+                  })
+                }}
+              </li>
+            }
+          </ol>
+        } @else {
+          <p>{{ t('pipelineEmpty') }}</p>
+        }
+      </div>
+    }
+  }
+
   @if ((shipsResource.value() ?? []).length === 0) {
     <p>{{ t('noShipsYet') }}</p>
   } @else {
@@ -61,7 +88,7 @@
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="!ship.unlocked || ship.buildActive || hasActiveShipyardJob() || queuingShip() === ship.key"
+                  [disabled]="!ship.unlocked || ship.buildActive || isQueueFull() || queuingShip() === ship.key"
                   (click)="build(ship, qty.valueAsNumber)"
                 >
                   {{ t('build') }}

@@ -102,4 +102,11 @@ describe('UniverseApiService', () => {
     expect(req.request.body).toEqual({ quantity: 5 });
     req.flush({});
   });
+
+  it('getShipyardQueue fetches the shipyard build pipeline for a planet', () => {
+    service.getShipyardQueue(3).subscribe();
+    const req = httpMock.expectOne('/api/planets/3/ships/queue');
+    expect(req.request.method).toBe('GET');
+    req.flush({ maxSize: 0, entries: [] });
+  });
 });

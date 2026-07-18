@@ -739,4 +739,100 @@ class FleetServiceTest {
                 .hasMessageContaining("Requirements not met");
         verify(resourceService, never()).debit(any(), any(ResourceCost.class));
     }
+
+    @Test
+    void queueShipRejectsASecondOrderBelowThePipelineUnlockLevelWithTheOriginalMessage() {
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(5);
+        when(jobRepository.findByPlanetIdOrderByEndsAtAsc(ORIGIN_ID)).thenReturn(List.of(
+                new ShipyardJob(ORIGIN_ID, "light_fighter", 1, Instant.now(), Instant.now().plusSeconds(60))));
+
+        assertThatThrownBy(() -> service.queueShip(ORIGIN_ID, OWNER_ID, "cruiser", 1))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("already in progress");
+        verify(resourceService, never()).debit(any(), any(ResourceCost.class));
+    }
+
+    @Test
+    void queueShipAllowsUpToFifteenQueuedOrdersOncePipelineIsUnlocked() {
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(6);
+        List<ShipyardJob> fourteenQueued = new java.util.ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            fourteenQueued.add(new ShipyardJob(ORIGIN_ID, "light_fighter", 1, Instant.now(), Instant.now().plusSeconds(60)));
+        }
+        when(jobRepository.findByPlanetIdOrderByEndsAtAsc(ORIGIN_ID)).thenReturn(fourteenQueued);
+
+        service.queueShip(ORIGIN_ID, OWNER_ID, "cruiser", 1);
+
+        verify(jobRepository).save(any(ShipyardJob.class));
+        verify(resourceService).debit(ORIGIN_ID, cruiser.baseCost().scaled(1));
+    }
+
+    @Test
+    void queueShipRejectsA16thOrderOncePipelineIsFullWithADifferentMessage() {
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(6);
+        List<ShipyardJob> fifteenQueued = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; i++) {
+            fifteenQueued.add(new ShipyardJob(ORIGIN_ID, "light_fighter", 1, Instant.now(), Instant.now().plusSeconds(60)));
+        }
+        when(jobRepository.findByPlanetIdOrderByEndsAtAsc(ORIGIN_ID)).thenReturn(fifteenQueued);
+
+        assertThatThrownBy(() -> service.queueShip(ORIGIN_ID, OWNER_ID, "cruiser", 1))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("queue is full");
+        verify(resourceService, never()).debit(any(), any(ResourceCost.class));
+    }
+
+    @Test
+    void queueShipChainsTheNewOrdersStartTimeAfterTheCurrentQueueTail() {
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(6);
+        Instant tailEnd = Instant.now().plusSeconds(500);
+        when(jobRepository.findByPlanetIdOrderByEndsAtAsc(ORIGIN_ID)).thenReturn(List.of(
+                new ShipyardJob(ORIGIN_ID, "light_fighter", 1, Instant.now(), tailEnd)));
+
+        service.queueShip(ORIGIN_ID, OWNER_ID, "cruiser", 1);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(ShipyardJob.class);
+        verify(jobRepository).save(captor.capture());
+        ShipyardJob saved = captor.getValue();
+        assertThat(saved.getStartedAt()).isEqualTo(tailEnd);
+        // shipyard level 6 -> unitBuildTimeSeconds = round(1800 / 7) = 257.
+        assertThat(saved.getEndsAt()).isEqualTo(tailEnd.plusSeconds(257));
+    }
+
+    @Test
+    void shipyardQueueIsHiddenBelowThePipelineUnlockLevelEvenWithAJobInProgress() {
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(5);
+        lenient().when(jobRepository.findByPlanetIdOrderByEndsAtAsc(ORIGIN_ID)).thenReturn(List.of(
+                new ShipyardJob(ORIGIN_ID, "light_fighter", 1, Instant.now(), Instant.now().plusSeconds(60))));
+
+        var queue = service.shipyardQueue(ORIGIN_ID);
+
+        assertThat(queue.maxSize()).isZero();
+        assertThat(queue.entries()).isEmpty();
+    }
+
+    @Test
+    void shipyardQueueExposesEveryQueuedEntryInOrderOncePipelineIsUnlocked() {
+        when(buildingService.levelOf(ORIGIN_ID, "shipyard")).thenReturn(6);
+        when(catalogService.ship("light_fighter")).thenReturn(lightFighter);
+        when(catalogService.ship("cruiser")).thenReturn(cruiser);
+        Instant firstEnd = Instant.now().plusSeconds(60);
+        Instant secondEnd = firstEnd.plusSeconds(120);
+        when(jobRepository.findByPlanetIdOrderByEndsAtAsc(ORIGIN_ID)).thenReturn(List.of(
+                new ShipyardJob(ORIGIN_ID, "light_fighter", 3, Instant.now(), firstEnd),
+                new ShipyardJob(ORIGIN_ID, "cruiser", 2, firstEnd, secondEnd)));
+
+        var queue = service.shipyardQueue(ORIGIN_ID);
+
+        assertThat(queue.maxSize()).isEqualTo(15);
+        assertThat(queue.entries()).hasSize(2);
+        assertThat(queue.entries().get(0).shipKey()).isEqualTo("light_fighter");
+        assertThat(queue.entries().get(0).position()).isEqualTo(1);
+        assertThat(queue.entries().get(0).quantity()).isEqualTo(3);
+        assertThat(queue.entries().get(1).shipKey()).isEqualTo("cruiser");
+        assertThat(queue.entries().get(1).position()).isEqualTo(2);
+        assertThat(queue.entries().get(1).startedAt()).isEqualTo(firstEnd);
+    }
 }

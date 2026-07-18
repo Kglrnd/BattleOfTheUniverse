@@ -6,7 +6,7 @@ import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
 import { shipCategory } from '../../core/fleet-mission';
 import { GameIconComponent } from '../../core/game-icon/game-icon.component';
-import { ShipyardView } from '../../core/models';
+import { ShipyardQueueEntryView, ShipyardView } from '../../core/models';
 import { UniverseApiService } from '../universe/universe-api.service';
 
 interface ShipSection {
@@ -31,6 +31,10 @@ export class ShipyardComponent {
     params: () => ({ planetId: this.planetId() }),
     stream: ({ params }) => this.api.getShips(params.planetId)
   });
+  protected readonly queueResource = rxResource({
+    params: () => ({ planetId: this.planetId() }),
+    stream: ({ params }) => this.api.getShipyardQueue(params.planetId)
+  });
   protected readonly shipSections = computed<ShipSection[]>(() => {
     const ships = this.shipsResource.value() ?? [];
     return [
@@ -51,7 +55,10 @@ export class ShipyardComponent {
       this.errorMessage.set(null);
     });
 
-    const pollHandle = setInterval(() => this.shipsResource.reload(), 5000);
+    const pollHandle = setInterval(() => {
+      this.shipsResource.reload();
+      this.queueResource.reload();
+    }, 5000);
     const clockHandle = setInterval(() => this.clockTick.update((v) => v + 1), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(pollHandle);
@@ -69,6 +76,7 @@ export class ShipyardComponent {
       next: () => {
         this.queuingShip.set(null);
         this.shipsResource.reload();
+        this.queueResource.reload();
       },
       error: (err) => {
         this.queuingShip.set(null);
@@ -79,6 +87,19 @@ export class ShipyardComponent {
 
   hasActiveShipyardJob(): boolean {
     return (this.shipsResource.value() ?? []).some((s) => s.buildActive);
+  }
+
+  /**
+   * Below the pipeline's unlock level there's still at most one order at a time, so this falls
+   * back to the pre-pipeline "anything building?" check - the queue endpoint always reports
+   * maxSize 0 there, by design, so it can't be used to detect that single in-progress order.
+   */
+  isQueueFull(): boolean {
+    const queue = this.queueResource.value();
+    if (queue && queue.maxSize > 0) {
+      return queue.entries.length >= queue.maxSize;
+    }
+    return this.hasActiveShipyardJob();
   }
 
   protected readonly shipName = (ship: ShipyardView) => catalogName(this.transloco, 'ships', ship);
@@ -92,5 +113,10 @@ export class ShipyardComponent {
   progress(ship: ShipyardView): number {
     this.clockTick();
     return progressPercentFromDuration(ship.buildEndsAt, ship.unitBuildTimeSeconds * (ship.buildingQuantity ?? 1));
+  }
+
+  remainingLabelForQueueEntry(entry: ShipyardQueueEntryView): string {
+    this.clockTick();
+    return formatCountdown(entry.endsAt);
   }
 }

@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-drop-shipyard-jobs-unique-constraint
+      author: kugi
+      comment: >
+        A shipyard at level 6+ can queue up to 15 ships back-to-back (a build pipeline), so
+        shipyard_jobs is no longer at most one row per planet - the check-then-insert cap is now
+        enforced in FleetService instead of the database.
+      changes:
+        - dropUniqueConstraint:
+            tableName: shipyard_jobs
+            constraintName: uk_shipyard_jobs_planet

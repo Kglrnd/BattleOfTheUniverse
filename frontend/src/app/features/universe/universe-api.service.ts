@@ -8,6 +8,7 @@ import {
   ResourceProductionView,
   ResourceView,
   ShipyardBuildResponse,
+  ShipyardQueueView,
   ShipyardView,
   SystemView,
   UpgradeResponse
@@ -63,5 +64,9 @@ export class UniverseApiService {
 
   buildShips(planetId: number, shipKey: string, quantity: number): Observable<ShipyardBuildResponse> {
     return this.http.post<ShipyardBuildResponse>(`/api/planets/${planetId}/ships/${shipKey}/build`, { quantity });
+  }
+
+  getShipyardQueue(planetId: number): Observable<ShipyardQueueView> {
+    return this.http.get<ShipyardQueueView>(`/api/planets/${planetId}/ships/queue`);
   }
 }

@@ -246,7 +246,11 @@
       "qty": "Qty",
       "build": "Build",
       "requires": "Requires {{label}} level {{requiredLevel}} (currently {{currentLevel}})",
-      "shipyardOrderFailed": "Shipyard order failed."
+      "shipyardOrderFailed": "Shipyard order failed.",
+      "pipelineTitle": "Build Pipeline",
+      "pipelineSlotsUsed": "{{used}} / {{max}} slots used",
+      "pipelineEntry": "#{{position}} — {{quantity}}x {{name}} ({{remaining}})",
+      "pipelineEmpty": "The pipeline is empty."
     }
   },
   "messages": {

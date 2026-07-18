@@ -246,7 +246,11 @@
       "qty": "Anzahl",
       "build": "Bauen",
       "requires": "Benötigt {{label}} Stufe {{requiredLevel}} (aktuell {{currentLevel}})",
-      "shipyardOrderFailed": "Werftauftrag fehlgeschlagen."
+      "shipyardOrderFailed": "Werftauftrag fehlgeschlagen.",
+      "pipelineTitle": "Bau-Pipeline",
+      "pipelineSlotsUsed": "{{used}} / {{max}} Plätze belegt",
+      "pipelineEntry": "#{{position}} — {{quantity}}x {{name}} ({{remaining}})",
+      "pipelineEmpty": "Die Pipeline ist leer."
     }
   },
   "messages": {

@@ -2,6 +2,7 @@ package de.kugi.dev.battleoftheuniverse.fleet;
 
 import de.kugi.dev.battleoftheuniverse.fleet.dto.BuildShipsRequest;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardBuildResponse;
+import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardQueueView;
 import de.kugi.dev.battleoftheuniverse.fleet.dto.ShipyardView;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
@@ -37,5 +38,11 @@ public class FleetController {
                                         @AuthenticationPrincipal AppUserPrincipal principal) {
         planetService.requireOwned(planetId, principal.getId());
         return fleetService.queueShip(planetId, principal.getId(), key, request.quantity());
+    }
+
+    @GetMapping("/queue")
+    public ShipyardQueueView queue(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {
+        planetService.requireOwned(planetId, principal.getId());
+        return fleetService.shipyardQueue(planetId);
     }
 }
