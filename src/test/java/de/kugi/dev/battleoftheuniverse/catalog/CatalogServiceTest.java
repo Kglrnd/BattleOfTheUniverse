@@ -96,7 +96,15 @@ class CatalogServiceTest {
         BuildingDefinition definition = new BuildingDefinition("k", "n", "d",
                 ResourceCost.ZERO, 1.5, 60, ResourceKey.METAL, 30, 1, List.of());
 
-        assertThat(service.productionPerHour(definition, 5)).isEqualTo(150.0);
+        assertThat(service.productionPerHour(definition, 5)).isEqualTo(180.0);
+    }
+
+    @Test
+    void productionPerHourIsAlreadyPositiveAtLevelZero() {
+        BuildingDefinition definition = new BuildingDefinition("k", "n", "d",
+                ResourceCost.ZERO, 1.5, 60, ResourceKey.METAL, 30, 1, List.of());
+
+        assertThat(service.productionPerHour(definition, 0)).isEqualTo(30.0);
     }
 
     @Test

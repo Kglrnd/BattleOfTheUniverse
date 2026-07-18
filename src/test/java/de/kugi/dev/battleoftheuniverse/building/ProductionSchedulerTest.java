@@ -46,7 +46,7 @@ class ProductionSchedulerTest {
     void tickScalesHourlyRateByTheBuildingsProductionEfficiency() {
         PlanetBuilding building = new PlanetBuilding(PLANET_ID, "metal_mine", 5);
         building.setProductionEfficiency(80.0);
-        when(buildingRepository.findByLevelGreaterThan(0)).thenReturn(List.of(building));
+        when(buildingRepository.findAll()).thenReturn(List.of(building));
         when(catalogService.building("metal_mine")).thenReturn(METAL_MINE);
         when(catalogService.productionPerHour(METAL_MINE, 5)).thenReturn(150.0);
 
@@ -57,9 +57,24 @@ class ProductionSchedulerTest {
     }
 
     @Test
+    void tickAppliesProductionForALevelZeroBuildingToo() {
+        // A freshly colonized planet's producing buildings start at level 0 but should already
+        // produce a base amount - not wait until level 1 to start.
+        PlanetBuilding building = new PlanetBuilding(PLANET_ID, "metal_mine", 0);
+        building.setProductionEfficiency(100.0);
+        when(buildingRepository.findAll()).thenReturn(List.of(building));
+        when(catalogService.building("metal_mine")).thenReturn(METAL_MINE);
+        when(catalogService.productionPerHour(METAL_MINE, 0)).thenReturn(30.0);
+
+        scheduler.tick();
+
+        verify(resourceService).applyProduction(eq(PLANET_ID), eq(Map.of(ResourceKey.METAL, 30.0)));
+    }
+
+    @Test
     void tickSkipsBuildingsThatDoNotProduceAResource() {
         PlanetBuilding building = new PlanetBuilding(PLANET_ID, "main_building", 3);
-        when(buildingRepository.findByLevelGreaterThan(0)).thenReturn(List.of(building));
+        when(buildingRepository.findAll()).thenReturn(List.of(building));
         BuildingDefinition mainBuilding = new BuildingDefinition(
                 "main_building", "Main Building", "desc",
                 new ResourceCost(0, 0, 0), 1.5, 60, ResourceKey.NONE, 0, 0, List.of());

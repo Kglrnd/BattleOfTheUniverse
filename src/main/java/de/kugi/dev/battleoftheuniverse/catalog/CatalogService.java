@@ -129,9 +129,13 @@ public class CatalogService {
         return Duration.ofSeconds((long) definition.baseResearchTimeSeconds() * targetLevel);
     }
 
-    /** Resource units produced per hour by a building at the given level. */
+    /**
+     * Resource units produced per hour by a building at the given level. Every level - including
+     * 0, before it's ever been upgraded - produces a base amount; each additional level adds
+     * another full increment on top, rather than production only starting at level 1.
+     */
     public double productionPerHour(BuildingDefinition definition, int level) {
-        return definition.baseProductionPerLevel() * level;
+        return definition.baseProductionPerLevel() * (level + 1);
     }
 
     public JsonNode schemaFor(CatalogType type) {

@@ -2,6 +2,8 @@ package de.kugi.dev.battleoftheuniverse.building;
 
 import de.kugi.dev.battleoftheuniverse.building.dto.BuildingView;
 import de.kugi.dev.battleoftheuniverse.building.dto.LockedRequirement;
+import de.kugi.dev.battleoftheuniverse.building.dto.ProductionLevelView;
+import de.kugi.dev.battleoftheuniverse.building.dto.ResourceProductionView;
 import de.kugi.dev.battleoftheuniverse.building.dto.UpgradeResponse;
 import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,6 +132,39 @@ public class BuildingService {
                             isResearchLab ? planet.getResearchEfficiency() : null,
                             producesResource && existing != null ? existing.getProductionEfficiency() : null
                     );
+                })
+                .toList();
+    }
+
+    /**
+     * Current production/hour for every resource-producing building on the planet, plus up to 5
+     * levels below (clipped at 0) and 5 levels above (no upper level cap exists, so this window
+     * is always full) the current level - lets the resources page show both a history and a
+     * preview of what upgrading further is worth.
+     */
+    public List<ResourceProductionView> productionOverview(Long planetId) {
+        Map<String, PlanetBuilding> byKey = buildingRepository.findByPlanetId(planetId).stream()
+                .collect(Collectors.toMap(PlanetBuilding::getBuildingKey, Function.identity()));
+
+        return catalogService.buildings().stream()
+                .filter(definition -> definition.producesResource() != ResourceKey.NONE)
+                .map(definition -> {
+                    PlanetBuilding existing = byKey.get(definition.key());
+                    int currentLevel = existing != null ? existing.getLevel() : 0;
+                    double efficiencyFraction = (existing != null ? existing.getProductionEfficiency() : 100.0) / 100.0;
+
+                    int fromLevel = Math.max(0, currentLevel - 5);
+                    int toLevel = currentLevel + 5;
+                    List<ProductionLevelView> levels = new ArrayList<>();
+                    for (int level = fromLevel; level <= toLevel; level++) {
+                        double perHour = catalogService.productionPerHour(definition, level) * efficiencyFraction;
+                        levels.add(new ProductionLevelView(level, perHour, level == currentLevel));
+                    }
+
+                    double currentPerHour = catalogService.productionPerHour(definition, currentLevel) * efficiencyFraction;
+                    return new ResourceProductionView(definition.key(), definition.name(), definition.description(),
+                            definition.producesResource(), definition.producesResource().getDisplayName(),
+                            currentLevel, efficiencyFraction * 100.0, currentPerHour, levels);
                 })
                 .toList();
     }

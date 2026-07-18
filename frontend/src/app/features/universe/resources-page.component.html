@@ -1,0 +1,26 @@
+<ng-container *transloco="let t; prefix: 'universe.resourcesPage'">
+  <h1>{{ t('title') }}</h1>
+
+  @if (planets().length === 0) {
+    <p>{{ t('noPlanets') }}</p>
+  } @else {
+    <div class="field origin-field">
+      <label for="resources-planet-select">{{ t('planetLabel') }}</label>
+      <select
+        id="resources-planet-select"
+        class="select"
+        name="resources-planet"
+        [ngModel]="selectedPlanetId()"
+        (ngModelChange)="onPlanetChange($event)"
+      >
+        @for (p of planets(); track p.id) {
+          <option [value]="p.id">{{ p.coordinates }} · {{ p.name }}</option>
+        }
+      </select>
+    </div>
+
+    @if (selectedPlanetId(); as planetId) {
+      <app-resource-production-list [planetId]="planetId" />
+    }
+  }
+</ng-container>

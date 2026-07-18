@@ -26,6 +26,7 @@
     "resetGame": "Reset game",
     "overview": "Overview",
     "buildings": "Buildings",
+    "resources": "Resources",
     "shipyard": "Shipyard",
     "espionage": "Espionage",
     "research": "Research",
@@ -398,6 +399,18 @@
       "title": "Buildings",
       "noPlanets": "You need at least one planet to build.",
       "planetLabel": "Planet"
+    },
+    "resourcesPage": {
+      "title": "Resources",
+      "noPlanets": "You need at least one planet to see resource production.",
+      "planetLabel": "Planet"
+    },
+    "resourceProductionList": {
+      "noProducingBuildings": "No resource-producing buildings on this planet yet.",
+      "level": "Level {{level}}",
+      "currentProduction": "{{amount}} {{resource}} / hour",
+      "colLevel": "Level",
+      "colProduction": "Per hour"
     }
   },
   "catalogData": {

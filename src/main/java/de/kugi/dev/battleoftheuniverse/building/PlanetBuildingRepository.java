@@ -11,8 +11,6 @@ public interface PlanetBuildingRepository extends JpaRepository<PlanetBuilding, 
 
     Optional<PlanetBuilding> findByPlanetIdAndBuildingKey(Long planetId, String buildingKey);
 
-    List<PlanetBuilding> findByLevelGreaterThan(int level);
-
     /** Total building level per (owner, building key) across every planet game-wide - used by the highscore. */
     @Query("""
             select p.ownerId as ownerId, pb.buildingKey as key, sum(pb.level) as total

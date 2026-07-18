@@ -6,7 +6,7 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { catalogDescription, catalogName } from '../../core/catalog-i18n';
 import { formatCountdown, progressPercentFromDuration } from '../../core/countdown';
 import { GameIconComponent } from '../../core/game-icon/game-icon.component';
-import { BuildingView } from '../../core/models';
+import { BuildingView, ResourceView } from '../../core/models';
 import { UniverseApiService } from './universe-api.service';
 
 @Component({
@@ -26,6 +26,10 @@ export class BuildingListComponent {
     params: () => ({ planetId: this.planetId() }),
     stream: ({ params }) => this.api.getBuildings(params.planetId)
   });
+  protected readonly resourcesResource = rxResource({
+    params: () => ({ planetId: this.planetId() }),
+    stream: ({ params }) => this.api.getResources(params.planetId)
+  });
   protected readonly upgrading = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   /** Bumped every second purely to force the countdown text to re-render. */
@@ -38,7 +42,10 @@ export class BuildingListComponent {
       this.errorMessage.set(null);
     });
 
-    const pollHandle = setInterval(() => this.buildingsResource.reload(), 5000);
+    const pollHandle = setInterval(() => {
+      this.buildingsResource.reload();
+      this.resourcesResource.reload();
+    }, 5000);
     const clockHandle = setInterval(() => this.clockTick.update((v) => v + 1), 1000);
     this.destroyRef.onDestroy(() => {
       clearInterval(pollHandle);
@@ -56,6 +63,7 @@ export class BuildingListComponent {
       next: () => {
         this.upgrading.set(null);
         this.buildingsResource.reload();
+        this.resourcesResource.reload();
       },
       error: (err) => {
         this.upgrading.set(null);
@@ -66,6 +74,17 @@ export class BuildingListComponent {
 
   hasActiveConstruction(): boolean {
     return (this.buildingsResource.value() ?? []).some((b) => b.constructionActive);
+  }
+
+  /** Whether the planet's current resource ledger covers this building's next-level cost. */
+  canAfford(building: BuildingView): boolean {
+    const amountOf = (key: ResourceView['resourceKey']) =>
+      (this.resourcesResource.value() ?? []).find((r) => r.resourceKey === key)?.amount ?? 0;
+    return (
+      amountOf('METAL') >= building.nextLevelCost.metal &&
+      amountOf('CRYSTAL') >= building.nextLevelCost.crystal &&
+      amountOf('DEUTERIUM') >= building.nextLevelCost.deuterium
+    );
   }
 
   protected readonly buildingName = (b: BuildingView) => catalogName(this.transloco, 'buildings', b);

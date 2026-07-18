@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import {
   BuildingView,
   PlanetView,
+  ResourceProductionView,
   ResourceView,
   ShipyardBuildResponse,
   ShipyardView,
@@ -46,6 +47,10 @@ export class UniverseApiService {
 
   getBuildings(planetId: number): Observable<BuildingView[]> {
     return this.http.get<BuildingView[]>(`/api/planets/${planetId}/buildings`);
+  }
+
+  getProduction(planetId: number): Observable<ResourceProductionView[]> {
+    return this.http.get<ResourceProductionView[]>(`/api/planets/${planetId}/buildings/production`);
   }
 
   upgrade(planetId: number, buildingKey: string): Observable<UpgradeResponse> {

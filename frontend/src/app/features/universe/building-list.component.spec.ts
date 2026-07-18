@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 
-import { BuildingView } from '../../core/models';
+import { BuildingView, ResourceView } from '../../core/models';
 import { BuildingListComponent } from './building-list.component';
 import { UniverseApiService } from './universe-api.service';
 
@@ -20,12 +20,22 @@ function building(overrides: Partial<BuildingView> = {}): BuildingView {
   } as BuildingView;
 }
 
+function abundantResources(): ResourceView[] {
+  return [
+    { resourceKey: 'METAL', displayName: 'Metal', amount: 100000 },
+    { resourceKey: 'CRYSTAL', displayName: 'Crystal', amount: 100000 },
+    { resourceKey: 'DEUTERIUM', displayName: 'Deuterium', amount: 100000 }
+  ];
+}
+
 describe('BuildingListComponent', () => {
   let upgrade: ReturnType<typeof vi.fn>;
   let getBuildings: ReturnType<typeof vi.fn>;
+  let getResources: ReturnType<typeof vi.fn>;
 
-  async function setup(buildings: BuildingView[]) {
+  async function setup(buildings: BuildingView[], resources: ResourceView[] = abundantResources()) {
     getBuildings = vi.fn(() => of(buildings));
+    getResources = vi.fn(() => of(resources));
     upgrade = vi.fn(() => of({}));
 
     await TestBed.configureTestingModule({
@@ -33,7 +43,7 @@ describe('BuildingListComponent', () => {
         BuildingListComponent,
         TranslocoTestingModule.forRoot({ langs: { en: {} }, translocoConfig: { availableLangs: ['en'], defaultLang: 'en' } })
       ],
-      providers: [{ provide: UniverseApiService, useValue: { getBuildings, upgrade } }]
+      providers: [{ provide: UniverseApiService, useValue: { getBuildings, getResources, upgrade } }]
     }).compileComponents();
 
     const fixture = TestBed.createComponent(BuildingListComponent);
@@ -68,7 +78,12 @@ describe('BuildingListComponent', () => {
         BuildingListComponent,
         TranslocoTestingModule.forRoot({ langs: { en: {} }, translocoConfig: { availableLangs: ['en'], defaultLang: 'en' } })
       ],
-      providers: [{ provide: UniverseApiService, useValue: { getBuildings: vi.fn(() => of([building()])), upgrade: failingUpgrade } }]
+      providers: [
+        {
+          provide: UniverseApiService,
+          useValue: { getBuildings: vi.fn(() => of([building()])), getResources: vi.fn(() => of(abundantResources())), upgrade: failingUpgrade }
+        }
+      ]
     }).compileComponents();
     const fixture = TestBed.createComponent(BuildingListComponent);
     fixture.componentRef.setInput('planetId', 1);
@@ -105,6 +120,36 @@ describe('BuildingListComponent', () => {
     expect(fixture.componentInstance.hasActiveConstruction()).toBe(true);
   });
 
+  it('canAfford is false when any resource on the planet falls short of the next-level cost', async () => {
+    const shortOnCrystal = [
+      { resourceKey: 'METAL' as const, displayName: 'Metal', amount: 1000 },
+      { resourceKey: 'CRYSTAL' as const, displayName: 'Crystal', amount: 10 },
+      { resourceKey: 'DEUTERIUM' as const, displayName: 'Deuterium', amount: 1000 }
+    ];
+    const fixture = await setup([building()], shortOnCrystal);
+
+    expect(fixture.componentInstance.canAfford(building())).toBe(false);
+  });
+
+  it('canAfford is true when every resource covers the next-level cost', async () => {
+    const fixture = await setup([building()]);
+
+    expect(fixture.componentInstance.canAfford(building())).toBe(true);
+  });
+
+  it('disables and visually flags the upgrade button when resources are insufficient', async () => {
+    const shortOnMetal = [
+      { resourceKey: 'METAL' as const, displayName: 'Metal', amount: 1 },
+      { resourceKey: 'CRYSTAL' as const, displayName: 'Crystal', amount: 1000 },
+      { resourceKey: 'DEUTERIUM' as const, displayName: 'Deuterium', amount: 1000 }
+    ];
+    const fixture = await setup([building({ unlocked: true })], shortOnMetal);
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.card-actions button');
+    expect(button.disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.cost-insufficient')).not.toBeNull();
+  });
+
   it('buildingName and buildingDescription look up translations specifically under the "buildings" catalog category', async () => {
     await TestBed.configureTestingModule({
       imports: [
@@ -114,7 +159,12 @@ describe('BuildingListComponent', () => {
           translocoConfig: { availableLangs: ['en'], defaultLang: 'en' }
         })
       ],
-      providers: [{ provide: UniverseApiService, useValue: { getBuildings: vi.fn(() => of([building()])), upgrade: vi.fn() } }]
+      providers: [
+        {
+          provide: UniverseApiService,
+          useValue: { getBuildings: vi.fn(() => of([building()])), getResources: vi.fn(() => of(abundantResources())), upgrade: vi.fn() }
+        }
+      ]
     }).compileComponents();
     const fixture = TestBed.createComponent(BuildingListComponent);
     fixture.componentRef.setInput('planetId', 1);

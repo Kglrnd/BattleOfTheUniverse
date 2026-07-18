@@ -1,0 +1,29 @@
+/* Card layout comes from the shared .card/.card-grid classes in styles.css. */
+
+.current-production {
+  font-weight: 600;
+}
+
+.production-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.production-table th,
+.production-table td {
+  padding: 0.25rem 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.production-table th:first-child,
+.production-table td:first-child {
+  text-align: left;
+}
+
+.current-row {
+  font-weight: 700;
+  background: var(--color-surface-alt);
+}

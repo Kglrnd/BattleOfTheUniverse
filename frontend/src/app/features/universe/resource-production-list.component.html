@@ -1,0 +1,49 @@
+<ng-container *transloco="let t; prefix: 'universe.resourceProductionList'">
+  @if ((productionResource.value() ?? []).length === 0) {
+    <p>{{ t('noProducingBuildings') }}</p>
+  } @else {
+    <div class="card-grid">
+      @for (production of productionResource.value() ?? []; track production.buildingKey) {
+        <div class="card production-card">
+          <div class="card-icon-row">
+            <app-game-icon kind="building" [key]="production.buildingKey" [size]="48" />
+            <div class="card-header">
+              <div class="card-title">{{ buildingName(production) }}</div>
+              <div class="card-subtitle">
+                {{ t('level', { level: production.currentLevel }) }}
+                ({{ production.productionEfficiency | number: '1.2-2' }}%)
+              </div>
+            </div>
+          </div>
+          <div class="card-content">
+            <p>{{ buildingDescription(production) }}</p>
+            <p class="current-production">
+              {{
+                t('currentProduction', {
+                  resource: production.resourceDisplayName,
+                  amount: (production.currentProductionPerHour | number: '1.0-1')
+                })
+              }}
+            </p>
+            <table class="production-table">
+              <thead>
+                <tr>
+                  <th>{{ t('colLevel') }}</th>
+                  <th>{{ t('colProduction') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of production.levels; track row.level) {
+                  <tr [class.current-row]="row.currentLevel">
+                    <td>{{ row.level }}</td>
+                    <td>{{ row.productionPerHour | number: '1.0-1' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</ng-container>

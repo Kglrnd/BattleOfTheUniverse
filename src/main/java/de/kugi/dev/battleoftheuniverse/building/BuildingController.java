@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.building;
 
 import de.kugi.dev.battleoftheuniverse.building.dto.BuildingView;
+import de.kugi.dev.battleoftheuniverse.building.dto.ResourceProductionView;
 import de.kugi.dev.battleoftheuniverse.building.dto.UpgradeResponse;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.user.AppUserPrincipal;
@@ -33,5 +34,11 @@ public class BuildingController {
                                     @AuthenticationPrincipal AppUserPrincipal principal) {
         planetService.requireOwned(planetId, principal.getId());
         return buildingService.upgrade(planetId, key);
+    }
+
+    @GetMapping("/production")
+    public List<ResourceProductionView> production(@PathVariable Long planetId, @AuthenticationPrincipal AppUserPrincipal principal) {
+        planetService.requireOwned(planetId, principal.getId());
+        return buildingService.productionOverview(planetId);
     }
 }

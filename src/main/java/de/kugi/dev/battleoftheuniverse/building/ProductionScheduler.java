@@ -33,7 +33,7 @@ public class ProductionScheduler {
     @Scheduled(fixedRate = 10_000)
     public void tick() {
         Map<Long, Map<ResourceKey, Double>> hourlyRatesByPlanet = new HashMap<>();
-        for (PlanetBuilding building : buildingRepository.findByLevelGreaterThan(0)) {
+        for (PlanetBuilding building : buildingRepository.findAll()) {
             BuildingDefinition definition = catalogService.building(building.getBuildingKey());
             if (definition.producesResource() == ResourceKey.NONE) {
                 continue;

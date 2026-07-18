@@ -24,6 +24,7 @@ describe('routes', () => {
     'universe/system/:galaxy/:system',
     'universe/:id',
     'buildings',
+    'resources',
     'shipyard',
     'fleet',
     'defense',

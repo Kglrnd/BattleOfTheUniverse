@@ -1,6 +1,8 @@
 package de.kugi.dev.battleoftheuniverse.building;
 
 import de.kugi.dev.battleoftheuniverse.building.dto.BuildingView;
+import de.kugi.dev.battleoftheuniverse.building.dto.ProductionLevelView;
+import de.kugi.dev.battleoftheuniverse.building.dto.ResourceProductionView;
 import de.kugi.dev.battleoftheuniverse.building.dto.UpgradeResponse;
 import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
@@ -26,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -152,6 +155,57 @@ class BuildingServiceTest {
         BuildingView researchLabView = views.stream().filter(v -> v.key().equals("research_lab")).findFirst().orElseThrow();
         assertThat(researchLabView.researchEfficiency()).isEqualTo(97.5);
         assertThat(researchLabView.productionEfficiency()).isNull();
+    }
+
+    @Test
+    void productionOverviewOnlyIncludesResourceProducingBuildings() {
+        when(catalogService.buildings()).thenReturn(List.of(METAL_MINE, RESEARCH_LAB));
+        when(buildingRepository.findByPlanetId(PLANET_ID)).thenReturn(List.of());
+        when(catalogService.productionPerHour(eq(METAL_MINE), any(Integer.class)))
+                .thenAnswer(inv -> 30.0 * (inv.getArgument(1, Integer.class) + 1));
+
+        List<ResourceProductionView> overview = service.productionOverview(PLANET_ID);
+
+        assertThat(overview).extracting(ResourceProductionView::buildingKey).containsExactly("metal_mine");
+    }
+
+    @Test
+    void productionOverviewShowsBaseProductionAtLevelZeroForANewlyColonizedPlanet() {
+        when(catalogService.buildings()).thenReturn(List.of(METAL_MINE));
+        when(buildingRepository.findByPlanetId(PLANET_ID)).thenReturn(List.of());
+        when(catalogService.productionPerHour(eq(METAL_MINE), any(Integer.class)))
+                .thenAnswer(inv -> 30.0 * (inv.getArgument(1, Integer.class) + 1));
+
+        List<ResourceProductionView> overview = service.productionOverview(PLANET_ID);
+
+        ResourceProductionView metalMine = overview.getFirst();
+        assertThat(metalMine.currentLevel()).isZero();
+        assertThat(metalMine.productionEfficiency()).isEqualTo(100.0);
+        assertThat(metalMine.currentProductionPerHour()).isEqualTo(30.0);
+        // No level below 0 exists, so the window is clipped there instead of going negative.
+        assertThat(metalMine.levels()).extracting(ProductionLevelView::level).containsExactly(0, 1, 2, 3, 4, 5);
+    }
+
+    @Test
+    void productionOverviewWindowsFiveLevelsBelowAndAboveAndScalesByEfficiency() {
+        when(catalogService.buildings()).thenReturn(List.of(METAL_MINE));
+        PlanetBuilding metalMineRow = new PlanetBuilding(PLANET_ID, "metal_mine", 8);
+        metalMineRow.setProductionEfficiency(50.0);
+        when(buildingRepository.findByPlanetId(PLANET_ID)).thenReturn(List.of(metalMineRow));
+        when(catalogService.productionPerHour(eq(METAL_MINE), any(Integer.class)))
+                .thenAnswer(inv -> 30.0 * (inv.getArgument(1, Integer.class) + 1));
+
+        List<ResourceProductionView> overview = service.productionOverview(PLANET_ID);
+
+        ResourceProductionView metalMine = overview.getFirst();
+        assertThat(metalMine.currentLevel()).isEqualTo(8);
+        assertThat(metalMine.productionEfficiency()).isEqualTo(50.0);
+        // Level 8 at 100% would be 30*9=270/hour; at 50% efficiency that's 135/hour.
+        assertThat(metalMine.currentProductionPerHour()).isEqualTo(135.0);
+        assertThat(metalMine.levels()).extracting(ProductionLevelView::level)
+                .containsExactly(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+        assertThat(metalMine.levels()).filteredOn(ProductionLevelView::currentLevel)
+                .extracting(ProductionLevelView::level).containsExactly(8);
     }
 
     @Test

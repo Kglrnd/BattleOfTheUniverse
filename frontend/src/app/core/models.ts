@@ -87,6 +87,24 @@ export interface UpgradeResponse {
   endsAt: string;
 }
 
+export interface ProductionLevelView {
+  level: number;
+  productionPerHour: number;
+  currentLevel: boolean;
+}
+
+export interface ResourceProductionView {
+  buildingKey: string;
+  buildingName: string;
+  buildingDescription: string;
+  resourceKey: ResourceKey;
+  resourceDisplayName: string;
+  currentLevel: number;
+  productionEfficiency: number;
+  currentProductionPerHour: number;
+  levels: ProductionLevelView[];
+}
+
 export interface ShipyardView {
   key: string;
   name: string;

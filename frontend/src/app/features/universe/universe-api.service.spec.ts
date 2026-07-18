@@ -73,6 +73,13 @@ describe('UniverseApiService', () => {
     req.flush([]);
   });
 
+  it('getProduction fetches the production overview for a planet', () => {
+    service.getProduction(3).subscribe();
+    const req = httpMock.expectOne('/api/planets/3/buildings/production');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
   it('upgrade posts an upgrade order for a building', () => {
     service.upgrade(3, 'metal_mine').subscribe();
     const req = httpMock.expectOne('/api/planets/3/buildings/metal_mine/upgrade');

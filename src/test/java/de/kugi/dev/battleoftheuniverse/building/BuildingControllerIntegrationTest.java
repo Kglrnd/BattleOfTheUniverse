@@ -55,6 +55,31 @@ class BuildingControllerIntegrationTest {
     }
 
     @Test
+    void productionOverviewShowsBaseProductionAtLevelZeroWindowedZeroToFive() throws Exception {
+        MockHttpSession session = registerAndLogin();
+        Long homeworldId = homeworldId(session);
+
+        mockMvc.perform(get("/api/planets/" + homeworldId + "/buildings/production").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.buildingKey=='metal_mine')].currentLevel").value(org.hamcrest.Matchers.contains(0)))
+                .andExpect(jsonPath("$[?(@.buildingKey=='metal_mine')].currentProductionPerHour")
+                        .value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.greaterThan(0.0))))
+                .andExpect(jsonPath("$[?(@.buildingKey=='metal_mine')].levels[0].level").value(org.hamcrest.Matchers.contains(0)))
+                .andExpect(jsonPath("$[?(@.buildingKey=='metal_mine')].levels[5].level").value(org.hamcrest.Matchers.contains(5)))
+                .andExpect(jsonPath("$[?(@.buildingKey=='research_lab')]").value(org.hamcrest.Matchers.empty()));
+    }
+
+    @Test
+    void rejectsProductionOverviewForAPlanetYouDoNotOwn() throws Exception {
+        MockHttpSession ownerSession = registerAndLogin();
+        Long homeworldId = homeworldId(ownerSession);
+        MockHttpSession otherSession = registerAndLogin();
+
+        mockMvc.perform(get("/api/planets/" + homeworldId + "/buildings/production").session(otherSession))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void upgradingAnAffordableBuildingQueuesConstruction() throws Exception {
         MockHttpSession session = registerAndLogin();
         Long homeworldId = homeworldId(session);
