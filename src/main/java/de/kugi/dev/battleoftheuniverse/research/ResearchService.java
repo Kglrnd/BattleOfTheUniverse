@@ -4,7 +4,7 @@ import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
-import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementChecker;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.TechnologyDefinition;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
@@ -16,6 +16,7 @@ import de.kugi.dev.battleoftheuniverse.research.dto.ResearchStartResponse;
 import de.kugi.dev.battleoftheuniverse.research.dto.TechnologyView;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,14 +46,16 @@ public class ResearchService {
     public List<TechnologyView> listForUser(Long userId) {
         var activeJob = jobRepository.findByUserId(userId);
         Optional<Planet> activePlanet = planetService.findActiveResearchPlanet(userId);
+        Map<String, Integer> levelsByKey = technologyRepository.findByUserId(userId).stream()
+                .collect(Collectors.toMap(Technology::getTechnologyKey, Technology::getLevel));
 
         return catalogService.technologies().stream()
                 .map(definition -> {
-                    int level = levelOf(userId, definition.key());
+                    int level = levelsByKey.getOrDefault(definition.key(), 0);
                     int targetLevel = level + 1;
                     boolean isBeingResearched = activeJob.isPresent()
                             && activeJob.get().getTechnologyKey().equals(definition.key());
-                    List<LockedRequirement> missingRequirements = missingRequirements(userId, definition.requirements());
+                    List<LockedRequirement> missingRequirements = missingRequirements(userId, definition.requirements(), levelsByKey);
                     return new TechnologyView(
                             definition.key(),
                             definition.name(),
@@ -88,7 +93,14 @@ public class ResearchService {
 
         Instant startedAt = Instant.now();
         Instant endsAt = startedAt.plus(adjustedResearchTime(definition, targetLevel, Optional.of(activePlanet)));
-        jobRepository.save(new ResearchJob(userId, activePlanet.getId(), technologyKey, targetLevel, startedAt, endsAt));
+        try {
+            jobRepository.save(new ResearchJob(userId, activePlanet.getId(), technologyKey, targetLevel, startedAt, endsAt));
+        } catch (DataIntegrityViolationException e) {
+            // The upfront isPresent() check passed, but a concurrent request beat us to the
+            // insert - the unique constraint on research_jobs(user_id) is the actual backstop;
+            // fail the same way the check would, rolling back the debit above too.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A research is already in progress for this account");
+        }
 
         return new ResearchStartResponse(technologyKey, targetLevel, endsAt);
     }
@@ -110,6 +122,9 @@ public class ResearchService {
 
     @Transactional
     public ResearchPlanetOption activateResearchPlanet(Long userId, Long planetId) {
+        // Ownership must be verified before the requirement check below, so a foreign planetId
+        // always 404s rather than leaking (via 400 vs 404) whether it happens to have a lab.
+        planetService.getOwned(planetId, userId);
         if (buildingService.levelOf(planetId, RESEARCH_LAB_KEY) < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This planet needs a Research Lab before it can host research");
         }
@@ -204,20 +219,23 @@ public class ResearchService {
     }
 
     private List<LockedRequirement> missingRequirements(Long userId, List<Requirement> requirements) {
-        List<LockedRequirement> missing = new ArrayList<>();
-        for (Requirement requirement : requirements) {
-            int currentLevel = switch (requirement.type()) {
-                case TECHNOLOGY -> levelOf(userId, requirement.key());
-                case BUILDING -> activeResearchPlanetBuildingLevel(userId, requirement.key());
-            };
-            if (currentLevel < requirement.level()) {
-                String label = requirement.type() == RequirementType.TECHNOLOGY
-                        ? catalogService.technology(requirement.key()).name()
-                        : catalogService.building(requirement.key()).name();
-                missing.add(new LockedRequirement(label, requirement.level(), currentLevel));
-            }
-        }
-        return missing;
+        return missingRequirements(userId, requirements, null);
+    }
+
+    /**
+     * {@code technologyLevelsByKey}, if given, is used instead of a per-requirement
+     * {@link #levelOf} query - {@link #listForUser} pre-fetches every one of the user's
+     * researched technologies once and reuses it across every catalog entry's requirement
+     * check, instead of re-querying per technology in the whole tree.
+     */
+    private List<LockedRequirement> missingRequirements(Long userId, List<Requirement> requirements, Map<String, Integer> technologyLevelsByKey) {
+        return RequirementChecker.unmet(catalogService, requirements, (type, key) -> switch (type) {
+                    case TECHNOLOGY -> technologyLevelsByKey != null ? technologyLevelsByKey.getOrDefault(key, 0) : levelOf(userId, key);
+                    case BUILDING -> activeResearchPlanetBuildingLevel(userId, key);
+                })
+                .stream()
+                .map(gap -> new LockedRequirement(gap.label(), gap.requiredLevel(), gap.currentLevel()))
+                .toList();
     }
 
     /** Research only happens from the account's active research planet - 0 if none is set. */

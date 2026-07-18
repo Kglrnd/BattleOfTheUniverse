@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-add-construction-jobs-unique-constraint
+      author: kugi
+      comment: >
+        Backstops the check-then-insert "only one job per planet" guard in BuildingService
+        against a race between two concurrent upgrade requests both passing the check before
+        either inserts.
+      changes:
+        - addUniqueConstraint:
+            tableName: construction_jobs
+            columnNames: planet_id
+            constraintName: uk_construction_jobs_planet
+  - changeSet:
+      id: 013-add-research-jobs-unique-constraint
+      author: kugi
+      comment: Same as construction_jobs, but research is scoped per-account (user_id), not per-planet.
+      changes:
+        - addUniqueConstraint:
+            tableName: research_jobs
+            columnNames: user_id
+            constraintName: uk_research_jobs_user
+  - changeSet:
+      id: 013-add-shipyard-jobs-unique-constraint
+      author: kugi
+      comment: Same as construction_jobs.
+      changes:
+        - addUniqueConstraint:
+            tableName: shipyard_jobs
+            columnNames: planet_id
+            constraintName: uk_shipyard_jobs_planet
+  - changeSet:
+      id: 013-add-defense-jobs-unique-constraint
+      author: kugi
+      comment: Same as construction_jobs.
+      changes:
+        - addUniqueConstraint:
+            tableName: defense_jobs
+            columnNames: planet_id
+            constraintName: uk_defense_jobs_planet

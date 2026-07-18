@@ -4,7 +4,7 @@ import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DriveScope;
 import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
-import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementChecker;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
@@ -30,13 +30,14 @@ import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -77,6 +78,9 @@ public class FleetService {
     /** Only this ship can invade a planet - matches the "invasion_unit" catalog entry. */
     private static final String INVASION_KEY = "invasion_unit";
 
+    /** Matches the "espionage_technology" entry in the technology catalog. */
+    private static final String ESPIONAGE_TECH_KEY = "espionage_technology";
+
     /** Espionage success chance at technology level 0, before any per-level bonus. */
     private static final double ESPIONAGE_BASE_CHANCE = 0.5;
     private static final double ESPIONAGE_CHANCE_PER_LEVEL = 0.05;
@@ -98,10 +102,12 @@ public class FleetService {
     public List<ShipyardView> listForPlanet(Long planetId, Long ownerId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
         int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
+        Map<String, Integer> ownedByKey = shipRepository.findByPlanetId(planetId).stream()
+                .collect(Collectors.toMap(Ship::getShipKey, Ship::getQuantity));
 
         return catalogService.ships().stream()
                 .map(definition -> {
-                    int owned = ownedQuantity(planetId, definition.key());
+                    int owned = ownedByKey.getOrDefault(definition.key(), 0);
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getShipKey().equals(definition.key());
                     List<LockedRequirement> missing = missingRequirements(planetId, ownerId, definition.requirements());
                     return new ShipyardView(
@@ -140,7 +146,14 @@ public class FleetService {
         int shipyardLevel = buildingService.levelOf(planetId, SHIPYARD_KEY);
         Instant startedAt = Instant.now();
         Instant endsAt = startedAt.plusSeconds(unitBuildTimeSeconds(definition, shipyardLevel) * quantity);
-        jobRepository.save(new ShipyardJob(planetId, shipKey, quantity, startedAt, endsAt));
+        try {
+            jobRepository.save(new ShipyardJob(planetId, shipKey, quantity, startedAt, endsAt));
+        } catch (DataIntegrityViolationException e) {
+            // The upfront isPresent() check passed, but a concurrent build request beat us to
+            // the insert - the unique constraint on shipyard_jobs(planet_id) is the actual
+            // backstop; fail the same way the check would, rolling back the debit above too.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A shipyard order is already in progress on this planet");
+        }
 
         return new ShipyardBuildResponse(shipKey, quantity, endsAt);
     }
@@ -152,20 +165,13 @@ public class FleetService {
      * shape, which already handles both types.
      */
     private List<LockedRequirement> missingRequirements(Long planetId, Long ownerId, List<Requirement> requirements) {
-        List<LockedRequirement> missing = new ArrayList<>();
-        for (Requirement requirement : requirements) {
-            int currentLevel = switch (requirement.type()) {
-                case BUILDING -> buildingService.levelOf(planetId, requirement.key());
-                case TECHNOLOGY -> researchService.levelOf(ownerId, requirement.key());
-            };
-            if (currentLevel < requirement.level()) {
-                String label = requirement.type() == RequirementType.TECHNOLOGY
-                        ? catalogService.technology(requirement.key()).name()
-                        : catalogService.building(requirement.key()).name();
-                missing.add(new LockedRequirement(label, requirement.level(), currentLevel));
-            }
-        }
-        return missing;
+        return RequirementChecker.unmet(catalogService, requirements, (type, key) -> switch (type) {
+                    case BUILDING -> buildingService.levelOf(planetId, key);
+                    case TECHNOLOGY -> researchService.levelOf(ownerId, key);
+                })
+                .stream()
+                .map(gap -> new LockedRequirement(gap.label(), gap.requiredLevel(), gap.currentLevel()))
+                .toList();
     }
 
     /** Each shipyard level speeds up construction (level 0 - no shipyard yet - is baseline speed). */
@@ -226,9 +232,7 @@ public class FleetService {
             return List.of();
         }
 
-        List<FleetMovement> incoming = movementRepository.findAll().stream()
-                .filter(m -> myPlanetsByCoordinates.containsKey(coordinateKey(m.getTargetGalaxy(), m.getTargetSystem(), m.getTargetPosition())))
-                .toList();
+        List<FleetMovement> incoming = movementRepository.findIncomingForOwner(ownerId);
 
         Set<Long> senderIds = incoming.stream().map(FleetMovement::getOwnerId).collect(Collectors.toSet());
         Map<Long, String> usernamesBySenderId = userRepository.findAllById(senderIds).stream()
@@ -295,6 +299,7 @@ public class FleetService {
 
         Map<ResourceKey, Long> cargoManifest = Map.of();
         if (request.missionType() == FleetMissionType.TRANSPORT) {
+            validateNoDuplicateCargoKeys(request.cargo());
             cargoManifest = request.cargo().stream()
                     .collect(Collectors.toMap(ResourceQuantity::resourceKey, ResourceQuantity::amount));
             for (var entry : cargoManifest.entrySet()) {
@@ -325,6 +330,15 @@ public class FleetService {
         for (ShipQuantity entry : ships) {
             if (!seen.add(entry.shipKey())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Duplicate ship type in fleet: " + entry.shipKey());
+            }
+        }
+    }
+
+    private void validateNoDuplicateCargoKeys(List<ResourceQuantity> cargo) {
+        Set<ResourceKey> seen = new HashSet<>();
+        for (ResourceQuantity entry : cargo) {
+            if (!seen.add(entry.resourceKey())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Duplicate resource in cargo manifest: " + entry.resourceKey());
             }
         }
     }
@@ -360,23 +374,57 @@ public class FleetService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one ship is required"));
     }
 
-    @Transactional
-    public void completeDueMissions() {
-        for (FleetMovement movement : movementRepository.findByArrivesAtBefore(Instant.now())) {
-            switch (movement.getMissionType()) {
-                case COLONIZE -> foundColony(movement);
-                case STATION -> stationShips(movement);
-                case ATTACK -> handleAttackArrival(movement);
-                case ESPIONAGE -> resolveEspionage(movement);
-                case TRANSPORT -> {
-                    stationShips(movement);
-                    deliverCargo(movement);
-                }
-                case BOMBARD -> handleBombardArrival(movement);
-                case INVADE -> handleInvadeArrival(movement);
-            }
-            movementRepository.delete(movement);
+    /**
+     * IDs of every movement due for completion. Read-only and separate from
+     * {@link #completeOneMovement} on purpose: {@code FleetMissionScheduler} processes each
+     * returned id in its own transaction, so one bad arrival can't roll back (and thus
+     * permanently re-block, sweep after sweep) every other due movement in the same tick.
+     */
+    @Transactional(readOnly = true)
+    public List<Long> dueMovementIds() {
+        return movementRepository.findByArrivesAtBefore(Instant.now()).stream()
+                .map(FleetMovement::getId)
+                .toList();
+    }
+
+    /**
+     * Completes exactly one due movement in its own transaction. A no-op if the movement was
+     * already removed (e.g. by a concurrent sweep) by the time this runs.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void completeOneMovement(Long movementId) {
+        FleetMovement movement = movementRepository.findById(movementId).orElse(null);
+        if (movement == null) {
+            return;
         }
+        switch (movement.getMissionType()) {
+            case COLONIZE -> foundColony(movement);
+            case STATION -> stationShips(movement);
+            case ATTACK -> handleAttackArrival(movement);
+            case ESPIONAGE -> resolveEspionage(movement);
+            case TRANSPORT -> {
+                stationShips(movement);
+                deliverCargo(movement);
+            }
+            case BOMBARD -> handleBombardArrival(movement);
+            case INVADE -> handleInvadeArrival(movement);
+        }
+        movementRepository.delete(movement);
+    }
+
+    /**
+     * Best-effort recovery for a movement whose {@link #completeOneMovement} threw: returns its
+     * ships to the origin planet and removes the row, so a single broken arrival (e.g. its target
+     * vanished mid-flight) doesn't retry forever and block every other due movement, sweep after
+     * sweep. Deliberately conservative - the fleet simply comes home rather than risking a
+     * half-applied mission effect.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recoverFailedMovement(Long movementId) {
+        movementRepository.findById(movementId).ifPresent(movement -> {
+            creditShips(movement.getOriginPlanetId(), movement.getShips());
+            movementRepository.delete(movement);
+        });
     }
 
     /**
@@ -538,8 +586,12 @@ public class FleetService {
     private void handleAttackArrival(FleetMovement movement) {
         Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
                 .orElseThrow(() -> new IllegalStateException("Attack target planet no longer exists"));
+        if (target.isDestroyed()) {
+            returnFleetToOrigin(movement);
+            return;
+        }
         events.publishEvent(new AttackArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
-                target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
+                target.getOwnerId(), target.getId(), target.getName(), movement.getShips()));
     }
 
     /**
@@ -555,7 +607,7 @@ public class FleetService {
             return;
         }
         events.publishEvent(new BombardArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
-                target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
+                target.getOwnerId(), target.getId(), target.getName(), movement.getShips()));
     }
 
     /**
@@ -571,7 +623,7 @@ public class FleetService {
             return;
         }
         events.publishEvent(new InvadeArrived(movement.getOwnerId(), movement.getOriginPlanetId(),
-                target.getOwnerId(), target.getId(), target.getName(), Map.copyOf(movement.getShips())));
+                target.getOwnerId(), target.getId(), target.getName(), movement.getShips()));
     }
 
     /**
@@ -584,7 +636,7 @@ public class FleetService {
         Planet target = planetService.findAtPosition(movement.getTargetGalaxy(), movement.getTargetSystem(), movement.getTargetPosition())
                 .orElseThrow(() -> new IllegalStateException("Espionage target planet no longer exists"));
 
-        int espionageLevel = researchService.levelOf(movement.getOwnerId(), "espionage_technology");
+        int espionageLevel = researchService.levelOf(movement.getOwnerId(), ESPIONAGE_TECH_KEY);
         double chance = Math.min(ESPIONAGE_MAX_CHANCE, ESPIONAGE_BASE_CHANCE + ESPIONAGE_CHANCE_PER_LEVEL * espionageLevel);
         boolean success = ThreadLocalRandom.current().nextDouble() < chance;
 
@@ -684,11 +736,5 @@ public class FleetService {
         }
         double hops = (double) distance / SYSTEM_STEP;
         return Math.max(1, Math.round(Math.ceil(consumptionRate * hops / driveMultiplier)));
-    }
-
-    private int ownedQuantity(Long planetId, String shipKey) {
-        return shipRepository.findByPlanetIdAndShipKey(planetId, shipKey)
-                .map(Ship::getQuantity)
-                .orElse(0);
     }
 }

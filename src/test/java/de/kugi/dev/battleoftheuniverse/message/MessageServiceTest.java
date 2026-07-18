@@ -177,11 +177,8 @@ class MessageServiceTest {
         User sender = new User("bob", "bob@example.com", "hash");
         sender.setId(2L);
         when(userRepository.findById(2L)).thenReturn(Optional.of(sender));
-        User self = new User("alice", "alice@example.com", "hash");
-        self.setId(1L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(self));
 
-        var view = service.markRead(1L, 5L);
+        var view = service.markRead(1L, "alice", 5L);
 
         assertThat(view.senderUsername()).isEqualTo("bob");
         assertThat(view.recipientUsername()).isEqualTo("alice");
@@ -193,7 +190,7 @@ class MessageServiceTest {
     void markReadRejectsAMessageThatIsNotAddressedToTheCaller() {
         when(messageRepository.findByIdAndRecipientUserId(5L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.markRead(1L, 5L))
+        assertThatThrownBy(() -> service.markRead(1L, "alice", 5L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Message not found");
     }

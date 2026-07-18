@@ -77,6 +77,26 @@ class UserServiceTest {
     }
 
     @Test
+    void setActiveUpdatesAndPersistsTheUsersActiveFlag() {
+        User user = new User("alice", "alice@example.com", "hash");
+        user.setId(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        AdminUserView view = service.setActive(1L, false);
+
+        assertThat(view.active()).isFalse();
+        assertThat(user.isActive()).isFalse();
+    }
+
+    @Test
+    void setActiveRejectsAnUnknownUserId() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.setActive(99L, false))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
     void updatePreferredLanguageUpdatesAndPersistsTheUsersLanguage() {
         User user = new User("alice", "alice@example.com", "hash");
         user.setId(1L);

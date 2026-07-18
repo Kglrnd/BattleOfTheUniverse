@@ -6,13 +6,16 @@ import de.kugi.dev.battleoftheuniverse.building.dto.UpgradeResponse;
 import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementChecker;
 import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
+import de.kugi.dev.battleoftheuniverse.planet.EfficiencyRoll;
 import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetService;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BuildingService {
 
-    private static final Set<String> STARTER_BUILDINGS = Set.of("main_building");
+    private static final String MAIN_BUILDING_KEY = "main_building";
+    private static final Set<String> STARTER_BUILDINGS = Set.of(MAIN_BUILDING_KEY);
     private static final String RESEARCH_LAB_KEY = "research_lab";
 
     private final PlanetBuildingRepository buildingRepository;
@@ -94,8 +97,7 @@ public class BuildingService {
 
     /** Uniform roll in [85.00, 109.99], fixed for the building's lifetime - mirrors PlanetService.rollResearchEfficiency(). */
     private double rollProductionEfficiency() {
-        int hundredths = 8500 + random.nextInt(10999 - 8500 + 1);
-        return hundredths / 100.0;
+        return EfficiencyRoll.roll(random);
     }
 
     public List<BuildingView> listForPlanet(Long planetId) {
@@ -106,13 +108,13 @@ public class BuildingService {
 
         return catalogService.buildings().stream()
                 .map(definition -> {
-                    int currentLevel = levelOf(planetId, definition.key());
+                    PlanetBuilding existing = byKey.get(definition.key());
+                    int currentLevel = existing != null ? existing.getLevel() : 0;
                     int targetLevel = currentLevel + 1;
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getBuildingKey().equals(definition.key());
                     List<LockedRequirement> missingRequirements = missingRequirements(planetId, definition.requirements());
                     boolean isResearchLab = definition.key().equals(RESEARCH_LAB_KEY);
                     boolean producesResource = definition.producesResource() != ResourceKey.NONE;
-                    PlanetBuilding existing = byKey.get(definition.key());
                     return new BuildingView(
                             definition.key(),
                             definition.name(),
@@ -148,7 +150,14 @@ public class BuildingService {
 
         Instant startedAt = Instant.now();
         Instant endsAt = startedAt.plus(catalogService.buildTimeFor(definition, targetLevel));
-        jobRepository.save(new ConstructionJob(planetId, buildingKey, targetLevel, startedAt, endsAt));
+        try {
+            jobRepository.save(new ConstructionJob(planetId, buildingKey, targetLevel, startedAt, endsAt));
+        } catch (DataIntegrityViolationException e) {
+            // The upfront isPresent() check passed, but a concurrent upgrade request beat us to
+            // the insert - the unique constraint on construction_jobs(planet_id) is the actual
+            // backstop; fail the same way the check would, rolling back the debit above too.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A construction is already in progress on this planet");
+        }
 
         return new UpgradeResponse(buildingKey, targetLevel, endsAt);
     }
@@ -176,18 +185,13 @@ public class BuildingService {
         return missingRequirements(planetId, requirements).isEmpty();
     }
 
+    /** Buildings are never technology-gated - a TECHNOLOGY requirement (if one ever appears) never blocks. */
     private List<LockedRequirement> missingRequirements(Long planetId, List<Requirement> requirements) {
-        List<LockedRequirement> missing = new ArrayList<>();
-        for (Requirement requirement : requirements) {
-            if (requirement.type() != RequirementType.BUILDING) {
-                continue;
-            }
-            int currentLevel = levelOf(planetId, requirement.key());
-            if (currentLevel < requirement.level()) {
-                missing.add(new LockedRequirement(catalogService.building(requirement.key()).name(), requirement.level(), currentLevel));
-            }
-        }
-        return missing;
+        return RequirementChecker.unmet(catalogService, requirements, (type, key) ->
+                        type == RequirementType.BUILDING ? levelOf(planetId, key) : Integer.MAX_VALUE)
+                .stream()
+                .map(gap -> new LockedRequirement(gap.label(), gap.requiredLevel(), gap.currentLevel()))
+                .toList();
     }
 
     /** Admin-triggered game reset: clears every building and in-progress construction, game-wide. */
@@ -208,8 +212,8 @@ public class BuildingService {
     @Transactional
     public void backfillMainBuilding() {
         for (Long planetId : planetService.listAllIds()) {
-            if (buildingRepository.findByPlanetIdAndBuildingKey(planetId, "main_building").isEmpty()) {
-                buildingRepository.save(new PlanetBuilding(planetId, "main_building", 1));
+            if (buildingRepository.findByPlanetIdAndBuildingKey(planetId, MAIN_BUILDING_KEY).isEmpty()) {
+                buildingRepository.save(new PlanetBuilding(planetId, MAIN_BUILDING_KEY, 1));
             }
         }
     }

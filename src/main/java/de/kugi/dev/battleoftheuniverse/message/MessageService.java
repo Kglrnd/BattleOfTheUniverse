@@ -16,7 +16,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -107,7 +109,7 @@ public class MessageService {
     }
 
     @Transactional
-    public MessageView markRead(Long userId, Long messageId) {
+    public MessageView markRead(Long userId, String username, Long messageId) {
         Message message = messageRepository.findByIdAndRecipientUserId(messageId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Message not found"));
         if (message.getReadAt() == null) {
@@ -117,12 +119,12 @@ public class MessageService {
 
         String senderUsername = message.getSenderUserId() == null ? SYSTEM_SENDER_LABEL
                 : userRepository.findById(message.getSenderUserId()).map(User::getUsername).orElse("unknown");
-        return new MessageView(message.getId(), senderUsername, userRepository.findById(userId).map(User::getUsername).orElse("unknown"),
+        return new MessageView(message.getId(), senderUsername, username,
                 message.getSubject(), message.getBody(), message.getType(), message.getSentAt(), message.getReadAt());
     }
 
-    private Map<Long, String> resolveUsernames(List<Message> messages, java.util.function.Function<Message, Long> idExtractor) {
-        Set<Long> ids = messages.stream().map(idExtractor).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+    private Map<Long, String> resolveUsernames(List<Message> messages, Function<Message, Long> idExtractor) {
+        Set<Long> ids = messages.stream().map(idExtractor).filter(Objects::nonNull).collect(Collectors.toSet());
         return userRepository.findAllById(ids).stream().collect(Collectors.toMap(User::getId, User::getUsername));
     }
 }

@@ -1,6 +1,5 @@
 package de.kugi.dev.battleoftheuniverse.highscore;
 
-import de.kugi.dev.battleoftheuniverse.building.PlanetBuilding;
 import de.kugi.dev.battleoftheuniverse.building.PlanetBuildingRepository;
 import de.kugi.dev.battleoftheuniverse.catalog.BuildingDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
@@ -8,13 +7,9 @@ import de.kugi.dev.battleoftheuniverse.catalog.DefenseDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import de.kugi.dev.battleoftheuniverse.catalog.ShipDefinition;
-import de.kugi.dev.battleoftheuniverse.defense.Tower;
 import de.kugi.dev.battleoftheuniverse.defense.TowerRepository;
-import de.kugi.dev.battleoftheuniverse.fleet.Ship;
 import de.kugi.dev.battleoftheuniverse.fleet.ShipRepository;
 import de.kugi.dev.battleoftheuniverse.highscore.dto.HighscoreResponseDto;
-import de.kugi.dev.battleoftheuniverse.planet.Planet;
-import de.kugi.dev.battleoftheuniverse.planet.PlanetClass;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetRepository;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
@@ -27,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -80,9 +74,9 @@ class HighscoreServiceTest {
         lenient().when(catalogService.ship("small_cargo")).thenReturn(TRANSPORT);
         lenient().when(catalogService.defense("light_defense_tower")).thenReturn(LIGHT_TOWER);
 
-        lenient().when(planetBuildingRepository.findByPlanetId(anyLong())).thenReturn(List.of());
-        lenient().when(shipRepository.findByPlanetId(anyLong())).thenReturn(List.of());
-        lenient().when(towerRepository.findByPlanetId(anyLong())).thenReturn(List.of());
+        lenient().when(planetBuildingRepository.sumLevelsByOwnerAndBuildingKey()).thenReturn(List.of());
+        lenient().when(shipRepository.sumQuantitiesByOwnerAndShipKey()).thenReturn(List.of());
+        lenient().when(towerRepository.sumQuantitiesByOwnerAndTowerKey()).thenReturn(List.of());
     }
 
     private User user(long id, String username) {
@@ -91,23 +85,65 @@ class HighscoreServiceTest {
         return user;
     }
 
-    private Planet planet(long id, long ownerId) {
-        Planet planet = new Planet("Home", ownerId, 1, 1, (int) id, PlanetClass.TEMPERATE);
-        planet.setId(id);
-        return planet;
+    private static PlanetBuildingRepository.OwnerKeyTotal buildingTotal(Long ownerId, String key, long total) {
+        return new PlanetBuildingRepository.OwnerKeyTotal() {
+            public Long getOwnerId() {
+                return ownerId;
+            }
+
+            public String getKey() {
+                return key;
+            }
+
+            public long getTotal() {
+                return total;
+            }
+        };
+    }
+
+    private static ShipRepository.OwnerKeyTotal shipTotal(Long ownerId, String key, long total) {
+        return new ShipRepository.OwnerKeyTotal() {
+            public Long getOwnerId() {
+                return ownerId;
+            }
+
+            public String getKey() {
+                return key;
+            }
+
+            public long getTotal() {
+                return total;
+            }
+        };
+    }
+
+    private static TowerRepository.OwnerKeyTotal towerTotal(Long ownerId, String key, long total) {
+        return new TowerRepository.OwnerKeyTotal() {
+            public Long getOwnerId() {
+                return ownerId;
+            }
+
+            public String getKey() {
+                return key;
+            }
+
+            public long getTotal() {
+                return total;
+            }
+        };
     }
 
     @Test
     void scoresBuildingsShipsAndTowersByCatalogPoints() {
         User alice = user(1L, "alice");
         when(userRepository.findAll()).thenReturn(List.of(alice));
-        when(planetRepository.findByOwnerId(1L)).thenReturn(List.of(planet(10L, 1L)));
-        when(planetBuildingRepository.findByPlanetId(10L))
-                .thenReturn(List.of(new PlanetBuilding(10L, "metal_mine", 5)));
-        when(shipRepository.findByPlanetId(10L))
-                .thenReturn(List.of(new Ship(10L, "cruiser", 2)));
-        when(towerRepository.findByPlanetId(10L))
-                .thenReturn(List.of(new Tower(10L, "light_defense_tower", 4)));
+        when(planetRepository.findDistinctOwnerIds()).thenReturn(List.of(1L));
+        when(planetBuildingRepository.sumLevelsByOwnerAndBuildingKey())
+                .thenReturn(List.of(buildingTotal(1L, "metal_mine", 5)));
+        when(shipRepository.sumQuantitiesByOwnerAndShipKey())
+                .thenReturn(List.of(shipTotal(1L, "cruiser", 2)));
+        when(towerRepository.sumQuantitiesByOwnerAndTowerKey())
+                .thenReturn(List.of(towerTotal(1L, "light_defense_tower", 4)));
 
         HighscoreResponseDto result = service.get(1L);
 
@@ -124,10 +160,10 @@ class HighscoreServiceTest {
     void colonyShipsAndTransportsScoreZeroPoints() {
         User alice = user(1L, "alice");
         when(userRepository.findAll()).thenReturn(List.of(alice));
-        when(planetRepository.findByOwnerId(1L)).thenReturn(List.of(planet(10L, 1L)));
-        when(shipRepository.findByPlanetId(10L)).thenReturn(List.of(
-                new Ship(10L, "colony_ship", 1),
-                new Ship(10L, "small_cargo", 3)));
+        when(planetRepository.findDistinctOwnerIds()).thenReturn(List.of(1L));
+        when(shipRepository.sumQuantitiesByOwnerAndShipKey()).thenReturn(List.of(
+                shipTotal(1L, "colony_ship", 1),
+                shipTotal(1L, "small_cargo", 3)));
 
         HighscoreResponseDto result = service.get(1L);
 
@@ -139,10 +175,9 @@ class HighscoreServiceTest {
         User alice = user(1L, "alice");
         User bob = user(2L, "bob");
         when(userRepository.findAll()).thenReturn(List.of(alice, bob));
-        when(planetRepository.findByOwnerId(1L)).thenReturn(List.of(planet(10L, 1L)));
-        when(planetRepository.findByOwnerId(2L)).thenReturn(List.of());
-        when(planetBuildingRepository.findByPlanetId(10L))
-                .thenReturn(List.of(new PlanetBuilding(10L, "metal_mine", 1)));
+        when(planetRepository.findDistinctOwnerIds()).thenReturn(List.of(1L));
+        when(planetBuildingRepository.sumLevelsByOwnerAndBuildingKey())
+                .thenReturn(List.of(buildingTotal(1L, "metal_mine", 1)));
 
         HighscoreResponseDto result = service.get(1L);
 
@@ -156,15 +191,11 @@ class HighscoreServiceTest {
         User bob = user(2L, "bob");
         User carol = user(3L, "carol");
         when(userRepository.findAll()).thenReturn(List.of(alice, bob, carol));
-        when(planetRepository.findByOwnerId(1L)).thenReturn(List.of(planet(10L, 1L)));
-        when(planetRepository.findByOwnerId(2L)).thenReturn(List.of(planet(20L, 2L)));
-        when(planetRepository.findByOwnerId(3L)).thenReturn(List.of(planet(30L, 3L)));
-        when(planetBuildingRepository.findByPlanetId(10L))
-                .thenReturn(List.of(new PlanetBuilding(10L, "metal_mine", 5)));
-        when(planetBuildingRepository.findByPlanetId(20L))
-                .thenReturn(List.of(new PlanetBuilding(20L, "metal_mine", 5)));
-        when(planetBuildingRepository.findByPlanetId(30L))
-                .thenReturn(List.of(new PlanetBuilding(30L, "metal_mine", 1)));
+        when(planetRepository.findDistinctOwnerIds()).thenReturn(List.of(1L, 2L, 3L));
+        when(planetBuildingRepository.sumLevelsByOwnerAndBuildingKey()).thenReturn(List.of(
+                buildingTotal(1L, "metal_mine", 5),
+                buildingTotal(2L, "metal_mine", 5),
+                buildingTotal(3L, "metal_mine", 1)));
 
         HighscoreResponseDto aliceResult = service.get(1L);
         HighscoreResponseDto carolResult = service.get(3L);

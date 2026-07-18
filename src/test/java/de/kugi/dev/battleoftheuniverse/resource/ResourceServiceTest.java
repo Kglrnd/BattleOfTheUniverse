@@ -5,6 +5,7 @@ import de.kugi.dev.battleoftheuniverse.catalog.ResourceKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,6 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,50 +41,41 @@ class ResourceServiceTest {
     }
 
     @Test
-    void creditAddsTheAmountToEachLedgerRow() {
-        PlanetResource metal = new PlanetResource(PLANET_ID, ResourceKey.METAL, 1000);
-        PlanetResource crystal = new PlanetResource(PLANET_ID, ResourceKey.CRYSTAL, 500);
-        PlanetResource deuterium = new PlanetResource(PLANET_ID, ResourceKey.DEUTERIUM, 100);
-        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.METAL)).thenReturn(Optional.of(metal));
-        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.CRYSTAL)).thenReturn(Optional.of(crystal));
-        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.DEUTERIUM)).thenReturn(Optional.of(deuterium));
+    void creditAddsTheAmountToEachLedgerRowAtomically() {
+        when(repository.creditAmount(any(), any(), anyLong())).thenReturn(1);
 
         service.credit(PLANET_ID, new ResourceCost(200, 50, 10));
 
-        assertThat(metal.getAmount()).isEqualTo(1200);
-        assertThat(crystal.getAmount()).isEqualTo(550);
-        assertThat(deuterium.getAmount()).isEqualTo(110);
+        verify(repository).creditAmount(PLANET_ID, ResourceKey.METAL, 200);
+        verify(repository).creditAmount(PLANET_ID, ResourceKey.CRYSTAL, 50);
+        verify(repository).creditAmount(PLANET_ID, ResourceKey.DEUTERIUM, 10);
     }
 
     @Test
     void debitSingleResourceSubtractsWhenAffordable() {
-        PlanetResource hydrogen = new PlanetResource(PLANET_ID, ResourceKey.HYDROGEN, 100);
-        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.HYDROGEN)).thenReturn(Optional.of(hydrogen));
+        when(repository.debitIfSufficient(PLANET_ID, ResourceKey.HYDROGEN, 40)).thenReturn(1);
 
         service.debit(PLANET_ID, ResourceKey.HYDROGEN, 40);
 
-        assertThat(hydrogen.getAmount()).isEqualTo(60);
+        verify(repository).debitIfSufficient(PLANET_ID, ResourceKey.HYDROGEN, 40);
     }
 
     @Test
     void debitSingleResourceThrowsWhenInsufficient() {
-        PlanetResource hydrogen = new PlanetResource(PLANET_ID, ResourceKey.HYDROGEN, 10);
-        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.HYDROGEN)).thenReturn(Optional.of(hydrogen));
+        when(repository.debitIfSufficient(PLANET_ID, ResourceKey.HYDROGEN, 40)).thenReturn(0);
 
         assertThatThrownBy(() -> service.debit(PLANET_ID, ResourceKey.HYDROGEN, 40))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Hydrogen");
-        assertThat(hydrogen.getAmount()).isEqualTo(10);
     }
 
     @Test
-    void creditSingleResourceAddsTheAmount() {
-        PlanetResource hydrogen = new PlanetResource(PLANET_ID, ResourceKey.HYDROGEN, 10);
-        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.HYDROGEN)).thenReturn(Optional.of(hydrogen));
+    void creditSingleResourceAddsTheAmountAtomically() {
+        when(repository.creditAmount(PLANET_ID, ResourceKey.HYDROGEN, 25)).thenReturn(1);
 
         service.credit(PLANET_ID, ResourceKey.HYDROGEN, 25);
 
-        assertThat(hydrogen.getAmount()).isEqualTo(35);
+        verify(repository).creditAmount(PLANET_ID, ResourceKey.HYDROGEN, 25);
     }
 
     @Test
@@ -121,7 +115,7 @@ class ResourceServiceTest {
     }
 
     @Test
-    void applyProductionCreditsWholeUnitsAndCarriesOverTheFractionalRemainder() {
+    void applyProductionCreditsWholeUnitsAndCarriesOverTheFractionalRemainderAtomically() {
         // 30/hour for exactly 1 hour = 30 whole units, lastUpdate advances by exactly 1 hour.
         Instant start = Instant.now().minusSeconds(3600);
         PlanetResource metal = new PlanetResource(PLANET_ID, ResourceKey.METAL, 1000);
@@ -130,9 +124,9 @@ class ResourceServiceTest {
 
         service.applyProduction(PLANET_ID, ResourceKey.METAL, 30.0);
 
-        assertThat(metal.getAmount()).isEqualTo(1030);
-        assertThat(metal.getLastUpdate()).isCloseTo(start.plusSeconds(3600), within(50, java.time.temporal.ChronoUnit.MILLIS));
-        verify(repository).save(metal);
+        ArgumentCaptor<Instant> newLastUpdateCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(repository).applyProductionDelta(eq(PLANET_ID), eq(ResourceKey.METAL), eq(30L), eq(start), newLastUpdateCaptor.capture());
+        assertThat(newLastUpdateCaptor.getValue()).isCloseTo(start.plusSeconds(3600), within(50, java.time.temporal.ChronoUnit.MILLIS));
     }
 
     @Test
@@ -143,8 +137,7 @@ class ResourceServiceTest {
 
         service.applyProduction(PLANET_ID, ResourceKey.METAL, 30.0);
 
-        assertThat(metal.getAmount()).isEqualTo(1000);
-        verify(repository, never()).save(any());
+        verify(repository, never()).applyProductionDelta(any(), any(), anyLong(), any(), any());
     }
 
     @Test
@@ -163,12 +156,13 @@ class ResourceServiceTest {
         when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.METAL)).thenReturn(Optional.of(metal));
         when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.CRYSTAL)).thenReturn(Optional.of(crystal));
         when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.DEUTERIUM)).thenReturn(Optional.of(deuterium));
+        when(repository.debitIfSufficient(any(), any(), anyLong())).thenReturn(1);
 
         service.debit(PLANET_ID, new ResourceCost(200, 50, 10));
 
-        assertThat(metal.getAmount()).isEqualTo(800);
-        assertThat(crystal.getAmount()).isEqualTo(450);
-        assertThat(deuterium.getAmount()).isEqualTo(90);
+        verify(repository).debitIfSufficient(PLANET_ID, ResourceKey.METAL, 200);
+        verify(repository).debitIfSufficient(PLANET_ID, ResourceKey.CRYSTAL, 50);
+        verify(repository).debitIfSufficient(PLANET_ID, ResourceKey.DEUTERIUM, 10);
     }
 
     @Test
@@ -183,7 +177,23 @@ class ResourceServiceTest {
         assertThatThrownBy(() -> service.debit(PLANET_ID, new ResourceCost(200, 50, 10)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Not enough resources");
-        assertThat(metal.getAmount()).isEqualTo(100);
-        verify(repository, never()).save(any());
+        verify(repository, never()).debitIfSufficient(any(), any(), anyLong());
+    }
+
+    @Test
+    void debitCostFailsCleanlyWhenAConcurrentDebitWinsTheRaceAfterTheUpfrontCheck() {
+        // The upfront check sees enough metal, but the atomic update itself finds it already spent
+        // by a concurrent debit - simulating the exact race this atomic approach exists to catch.
+        PlanetResource metal = new PlanetResource(PLANET_ID, ResourceKey.METAL, 1000);
+        PlanetResource crystal = new PlanetResource(PLANET_ID, ResourceKey.CRYSTAL, 500);
+        PlanetResource deuterium = new PlanetResource(PLANET_ID, ResourceKey.DEUTERIUM, 100);
+        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.METAL)).thenReturn(Optional.of(metal));
+        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.CRYSTAL)).thenReturn(Optional.of(crystal));
+        when(repository.findByPlanetIdAndResourceKey(PLANET_ID, ResourceKey.DEUTERIUM)).thenReturn(Optional.of(deuterium));
+        when(repository.debitIfSufficient(PLANET_ID, ResourceKey.METAL, 200)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.debit(PLANET_ID, new ResourceCost(200, 50, 10)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Not enough resources");
     }
 }

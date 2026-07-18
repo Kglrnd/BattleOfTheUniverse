@@ -67,18 +67,35 @@ public class PlanetService {
         return place(ownerId, name, pos[0], pos[1], pos[2], homeworld);
     }
 
-    private int[] randomFreePosition() {
-        int galaxy;
-        int system;
-        int position;
-        do {
-            galaxy = 1 + random.nextInt(SystemLayout.GALAXY_COUNT);
-            system = 1 + random.nextInt(SystemLayout.SYSTEMS_PER_GALAXY);
-            List<Integer> usable = List.copyOf(SystemLayout.usablePositions(galaxy, system));
-            position = usable.get(random.nextInt(usable.size()));
-        } while (planetRepository.existsByGalaxyAndSystemAndPosition(galaxy, system, position));
+    /** Random probing gives up after this many collisions and falls back to a deterministic scan, so a near-full universe can't spin forever. */
+    private static final int MAX_RANDOM_PLACEMENT_ATTEMPTS = 200;
 
-        return new int[]{galaxy, system, position};
+    private int[] randomFreePosition() {
+        for (int attempt = 0; attempt < MAX_RANDOM_PLACEMENT_ATTEMPTS; attempt++) {
+            int galaxy = 1 + random.nextInt(SystemLayout.GALAXY_COUNT);
+            int system = 1 + random.nextInt(SystemLayout.SYSTEMS_PER_GALAXY);
+            List<Integer> usable = List.copyOf(SystemLayout.usablePositions(galaxy, system));
+            int position = usable.get(random.nextInt(usable.size()));
+            if (!planetRepository.existsByGalaxyAndSystemAndPosition(galaxy, system, position)) {
+                return new int[]{galaxy, system, position};
+            }
+        }
+        return firstFreePosition()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "No free position available in the universe"));
+    }
+
+    /** Deterministic fallback once random probing can't find a free slot quickly - scans every position in coordinate order. */
+    private Optional<int[]> firstFreePosition() {
+        for (int galaxy = 1; galaxy <= SystemLayout.GALAXY_COUNT; galaxy++) {
+            for (int system = 1; system <= SystemLayout.SYSTEMS_PER_GALAXY; system++) {
+                for (int position : SystemLayout.usablePositions(galaxy, system)) {
+                    if (!planetRepository.existsByGalaxyAndSystemAndPosition(galaxy, system, position)) {
+                        return Optional.of(new int[]{galaxy, system, position});
+                    }
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private Planet place(Long ownerId, String name, int galaxy, int system, int position, boolean homeworld) {
@@ -93,8 +110,7 @@ public class PlanetService {
 
     /** Uniform roll in [85.00, 109.99], fixed for the planet's lifetime. */
     private double rollResearchEfficiency() {
-        int hundredths = 8500 + random.nextInt(10999 - 8500 + 1);
-        return hundredths / 100.0;
+        return EfficiencyRoll.roll(random);
     }
 
     public List<Planet> listMine(Long ownerId) {
@@ -159,6 +175,13 @@ public class PlanetService {
     /** Used by other modules that only need to verify ownership, not the full entity. */
     public boolean isOwnedBy(Long planetId, Long ownerId) {
         return planetRepository.findByIdAndOwnerId(planetId, ownerId).isPresent();
+    }
+
+    /** Throws 404 if the planet doesn't exist or isn't owned by this account - cheaper than {@link #getOwned} when the caller doesn't need the entity itself. */
+    public void requireOwned(Long planetId, Long ownerId) {
+        if (!isOwnedBy(planetId, ownerId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Planet not found");
+        }
     }
 
     public Optional<Planet> findActiveResearchPlanet(Long ownerId) {

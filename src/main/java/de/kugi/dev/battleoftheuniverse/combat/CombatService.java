@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CombatService {
 
+    /** The technology that currently boosts attack power - matches the "laser_technology" catalog entry. */
     private static final String WEAPONS_TECH_KEY = "laser_technology";
     private static final String SHIELDS_TECH_KEY = "shielding_technology";
     private static final double WEAPONS_BONUS_PER_LEVEL = 0.1;
@@ -66,7 +68,10 @@ public class CombatService {
 
     @ApplicationModuleListener
     void on(AttackArrived event) {
-        BattleOutcome outcome = resolveCombat(event.attackingShips(), event.attackerId(), event.defenderId(), event.defenderPlanetId());
+        Map<String, Integer> towers = defenseService.stationedTowers(event.defenderPlanetId());
+        Map<String, Integer> defenderShips = fleetService.stationedShips(event.defenderPlanetId());
+        BattleOutcome outcome = resolveCombat(event.attackingShips(), event.attackerId(), event.defenderId(),
+                event.defenderPlanetId(), towers, defenderShips);
         fleetService.creditShips(event.attackerOriginPlanetId(), outcome.survivors());
 
         ResourceCost loot = ResourceCost.ZERO;
@@ -129,7 +134,7 @@ public class CombatService {
         if (towers.isEmpty() && defenderShips.isEmpty()) {
             survivors = new HashMap<>(attackingShips);
         } else {
-            BattleOutcome outcome = resolveCombat(attackingShips, attackerId, defenderId, defenderPlanetId);
+            BattleOutcome outcome = resolveCombat(attackingShips, attackerId, defenderId, defenderPlanetId, towers, defenderShips);
             survivors = outcome.survivors();
             events.publishEvent(new BattleReport(attackerId, defenderId, defenderPlanetId, defenderPlanetName,
                     attackingShips, outcome.attackerLosses(), outcome.towers(), outcome.towerLosses(),
@@ -153,12 +158,11 @@ public class CombatService {
      * caller); the caller decides what to do with survivors (credit them back, consume some of
      * them for a special effect, etc).
      */
-    private BattleOutcome resolveCombat(Map<String, Integer> attackingShips, Long attackerId, Long defenderId, Long defenderPlanetId) {
+    private BattleOutcome resolveCombat(Map<String, Integer> attackingShips, Long attackerId, Long defenderId, Long defenderPlanetId,
+                                         Map<String, Integer> towers, Map<String, Integer> defenderShips) {
         long attackPower = totalPower(attackingShips, key -> catalogService.ship(key).attack());
         attackPower = Math.round(attackPower * (1 + WEAPONS_BONUS_PER_LEVEL * researchService.levelOf(attackerId, WEAPONS_TECH_KEY)));
 
-        Map<String, Integer> towers = defenseService.stationedTowers(defenderPlanetId);
-        Map<String, Integer> defenderShips = fleetService.stationedShips(defenderPlanetId);
         long towerPower = totalPower(towers, key -> catalogService.defense(key).defense());
         long fleetPower = totalPower(defenderShips, key -> catalogService.ship(key).defense());
         double shieldMultiplier = 1 + SHIELDS_BONUS_PER_LEVEL * researchService.levelOf(defenderId, SHIELDS_TECH_KEY);
@@ -228,7 +232,7 @@ public class CombatService {
         return new ResourceCost(Math.round(metal * scale), Math.round(crystal * scale), Math.round(deuterium * scale));
     }
 
-    private long totalPower(Map<String, Integer> owned, java.util.function.ToIntFunction<String> statFor) {
+    private long totalPower(Map<String, Integer> owned, ToIntFunction<String> statFor) {
         return owned.entrySet().stream()
                 .mapToLong(e -> (long) statFor.applyAsInt(e.getKey()) * e.getValue())
                 .sum();
@@ -236,8 +240,12 @@ public class CombatService {
 
     /**
      * Splits a destroyed-power budget across unit types proportional to each type's share
-     * of the group's owned quantity (every type in the group takes the same loss fraction),
-     * floored to whole units - never destroys more than is owned.
+     * of the group's owned quantity (every type in the group takes the same loss fraction) -
+     * never destroys more than is owned. Rounded to the nearest whole unit rather than floored:
+     * flooring outright meant any stack small enough that {@code qty * fraction < 1} (e.g. 9
+     * ships at a 10% loss fraction, i.e. 0.9 destroyed) always took zero losses no matter how
+     * lopsided the battle - rounding still under-counts very small fractions (below 0.5) but at
+     * least stops guaranteeing full immortality for a fraction that rounds up.
      */
     private Map<String, Integer> distributeLosses(Map<String, Integer> owned, long totalPower, long destroyedPower) {
         if (destroyedPower <= 0 || totalPower <= 0) {
@@ -246,7 +254,7 @@ public class CombatService {
         double fraction = Math.min(1.0, (double) destroyedPower / totalPower);
         Map<String, Integer> losses = new HashMap<>();
         owned.forEach((key, qty) -> {
-            int lost = (int) Math.floor(qty * fraction);
+            int lost = (int) Math.round(qty * fraction);
             if (lost > 0) {
                 losses.put(key, lost);
             }

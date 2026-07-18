@@ -12,8 +12,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +53,7 @@ class ProductionSchedulerTest {
         scheduler.tick();
 
         // 150 base/hour * 80% efficiency = 120/hour
-        verify(resourceService).applyProduction(eq(PLANET_ID), eq(ResourceKey.METAL), eq(120.0));
+        verify(resourceService).applyProduction(eq(PLANET_ID), eq(Map.of(ResourceKey.METAL, 120.0)));
     }
 
     @Test
@@ -64,6 +67,6 @@ class ProductionSchedulerTest {
 
         scheduler.tick();
 
-        verify(resourceService, org.mockito.Mockito.never()).applyProduction(eq(PLANET_ID), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyDouble());
+        verify(resourceService, never()).applyProduction(eq(PLANET_ID), anyMap());
     }
 }

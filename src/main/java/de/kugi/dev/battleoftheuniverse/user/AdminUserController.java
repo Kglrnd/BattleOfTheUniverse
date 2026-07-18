@@ -1,6 +1,7 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
 import de.kugi.dev.battleoftheuniverse.user.dto.AdminUserView;
+import de.kugi.dev.battleoftheuniverse.user.dto.ChangeActiveRequest;
 import de.kugi.dev.battleoftheuniverse.user.dto.ChangeRoleRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,5 +39,15 @@ public class AdminUserController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "You cannot change your own role");
         }
         return userService.changeRole(id, request.role());
+    }
+
+    @PatchMapping("/{id}/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AdminUserView changeActive(@PathVariable Long id, @Valid @RequestBody ChangeActiveRequest request,
+                                       @AuthenticationPrincipal AppUserPrincipal principal) {
+        if (id.equals(principal.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You cannot deactivate your own account");
+        }
+        return userService.setActive(id, request.active());
     }
 }

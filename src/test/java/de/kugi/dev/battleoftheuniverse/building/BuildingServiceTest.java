@@ -140,8 +140,6 @@ class BuildingServiceTest {
         PlanetBuilding metalMineRow = new PlanetBuilding(PLANET_ID, "metal_mine", 3);
         metalMineRow.setProductionEfficiency(92.1);
         when(buildingRepository.findByPlanetId(PLANET_ID)).thenReturn(List.of(metalMineRow));
-        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "metal_mine")).thenReturn(Optional.of(metalMineRow));
-        when(buildingRepository.findByPlanetIdAndBuildingKey(PLANET_ID, "research_lab")).thenReturn(Optional.empty());
         when(catalogService.costFor(any(BuildingDefinition.class), any(Integer.class))).thenReturn(new ResourceCost(1, 1, 1));
         when(catalogService.buildTimeFor(any(BuildingDefinition.class), any(Integer.class))).thenReturn(Duration.ofSeconds(1));
 

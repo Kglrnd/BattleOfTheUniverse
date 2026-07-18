@@ -68,4 +68,14 @@ public class UserService {
         userRepository.save(user);
         return userMapper.toAdminView(user);
     }
+
+    /** Deactivating flips {@link User#isActive()} to false, which Spring Security's {@code isEnabled()} then rejects at login - an active session isn't forcibly killed, but the account can't log in again. */
+    @Transactional
+    public AdminUserView setActive(Long userId, boolean active) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setActive(active);
+        userRepository.save(user);
+        return userMapper.toAdminView(user);
+    }
 }

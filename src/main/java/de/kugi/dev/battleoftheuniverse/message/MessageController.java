@@ -45,6 +45,6 @@ public class MessageController {
 
     @PostMapping("/{id}/read")
     public MessageView markRead(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal principal) {
-        return messageService.markRead(principal.getId(), id);
+        return messageService.markRead(principal.getId(), principal.getUsername(), id);
     }
 }

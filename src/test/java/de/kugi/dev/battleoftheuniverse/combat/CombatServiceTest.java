@@ -101,15 +101,15 @@ class CombatServiceTest {
         verify(defenseService).applyLosses(TARGET_PLANET_ID, Map.of("light_defense_tower", 5));
         verify(fleetService, never()).applyLosses(any(), any());
 
-        // powerTraded = min(4000, 250) = 250; attackerLossFraction = 250/4000 = 0.0625 -> floor(10*0.0625) = 0
+        // powerTraded = min(4000, 250) = 250; attackerLossFraction = 250/4000 = 0.0625 -> round(10*0.0625) = round(0.625) = 1
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Integer>> survivorsCaptor = ArgumentCaptor.forClass(Map.class);
         verify(fleetService).creditShips(eq(ORIGIN_ID), survivorsCaptor.capture());
-        assertThat(survivorsCaptor.getValue()).containsExactlyEntriesOf(Map.of("cruiser", 10));
+        assertThat(survivorsCaptor.getValue()).containsExactlyEntriesOf(Map.of("cruiser", 9));
 
         ArgumentCaptor<BattleReport> reportCaptor = ArgumentCaptor.forClass(BattleReport.class);
         verify(events).publishEvent(reportCaptor.capture());
-        assertThat(reportCaptor.getValue().attackerLosses()).isEmpty();
+        assertThat(reportCaptor.getValue().attackerLosses()).containsExactlyEntriesOf(Map.of("cruiser", 1));
         assertThat(reportCaptor.getValue().defenderTowerLosses()).containsExactlyEntriesOf(Map.of("light_defense_tower", 5));
     }
 

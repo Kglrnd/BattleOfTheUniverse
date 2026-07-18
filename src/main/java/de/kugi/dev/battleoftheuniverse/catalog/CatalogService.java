@@ -19,9 +19,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -41,11 +44,18 @@ public class CatalogService {
     private String catalogDirPath;
     private Path catalogDir;
 
-    private final Map<CatalogType, JsonNode> rawData = new ConcurrentHashMap<>();
-    private final Map<String, BuildingDefinition> buildingsByKey = new ConcurrentHashMap<>();
-    private final Map<String, ShipDefinition> shipsByKey = new ConcurrentHashMap<>();
-    private final Map<String, TechnologyDefinition> technologiesByKey = new ConcurrentHashMap<>();
-    private final Map<String, DefenseDefinition> defensesByKey = new ConcurrentHashMap<>();
+    /**
+     * Each map is replaced wholesale (never mutated in place) and published via a volatile
+     * write, so a concurrent reader always sees either the old or the new catalog in full -
+     * never a partially-cleared one mid-{@link #save}. A {@link LinkedHashMap} preserves JSON
+     * declaration order for {@link #buildings()}/{@link #ships()}/etc, unlike the previous
+     * {@code ConcurrentHashMap}, whose iteration order was incidental.
+     */
+    private volatile Map<CatalogType, JsonNode> rawData = Map.of();
+    private volatile Map<String, BuildingDefinition> buildingsByKey = Map.of();
+    private volatile Map<String, ShipDefinition> shipsByKey = Map.of();
+    private volatile Map<String, TechnologyDefinition> technologiesByKey = Map.of();
+    private volatile Map<String, DefenseDefinition> defensesByKey = Map.of();
 
     @PostConstruct
     void loadAll() {
@@ -141,7 +151,11 @@ public class CatalogService {
      */
     public synchronized void save(CatalogType type, JsonNode newData) {
         validate(type, newData);
-        applyToMemory(type, newData);
+        try {
+            applyToMemory(type, newData);
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid catalog data for " + type + ": " + e.getMessage(), e);
+        }
         try {
             Files.createDirectories(catalogDir);
             Files.writeString(catalogDir.resolve(type.fileName()), newData.toPrettyString());
@@ -165,39 +179,54 @@ public class CatalogService {
             throw new IllegalStateException("Could not load catalog " + type, e);
         }
         validate(type, data);
-        applyToMemory(type, data);
-    }
-
-    /** Deserializes into the target record type and swaps it into the in-memory maps, or throws a 400 if the shape doesn't fit. */
-    private void applyToMemory(CatalogType type, JsonNode data) {
         try {
-            switch (type) {
-                case BUILDINGS -> {
-                    BuildingCatalog catalog = jsonMapper.treeToValue(data, BuildingCatalog.class);
-                    replaceAll(buildingsByKey, catalog.buildings(), BuildingDefinition::key);
-                }
-                case SHIPS -> {
-                    ShipCatalog catalog = jsonMapper.treeToValue(data, ShipCatalog.class);
-                    replaceAll(shipsByKey, catalog.ships(), ShipDefinition::key);
-                }
-                case TECHNOLOGIES -> {
-                    TechnologyCatalog catalog = jsonMapper.treeToValue(data, TechnologyCatalog.class);
-                    replaceAll(technologiesByKey, catalog.technologies(), TechnologyDefinition::key);
-                }
-                case DEFENSES -> {
-                    DefenseCatalog catalog = jsonMapper.treeToValue(data, DefenseCatalog.class);
-                    replaceAll(defensesByKey, catalog.defenses(), DefenseDefinition::key);
-                }
-            }
+            applyToMemory(type, data);
         } catch (RuntimeException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid catalog data for " + type + ": " + e.getMessage());
+            // Unlike save()'s ResponseStatusException, a startup failure isn't a web request to
+            // reject - it's a corrupt live file that needs fixing before the server can run at
+            // all, so this keeps the original exception type and cause instead of flattening it
+            // into an HTTP-shaped message string.
+            throw new IllegalStateException("Could not load catalog " + type + " into memory at startup", e);
         }
-        rawData.put(type, data);
     }
 
-    private <T> void replaceAll(Map<String, T> target, List<T> values, java.util.function.Function<T, String> keyFn) {
-        target.clear();
-        target.putAll(values.stream().collect(Collectors.toMap(keyFn, v -> v)));
+    /**
+     * Deserializes into the target record type and swaps it into the in-memory maps. Throws
+     * whatever {@link RuntimeException} deserialization/mapping produced - {@link #save} and
+     * {@link #reload} each translate that into whatever's appropriate for their own caller.
+     */
+    private void applyToMemory(CatalogType type, JsonNode data) {
+        switch (type) {
+            case BUILDINGS -> {
+                BuildingCatalog catalog = jsonMapper.treeToValue(data, BuildingCatalog.class);
+                buildingsByKey = orderedByKey(catalog.buildings(), BuildingDefinition::key);
+            }
+            case SHIPS -> {
+                ShipCatalog catalog = jsonMapper.treeToValue(data, ShipCatalog.class);
+                shipsByKey = orderedByKey(catalog.ships(), ShipDefinition::key);
+            }
+            case TECHNOLOGIES -> {
+                TechnologyCatalog catalog = jsonMapper.treeToValue(data, TechnologyCatalog.class);
+                technologiesByKey = orderedByKey(catalog.technologies(), TechnologyDefinition::key);
+            }
+            case DEFENSES -> {
+                DefenseCatalog catalog = jsonMapper.treeToValue(data, DefenseCatalog.class);
+                defensesByKey = orderedByKey(catalog.defenses(), DefenseDefinition::key);
+            }
+        }
+        Map<CatalogType, JsonNode> updatedRawData = new EnumMap<>(CatalogType.class);
+        updatedRawData.putAll(rawData);
+        updatedRawData.put(type, data);
+        rawData = Collections.unmodifiableMap(updatedRawData);
+    }
+
+    /** Preserves declaration order from the source JSON, unlike a plain {@code Collectors.toMap}/{@code ConcurrentHashMap}. */
+    private <T> Map<String, T> orderedByKey(List<T> values, Function<T, String> keyFn) {
+        Map<String, T> ordered = new LinkedHashMap<>();
+        for (T value : values) {
+            ordered.put(keyFn.apply(value), value);
+        }
+        return Collections.unmodifiableMap(ordered);
     }
 
     private void validate(CatalogType type, JsonNode data) {

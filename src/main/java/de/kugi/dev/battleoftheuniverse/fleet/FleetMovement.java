@@ -14,11 +14,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +44,7 @@ public class FleetMovement {
     @CollectionTable(name = "fleet_movement_ships", joinColumns = @JoinColumn(name = "movement_id"))
     @MapKeyColumn(name = "ship_key")
     @Column(name = "quantity")
+    @Getter(AccessLevel.NONE)
     private Map<String, Integer> ships = new HashMap<>();
 
     /** Resource key -> amount. Only populated for TRANSPORT missions; empty otherwise. */
@@ -50,6 +53,7 @@ public class FleetMovement {
     @MapKeyColumn(name = "resource_key")
     @MapKeyEnumerated(EnumType.STRING)
     @Column(name = "amount")
+    @Getter(AccessLevel.NONE)
     private Map<ResourceKey, Long> cargo = new HashMap<>();
 
     @Enumerated(EnumType.STRING)
@@ -82,5 +86,19 @@ public class FleetMovement {
     public FleetMovement(Long originPlanetId, Long ownerId, Map<String, Integer> ships, FleetMissionType missionType,
                           int targetGalaxy, int targetSystem, int targetPosition, Instant departedAt, Instant arrivesAt) {
         this(originPlanetId, ownerId, ships, Map.of(), missionType, targetGalaxy, targetSystem, targetPosition, departedAt, arrivesAt);
+    }
+
+    /**
+     * Always an unmodifiable view - callers (including async {@code @ApplicationModuleListener}s
+     * that outlive this entity's persistence context) must never get a handle to the live,
+     * Hibernate-managed map.
+     */
+    public Map<String, Integer> getShips() {
+        return Collections.unmodifiableMap(ships);
+    }
+
+    /** See {@link #getShips()}. */
+    public Map<ResourceKey, Long> getCargo() {
+        return Collections.unmodifiableMap(cargo);
     }
 }

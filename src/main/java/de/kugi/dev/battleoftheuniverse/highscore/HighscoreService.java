@@ -6,7 +6,6 @@ import de.kugi.dev.battleoftheuniverse.defense.TowerRepository;
 import de.kugi.dev.battleoftheuniverse.fleet.ShipRepository;
 import de.kugi.dev.battleoftheuniverse.highscore.dto.HighscoreEntryDto;
 import de.kugi.dev.battleoftheuniverse.highscore.dto.HighscoreResponseDto;
-import de.kugi.dev.battleoftheuniverse.planet.Planet;
 import de.kugi.dev.battleoftheuniverse.planet.PlanetRepository;
 import de.kugi.dev.battleoftheuniverse.user.User;
 import de.kugi.dev.battleoftheuniverse.user.UserRepository;
@@ -15,12 +14,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Ranks players by a score derived from what they've built: each building level, ship and
  * defense tower contributes its catalog {@code points} value. Colony ships and transports are
- * worth 0 points in the catalog data, so they don't contribute.
+ * worth 0 points in the catalog data, so they don't contribute. Scores are computed from three
+ * grouped-sum queries (one per building/ship/tower) rather than per-planet-per-user loops, so
+ * this stays cheap regardless of player or planet count.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,14 +58,24 @@ public class HighscoreService {
     }
 
     private List<RankedUser> rankedScores() {
+        Set<Long> ownersWithPlanets = new HashSet<>(planetRepository.findDistinctOwnerIds());
+        Map<Long, Long> scoreByOwnerId = new HashMap<>();
+        for (var row : planetBuildingRepository.sumLevelsByOwnerAndBuildingKey()) {
+            scoreByOwnerId.merge(row.getOwnerId(), row.getTotal() * catalogService.building(row.getKey()).points(), Long::sum);
+        }
+        for (var row : shipRepository.sumQuantitiesByOwnerAndShipKey()) {
+            scoreByOwnerId.merge(row.getOwnerId(), row.getTotal() * catalogService.ship(row.getKey()).points(), Long::sum);
+        }
+        for (var row : towerRepository.sumQuantitiesByOwnerAndTowerKey()) {
+            scoreByOwnerId.merge(row.getOwnerId(), row.getTotal() * catalogService.defense(row.getKey()).points(), Long::sum);
+        }
+
         List<ScoredUser> scored = new ArrayList<>();
         for (User user : userRepository.findAll()) {
-            List<Planet> planets = planetRepository.findByOwnerId(user.getId());
-            if (planets.isEmpty()) {
+            if (!ownersWithPlanets.contains(user.getId())) {
                 continue;
             }
-            long score = planets.stream().mapToLong(planet -> scoreForPlanet(planet.getId())).sum();
-            scored.add(new ScoredUser(user.getId(), user.getUsername(), score));
+            scored.add(new ScoredUser(user.getId(), user.getUsername(), scoreByOwnerId.getOrDefault(user.getId(), 0L)));
         }
         scored.sort(Comparator.comparingLong(ScoredUser::score).reversed());
 
@@ -76,19 +91,6 @@ public class HighscoreService {
             ranked.add(new RankedUser(rank, current.userId(), current.username(), current.score()));
         }
         return ranked;
-    }
-
-    private long scoreForPlanet(Long planetId) {
-        long buildingPoints = planetBuildingRepository.findByPlanetId(planetId).stream()
-                .mapToLong(pb -> (long) pb.getLevel() * catalogService.building(pb.getBuildingKey()).points())
-                .sum();
-        long shipPoints = shipRepository.findByPlanetId(planetId).stream()
-                .mapToLong(ship -> (long) ship.getQuantity() * catalogService.ship(ship.getShipKey()).points())
-                .sum();
-        long towerPoints = towerRepository.findByPlanetId(planetId).stream()
-                .mapToLong(tower -> (long) tower.getQuantity() * catalogService.defense(tower.getTowerKey()).points())
-                .sum();
-        return buildingPoints + shipPoints + towerPoints;
     }
 
     private record ScoredUser(Long userId, String username, long score) {

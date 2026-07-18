@@ -4,6 +4,7 @@ import de.kugi.dev.battleoftheuniverse.building.BuildingService;
 import de.kugi.dev.battleoftheuniverse.catalog.CatalogService;
 import de.kugi.dev.battleoftheuniverse.catalog.DefenseDefinition;
 import de.kugi.dev.battleoftheuniverse.catalog.Requirement;
+import de.kugi.dev.battleoftheuniverse.catalog.RequirementChecker;
 import de.kugi.dev.battleoftheuniverse.catalog.RequirementType;
 import de.kugi.dev.battleoftheuniverse.catalog.ResourceCost;
 import de.kugi.dev.battleoftheuniverse.defense.dto.LockedRequirement;
@@ -11,13 +12,13 @@ import de.kugi.dev.battleoftheuniverse.defense.dto.TowerBuildResponse;
 import de.kugi.dev.battleoftheuniverse.defense.dto.TowerView;
 import de.kugi.dev.battleoftheuniverse.resource.ResourceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,10 +35,12 @@ public class DefenseService {
 
     public List<TowerView> listForPlanet(Long planetId) {
         var activeJob = jobRepository.findByPlanetId(planetId);
+        Map<String, Integer> ownedByKey = towerRepository.findByPlanetId(planetId).stream()
+                .collect(Collectors.toMap(Tower::getTowerKey, Tower::getQuantity));
 
         return catalogService.defenses().stream()
                 .map(definition -> {
-                    int owned = ownedQuantity(planetId, definition.key());
+                    int owned = ownedByKey.getOrDefault(definition.key(), 0);
                     boolean isBeingBuilt = activeJob.isPresent() && activeJob.get().getTowerKey().equals(definition.key());
                     List<LockedRequirement> missingRequirements = missingRequirements(planetId, definition.requirements());
                     return new TowerView(
@@ -74,7 +77,14 @@ public class DefenseService {
 
         Instant startedAt = Instant.now();
         Instant endsAt = startedAt.plusSeconds((long) definition.baseBuildTimeSeconds() * quantity);
-        jobRepository.save(new DefenseJob(planetId, towerKey, quantity, startedAt, endsAt));
+        try {
+            jobRepository.save(new DefenseJob(planetId, towerKey, quantity, startedAt, endsAt));
+        } catch (DataIntegrityViolationException e) {
+            // The upfront isPresent() check passed, but a concurrent build request beat us to
+            // the insert - the unique constraint on defense_jobs(planet_id) is the actual
+            // backstop; fail the same way the check would, rolling back the debit above too.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A defense order is already in progress on this planet");
+        }
 
         return new TowerBuildResponse(towerKey, quantity, endsAt);
     }
@@ -129,23 +139,12 @@ public class DefenseService {
         towerRepository.deleteAll(towerRepository.findByPlanetId(planetId));
     }
 
-    private int ownedQuantity(Long planetId, String towerKey) {
-        return towerRepository.findByPlanetIdAndTowerKey(planetId, towerKey)
-                .map(Tower::getQuantity)
-                .orElse(0);
-    }
-
+    /** Defense towers are never technology-gated - a TECHNOLOGY requirement (if one ever appears) never blocks. */
     private List<LockedRequirement> missingRequirements(Long planetId, List<Requirement> requirements) {
-        List<LockedRequirement> missing = new ArrayList<>();
-        for (Requirement requirement : requirements) {
-            if (requirement.type() != RequirementType.BUILDING) {
-                continue;
-            }
-            int currentLevel = buildingService.levelOf(planetId, requirement.key());
-            if (currentLevel < requirement.level()) {
-                missing.add(new LockedRequirement(catalogService.building(requirement.key()).name(), requirement.level(), currentLevel));
-            }
-        }
-        return missing;
+        return RequirementChecker.unmet(catalogService, requirements, (type, key) ->
+                        type == RequirementType.BUILDING ? buildingService.levelOf(planetId, key) : Integer.MAX_VALUE)
+                .stream()
+                .map(gap -> new LockedRequirement(gap.label(), gap.requiredLevel(), gap.currentLevel()))
+                .toList();
     }
 }

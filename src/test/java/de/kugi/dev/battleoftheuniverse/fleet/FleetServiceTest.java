@@ -311,7 +311,8 @@ class FleetServiceTest {
         target.setId(20L);
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("espionage_probe", 1), FleetMissionType.ESPIONAGE,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
-        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        movement.setId(100L);
+        when(movementRepository.findById(100L)).thenReturn(Optional.of(movement));
         when(planetService.findAtPosition(2, 5, 9)).thenReturn(Optional.of(target));
         when(researchService.levelOf(OWNER_ID, "espionage_technology")).thenReturn(0);
         when(shipRepository.findByPlanetIdAndShipKey(ORIGIN_ID, "espionage_probe")).thenReturn(Optional.of(new Ship(ORIGIN_ID, "espionage_probe", 4)));
@@ -319,7 +320,7 @@ class FleetServiceTest {
         lenient().when(shipRepository.findByPlanetId(20L)).thenReturn(List.of());
         lenient().when(resourceService.raw(20L)).thenReturn(List.of());
 
-        service.completeDueMissions();
+        service.completeOneMovement(100L);
 
         var eventCaptor = org.mockito.ArgumentCaptor.forClass(EspionageResolved.class);
         verify(events).publishEvent(eventCaptor.capture());
@@ -341,14 +342,15 @@ class FleetServiceTest {
     void completeDueMissionsFoundsAColonyForADueColonizeMovement() {
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("colony_ship", 1), FleetMissionType.COLONIZE,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
-        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        movement.setId(100L);
+        when(movementRepository.findById(100L)).thenReturn(Optional.of(movement));
         Planet colony = new Planet("Colony", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
         colony.setId(30L);
         colony.setResearchEfficiency(97.5);
         when(planetService.createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9))).thenReturn(colony);
         when(buildingService.initializeProducingBuildings(30L)).thenReturn(Map.of("metal_mine", 92.1));
 
-        service.completeDueMissions();
+        service.completeOneMovement(100L);
 
         verify(planetService).createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9));
         verify(movementRepository).delete(movement);
@@ -365,13 +367,14 @@ class FleetServiceTest {
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID,
                 Map.of("colony_ship", 1, "cruiser", 4), FleetMissionType.COLONIZE,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
-        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        movement.setId(100L);
+        when(movementRepository.findById(100L)).thenReturn(Optional.of(movement));
         Planet colony = new Planet("Colony", OWNER_ID, 2, 5, 9, PlanetClass.TEMPERATE);
         colony.setId(30L);
         when(planetService.createColonyPlanetAt(eq(OWNER_ID), any(), eq(2), eq(5), eq(9))).thenReturn(colony);
         when(shipRepository.findByPlanetIdAndShipKey(30L, "cruiser")).thenReturn(Optional.empty());
 
-        service.completeDueMissions();
+        service.completeOneMovement(100L);
 
         var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
         verify(shipRepository).save(shipCaptor.capture());
@@ -387,11 +390,12 @@ class FleetServiceTest {
         target.setId(20L);
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 3), FleetMissionType.STATION,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
-        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        movement.setId(100L);
+        when(movementRepository.findById(100L)).thenReturn(Optional.of(movement));
         when(planetService.findAtPosition(2, 5, 9)).thenReturn(Optional.of(target));
         when(shipRepository.findByPlanetIdAndShipKey(20L, "cruiser")).thenReturn(Optional.of(new Ship(20L, "cruiser", 4)));
 
-        service.completeDueMissions();
+        service.completeOneMovement(100L);
 
         var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
         verify(shipRepository).save(shipCaptor.capture());
@@ -405,10 +409,11 @@ class FleetServiceTest {
         target.setId(20L);
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 5), FleetMissionType.ATTACK,
                 9, 9, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
-        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        movement.setId(100L);
+        when(movementRepository.findById(100L)).thenReturn(Optional.of(movement));
         when(planetService.findAtPosition(9, 9, 9)).thenReturn(Optional.of(target));
 
-        service.completeDueMissions();
+        service.completeOneMovement(100L);
 
         var eventCaptor = org.mockito.ArgumentCaptor.forClass(AttackArrived.class);
         verify(events).publishEvent(eventCaptor.capture());
@@ -433,9 +438,9 @@ class FleetServiceTest {
 
         FleetMovement attackOnMe = new FleetMovement(99L, OTHER_OWNER_ID, Map.of("cruiser", 5), FleetMissionType.ATTACK,
                 3, 7, 4, Instant.now(), Instant.now().plusSeconds(60));
-        FleetMovement unrelatedMovement = new FleetMovement(77L, OTHER_OWNER_ID, Map.of("cruiser", 2), FleetMissionType.STATION,
-                1, 1, 1, Instant.now(), Instant.now().plusSeconds(60));
-        when(movementRepository.findAll()).thenReturn(List.of(attackOnMe, unrelatedMovement));
+        // The unrelated movement isn't stubbed here - findIncomingForOwner already filters by
+        // target coordinates in the DB, so the service only ever sees matches.
+        when(movementRepository.findIncomingForOwner(OWNER_ID)).thenReturn(List.of(attackOnMe));
 
         User attacker = new User("raider", "raider@example.com", "hash");
         attacker.setId(OTHER_OWNER_ID);
@@ -606,11 +611,12 @@ class FleetServiceTest {
         Map<ResourceKey, Long> cargo = Map.of(ResourceKey.METAL, 30L, ResourceKey.CRYSTAL, 10L);
         FleetMovement movement = new FleetMovement(ORIGIN_ID, OWNER_ID, Map.of("cruiser", 1), cargo, FleetMissionType.TRANSPORT,
                 2, 5, 9, Instant.now().minusSeconds(120), Instant.now().minusSeconds(1));
-        when(movementRepository.findByArrivesAtBefore(any())).thenReturn(List.of(movement));
+        movement.setId(100L);
+        when(movementRepository.findById(100L)).thenReturn(Optional.of(movement));
         when(planetService.findAtPosition(2, 5, 9)).thenReturn(Optional.of(target));
         when(shipRepository.findByPlanetIdAndShipKey(20L, "cruiser")).thenReturn(Optional.empty());
 
-        service.completeDueMissions();
+        service.completeOneMovement(100L);
 
         var shipCaptor = org.mockito.ArgumentCaptor.forClass(Ship.class);
         verify(shipRepository).save(shipCaptor.capture());
