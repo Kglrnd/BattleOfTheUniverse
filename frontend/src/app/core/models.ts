@@ -8,6 +8,10 @@ export interface UserView {
   preferredLanguage: string;
 }
 
+export interface AppSettingsView {
+  registrationEnabled: boolean;
+}
+
 export interface AdminUserView {
   id: number;
   username: string;

@@ -1,5 +1,6 @@
 package de.kugi.dev.battleoftheuniverse.user;
 
+import de.kugi.dev.battleoftheuniverse.user.dto.AppSettingsView;
 import de.kugi.dev.battleoftheuniverse.user.dto.RegisterRequest;
 import de.kugi.dev.battleoftheuniverse.user.dto.UpdateLanguageRequest;
 import jakarta.validation.Valid;
@@ -27,11 +28,18 @@ public class AuthController {
 
     private final UserService userService;
     private final UserMapper userMapper;
+    private final AppSettingsService appSettingsService;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public UserView register(@Valid @RequestBody RegisterRequest request) {
         return userService.register(request);
+    }
+
+    /** Lets the register page pre-emptively hide the form instead of letting the user fill it out only to hit a 403. */
+    @GetMapping("/registration-status")
+    public AppSettingsView registrationStatus() {
+        return new AppSettingsView(appSettingsService.isRegistrationEnabled());
     }
 
     @GetMapping("/me")

@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-app-settings
+      author: kugi
+      changes:
+        - createTable:
+            tableName: app_settings
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: registration_enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - insert:
+            tableName: app_settings
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: registration_enabled
+                  valueBoolean: true

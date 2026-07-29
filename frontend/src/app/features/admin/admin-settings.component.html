@@ -1,0 +1,33 @@
+<ng-container *transloco="let t; prefix: 'admin.settings'">
+  <h1>{{ t('title') }}</h1>
+
+  <div class="card settings-card">
+    <div class="card-header">
+      <div class="card-title">{{ t('registrationTitle') }}</div>
+    </div>
+    <div class="card-content">
+      <p>{{ t('registrationIntro') }}</p>
+
+      @if (!loading()) {
+        <p class="field-hint">
+          {{ registrationEnabled() ? t('registrationEnabledStatus') : t('registrationDisabledStatus') }}
+        </p>
+      }
+
+      @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+      }
+    </div>
+    <div class="card-actions">
+      <button
+        type="button"
+        class="btn"
+        [class.btn-danger]="registrationEnabled()"
+        [disabled]="loading() || saving()"
+        (click)="toggleRegistration()"
+      >
+        {{ saving() ? t('saving') : registrationEnabled() ? t('disableRegistration') : t('enableRegistration') }}
+      </button>
+    </div>
+  </div>
+</ng-container>

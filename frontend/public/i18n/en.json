@@ -23,6 +23,7 @@
     "catalogShips": "Ships",
     "catalogTechnologies": "Technologies",
     "catalogDefenses": "Defenses",
+    "settings": "Settings",
     "resetGame": "Reset game",
     "overview": "Overview",
     "buildings": "Buildings",
@@ -57,7 +58,8 @@
       "submit": "Create account",
       "alreadyHaveAccount": "Already have an account?",
       "loginLink": "Log in",
-      "registrationFailed": "Registration failed."
+      "registrationFailed": "Registration failed.",
+      "registrationClosed": "Registration is currently closed. Please check back later."
     }
   },
   "admin": {
@@ -100,6 +102,18 @@
       "colHomeworld": "Homeworld",
       "colCreated": "Created",
       "yes": "Yes"
+    },
+    "settings": {
+      "title": "Settings",
+      "registrationTitle": "Player registration",
+      "registrationIntro": "Control whether new players can create an account. Existing players can always log in, regardless of this setting.",
+      "registrationEnabledStatus": "Registration is currently open.",
+      "registrationDisabledStatus": "Registration is currently closed.",
+      "enableRegistration": "Enable registration",
+      "disableRegistration": "Disable registration",
+      "saving": "Saving…",
+      "loadError": "Failed to load settings.",
+      "updateError": "Failed to update the setting."
     },
     "reset": {
       "title": "Reset game",

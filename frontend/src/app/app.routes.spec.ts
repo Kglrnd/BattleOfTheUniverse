@@ -49,6 +49,10 @@ describe('routes', () => {
     expect(routes.find((r) => r.path === 'admin/reset')?.canActivate).toEqual([adminGuard]);
   });
 
+  it('guards admin/settings with adminGuard specifically (stricter than staffGuard)', () => {
+    expect(routes.find((r) => r.path === 'admin/settings')?.canActivate).toEqual([adminGuard]);
+  });
+
   it('every route other than the redirects has a loadComponent factory that resolves to a component class', async () => {
     const withoutRedirect = routes.filter((r) => r.path !== '' && r.path !== '**');
     for (const route of withoutRedirect) {

@@ -18,6 +18,10 @@
 
     @if (isAdmin()) {
       <div class="tree-node">
+        <a class="tree-toggle" routerLink="/admin/settings" routerLinkActive="active">{{ t('settings') }}</a>
+      </div>
+
+      <div class="tree-node">
         <a class="tree-toggle" routerLink="/admin/reset" routerLinkActive="active">{{ t('resetGame') }}</a>
       </div>
     }

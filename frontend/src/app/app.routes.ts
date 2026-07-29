@@ -103,5 +103,10 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/admin-reset.component').then((m) => m.AdminResetComponent)
   },
+  {
+    path: 'admin/settings',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-settings.component').then((m) => m.AdminSettingsComponent)
+  },
   { path: '**', redirectTo: 'universe' }
 ];

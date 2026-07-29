@@ -4,7 +4,7 @@ import { TranslocoService } from '@jsverse/transloco';
 import { Observable, catchError, of, tap } from 'rxjs';
 
 import { AppLang, isAppLang, persistLang } from './language';
-import { UserView } from './models';
+import { AppSettingsView, UserView } from './models';
 
 export interface RegisterRequest {
   username: string;
@@ -30,6 +30,10 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<UserView> {
     return this.http.post<UserView>('/api/auth/register', request);
+  }
+
+  registrationStatus(): Observable<AppSettingsView> {
+    return this.http.get<AppSettingsView>('/api/auth/registration-status');
   }
 
   login(username: string, password: string): Observable<UserView> {

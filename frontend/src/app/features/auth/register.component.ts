@@ -22,12 +22,23 @@ export class RegisterComponent {
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
+  // Defaults to open so a failed/slow status check never blocks a real registration attempt -
+  // the backend still enforces the actual gate, this is purely so players aren't asked to fill
+  // out a form that's doomed to fail.
+  protected readonly registrationOpen = signal(true);
 
   protected readonly form = this.fb.nonNullable.group({
     username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
+
+  constructor() {
+    this.auth.registrationStatus().subscribe({
+      next: (status) => this.registrationOpen.set(status.registrationEnabled),
+      error: () => this.registrationOpen.set(true)
+    });
+  }
 
   submit(): void {
     if (this.form.invalid || this.submitting()) {

@@ -20,6 +20,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher events;
     private final UserMapper userMapper;
+    private final AppSettingsService appSettingsService;
 
     /** Convenience for callers outside this module, which can't see the {@code dto} package. */
     @Transactional
@@ -29,6 +30,9 @@ public class UserService {
 
     @Transactional
     public UserView register(RegisterRequest request) {
+        if (!appSettingsService.isRegistrationEnabled()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Registration is currently disabled");
+        }
         if (userRepository.existsByUsername(request.username())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already taken");
         }

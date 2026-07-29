@@ -23,6 +23,7 @@
     "catalogShips": "Schiffe",
     "catalogTechnologies": "Technologien",
     "catalogDefenses": "Verteidigungsanlagen",
+    "settings": "Einstellungen",
     "resetGame": "Spiel zurücksetzen",
     "overview": "Übersicht",
     "buildings": "Gebäude",
@@ -57,7 +58,8 @@
       "submit": "Konto erstellen",
       "alreadyHaveAccount": "Bereits ein Konto?",
       "loginLink": "Anmelden",
-      "registrationFailed": "Registrierung fehlgeschlagen."
+      "registrationFailed": "Registrierung fehlgeschlagen.",
+      "registrationClosed": "Die Registrierung ist derzeit geschlossen. Bitte schau später wieder vorbei."
     }
   },
   "admin": {
@@ -100,6 +102,18 @@
       "colHomeworld": "Heimatwelt",
       "colCreated": "Erstellt",
       "yes": "Ja"
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "registrationTitle": "Spielerregistrierung",
+      "registrationIntro": "Steuere, ob neue Spieler ein Konto erstellen können. Bestehende Spieler können sich unabhängig von dieser Einstellung immer anmelden.",
+      "registrationEnabledStatus": "Die Registrierung ist derzeit geöffnet.",
+      "registrationDisabledStatus": "Die Registrierung ist derzeit geschlossen.",
+      "enableRegistration": "Registrierung aktivieren",
+      "disableRegistration": "Registrierung deaktivieren",
+      "saving": "Wird gespeichert…",
+      "loadError": "Einstellungen konnten nicht geladen werden.",
+      "updateError": "Die Einstellung konnte nicht aktualisiert werden."
     },
     "reset": {
       "title": "Spiel zurücksetzen",

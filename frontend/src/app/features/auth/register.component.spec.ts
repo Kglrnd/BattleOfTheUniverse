@@ -30,7 +30,8 @@ describe('RegisterComponent', () => {
   async function setup(
     register: ReturnType<typeof vi.fn> = vi.fn(() => of({} as UserView)),
     login: ReturnType<typeof vi.fn> = vi.fn(() => of({} as UserView)),
-    getHomePlanet: ReturnType<typeof vi.fn> = vi.fn(() => of(planet(7)))
+    getHomePlanet: ReturnType<typeof vi.fn> = vi.fn(() => of(planet(7))),
+    registrationStatus: ReturnType<typeof vi.fn> = vi.fn(() => of({ registrationEnabled: true }))
   ) {
     await TestBed.configureTestingModule({
       imports: [
@@ -39,7 +40,7 @@ describe('RegisterComponent', () => {
       ],
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: { register, login } },
+        { provide: AuthService, useValue: { register, login, registrationStatus } },
         { provide: UniverseApiService, useValue: { getHomePlanet } }
       ]
     }).compileComponents();
@@ -47,7 +48,7 @@ describe('RegisterComponent', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
-    return { fixture, register, login, getHomePlanet };
+    return { fixture, register, login, getHomePlanet, registrationStatus };
   }
 
   function fillValidForm(fixture: Awaited<ReturnType<typeof setup>>['fixture']) {
@@ -114,5 +115,19 @@ describe('RegisterComponent', () => {
     fixture.componentInstance.submit();
 
     expect(fixture.componentInstance['errorMessage']()).toBeTruthy();
+  });
+
+  it('hides the form when registration is closed', async () => {
+    const registrationStatus = vi.fn(() => of({ registrationEnabled: false }));
+    const { fixture } = await setup(undefined, undefined, undefined, registrationStatus);
+
+    expect(fixture.componentInstance['registrationOpen']()).toBe(false);
+  });
+
+  it('keeps the form open when the registration status check fails', async () => {
+    const registrationStatus = vi.fn(() => throwError(() => new Error('fail')));
+    const { fixture } = await setup(undefined, undefined, undefined, registrationStatus);
+
+    expect(fixture.componentInstance['registrationOpen']()).toBe(true);
   });
 });

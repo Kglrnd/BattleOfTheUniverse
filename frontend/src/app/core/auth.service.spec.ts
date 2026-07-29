@@ -69,6 +69,17 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('registrationStatus fetches /api/auth/registration-status', () => {
+    let result: { registrationEnabled: boolean } | undefined;
+    service.registrationStatus().subscribe((r) => (result = r));
+
+    const req = httpMock.expectOne('/api/auth/registration-status');
+    expect(req.request.method).toBe('GET');
+    req.flush({ registrationEnabled: false });
+
+    expect(result).toEqual({ registrationEnabled: false });
+  });
+
   it('login applies the returned user and sets active language when it is a supported app lang', () => {
     service.login('player', 'secret').subscribe();
 

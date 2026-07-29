@@ -18,6 +18,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,12 +32,15 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private ApplicationEventPublisher events;
+    @Mock
+    private AppSettingsService appSettingsService;
 
     private UserService service;
 
     @BeforeEach
     void setUp() {
-        service = new UserService(userRepository, passwordEncoder, events, new UserMapperImpl());
+        lenient().when(appSettingsService.isRegistrationEnabled()).thenReturn(true);
+        service = new UserService(userRepository, passwordEncoder, events, new UserMapperImpl(), appSettingsService);
     }
 
     @Test
@@ -166,6 +170,16 @@ class UserServiceTest {
         assertThatThrownBy(() -> service.register(new RegisterRequest("alice", "alice@example.com", "secret123", null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Email already registered");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerRejectsWhenRegistrationIsDisabled() {
+        when(appSettingsService.isRegistrationEnabled()).thenReturn(false);
+
+        assertThatThrownBy(() -> service.register(new RegisterRequest("alice", "alice@example.com", "secret123", null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Registration is currently disabled");
         verify(userRepository, never()).save(any());
     }
 }
