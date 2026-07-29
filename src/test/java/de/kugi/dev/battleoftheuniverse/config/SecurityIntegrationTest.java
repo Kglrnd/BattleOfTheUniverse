@@ -41,6 +41,18 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
     }
 
+    /**
+     * The h2-console is only ever enabled via {@code spring.h2.console.enabled} (see
+     * {@code application-dev.yml}), which isn't set under the "test" profile - so this proves
+     * the path isn't hardcoded permitAll regardless of whether the console is actually mounted
+     * (see SecurityConfig.h2ConsoleEnabled).
+     */
+    @Test
+    void h2ConsoleRequiresAuthenticationWhenTheConsoleIsNotEnabled() throws Exception {
+        mockMvc.perform(get("/h2-console/"))
+                .andExpect(status().isUnauthorized());
+    }
+
     @Test
     void protectedEndpointsRejectUnauthenticatedRequestsWithAJsonApiErrorNotARedirect() throws Exception {
         // Without a custom AuthenticationEntryPoint, Spring Security's formLogin default is a

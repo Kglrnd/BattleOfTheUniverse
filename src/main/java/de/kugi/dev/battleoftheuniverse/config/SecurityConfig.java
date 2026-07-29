@@ -6,6 +6,7 @@ import de.kugi.dev.battleoftheuniverse.user.UserView;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Configuration
@@ -32,26 +35,44 @@ public class SecurityConfig {
     private final UserMapper userMapper;
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
+    /**
+     * The h2-console servlet only actually exists when this is true (see {@code application-dev.yml}) - it's
+     * never set in prod. Gating the permitAll/CSRF-exempt rules on the same flag (rather than hardcoding the
+     * path as always-permitted) means a misconfigured deployment that silently falls back to the "dev" default
+     * profile (e.g. a bare {@code java -jar} run that forgets to set {@code SPRING_PROFILES_ACTIVE=prod}) can't
+     * end up with an unauthenticated SQL console reachable over the network.
+     */
+    @Value("${spring.h2.console.enabled:false}")
+    private boolean h2ConsoleEnabled;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, UrlBasedCorsConfigurationSource corsSource) {
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
+
+        List<String> csrfIgnoredPaths = new ArrayList<>(List.of("/api/auth/register", "/api/auth/login"));
+        if (h2ConsoleEnabled) {
+            csrfIgnoredPaths.add("/h2-console/**");
+        }
 
         http
                 .cors(cors -> cors.configurationSource(corsSource))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(csrfHandler)
-                        .ignoringRequestMatchers("/h2-console/**", "/api/auth/register", "/api/auth/login"))
+                        .ignoringRequestMatchers(csrfIgnoredPaths.toArray(String[]::new)))
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(this::onAuthenticationRequired))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/registration-status").permitAll()
-                        .requestMatchers("/api/version").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> {
+                    if (h2ConsoleEnabled) {
+                        auth.requestMatchers("/h2-console/**").permitAll();
+                    }
+                    auth.requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/registration-status").permitAll()
+                            .requestMatchers("/api/version").permitAll()
+                            .requestMatchers("/actuator/health").permitAll()
+                            .anyRequest().authenticated();
+                })
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/auth/login")
                         .successHandler(this::onLoginSuccess)
