@@ -100,13 +100,38 @@ main > * {
     padding: 0.75rem 1rem;
   }
 
+  .brand {
+    font-size: 1rem;
+  }
+
   nav {
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.5rem;
   }
 
+  .username {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* login/register links aren't .btn elements, so they miss the global mobile touch-target bump */
+  nav a:not(.btn) {
+    padding: 0.5rem 0.25rem;
+  }
+
   main {
     padding: 1rem;
+  }
+}
+
+/* Very narrow phones (e.g. 360-375px) - the username competes with the admin-toggle,
+   language-switcher and logout button for the same row; drop it to keep the row from
+   wrapping onto three lines. Not critical info - the logged-in user already knows who they are. */
+@media (max-width: 400px) {
+  .username {
+    display: none;
   }
 }

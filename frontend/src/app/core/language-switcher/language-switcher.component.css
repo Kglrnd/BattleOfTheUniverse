@@ -7,3 +7,13 @@
   padding: 0.35rem 0.6rem;
   font-size: 0.8rem;
 }
+
+/* Below this, touch is the primary input - the .btn override below has higher specificity
+   than the global mobile bump in styles.css, so it needs its own touch-target-sized padding. */
+@media (max-width: 768px) {
+  .lang-btn {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    min-height: 44px;
+  }
+}
