@@ -146,6 +146,43 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!--
+              Security patch overrides: these transitive versions are pinned by the
+              spring-boot-dependencies BOM (imported via spring-boot-starter-parent) to
+              releases with known, fixed CVEs. Bumped ahead of the BOM here rather than
+              waiting for the next Spring Boot release; see SECURITY.md for the analysis.
+            -->
+            <dependency>
+                <!-- CVE-2026-54291: pgjdbc channel-binding auth downgrade, fixed in 42.7.12. -->
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>42.7.13</version>
+            </dependency>
+            <dependency>
+                <!-- CVE-2026-49844: log4j-api MapMessage JSON float encoding, fixed in 2.25.5. -->
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>2.25.5</version>
+            </dependency>
+            <dependency>
+                <!-- GHSA-5gvw-p9qm-jgwh: jackson-databind @JsonView bypass, fixed in 3.1.5.
+                     Bumped alongside jackson-core/jackson-dataformat-yaml to keep the
+                     tools.jackson 3.1.x release train aligned. -->
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.1.5</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>3.1.5</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>3.1.5</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
