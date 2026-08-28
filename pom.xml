@@ -28,7 +28,7 @@
     </scm>
     <properties>
         <java.version>25</java.version>
-        <spring-modulith.version>2.1.0</spring-modulith.version>
+        <spring-modulith.version>2.1.1</spring-modulith.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <jacoco.version>0.8.15</jacoco.version>
         <pitest.version>1.30.0</pitest.version>
