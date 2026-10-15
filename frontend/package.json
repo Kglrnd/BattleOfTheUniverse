@@ -35,7 +35,7 @@
     "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/typescript-checker": "^10.0.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^5.0.0",
     "angular-eslint": "22.1.0",
     "eslint": "^10.6.0",
     "jsdom": "^30.0.1",
