@@ -157,7 +157,7 @@
                 <!-- CVE-2026-54291: pgjdbc channel-binding auth downgrade, fixed in 42.7.12. -->
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>42.7.13</version>
+                <version>42.7.14</version>
             </dependency>
             <dependency>
                 <!-- CVE-2026-49844: log4j-api MapMessage JSON float encoding, fixed in 2.25.5. -->
