@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.0</version>
+        <version>4.1.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>de.kugidev</groupId>
@@ -28,10 +28,13 @@
     </scm>
     <properties>
         <java.version>25</java.version>
-        <spring-modulith.version>2.1.0</spring-modulith.version>
+        <spring-modulith.version>2.1.2</spring-modulith.version>
+        <!-- Boot 4.1.2's BOM still manages h2 at 2.4.240; bumped via this Boot-defined
+             property to the latest h2 release (dev/test-only embedded DB, no CVE involved). -->
+        <h2.version>2.5.252</h2.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <jacoco.version>0.8.15</jacoco.version>
-        <pitest.version>1.30.0</pitest.version>
+        <pitest.version>1.30.1</pitest.version>
         <pitest-junit5.version>1.2.3</pitest-junit5.version>
         <!-- Enforced by the jacoco:check goal bound to verify (see below); bump alongside real coverage gains. -->
         <jacoco.instruction.minimum>0.80</jacoco.instruction.minimum>
@@ -105,7 +108,7 @@
         <dependency>
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
-            <version>3.0.7</version>
+            <version>3.0.8</version>
         </dependency>
 
         <dependency>
@@ -148,41 +151,14 @@
             </dependency>
 
             <!--
-              Security patch overrides: these transitive versions are pinned by the
-              spring-boot-dependencies BOM (imported via spring-boot-starter-parent) to
-              releases with known, fixed CVEs. Bumped ahead of the BOM here rather than
-              waiting for the next Spring Boot release; see SECURITY.md for the analysis.
+              The 2026-08-28 security audit (see SECURITY.md) pinned org.postgresql:postgresql,
+              org.apache.logging.log4j:log4j-api and the tools.jackson.core/dataformat 3.1.x
+              release train ahead of the spring-boot-dependencies BOM to close known CVEs before
+              the next Spring Boot release. As of spring-boot-starter-parent 4.1.2 the BOM itself
+              manages postgresql 42.7.14, log4j-api 2.25.5 and jackson-bom 3.1.7 - all at or past
+              those fixed versions - so the overrides were removed rather than carried forward
+              (keeping a stale 3.1.5 pin here would have downgraded jackson below the BOM's 3.1.7).
             -->
-            <dependency>
-                <!-- CVE-2026-54291: pgjdbc channel-binding auth downgrade, fixed in 42.7.12. -->
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>42.7.13</version>
-            </dependency>
-            <dependency>
-                <!-- CVE-2026-49844: log4j-api MapMessage JSON float encoding, fixed in 2.25.5. -->
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>2.25.5</version>
-            </dependency>
-            <dependency>
-                <!-- GHSA-5gvw-p9qm-jgwh: jackson-databind @JsonView bypass, fixed in 3.1.5.
-                     Bumped alongside jackson-core/jackson-dataformat-yaml to keep the
-                     tools.jackson 3.1.x release train aligned. -->
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>3.1.5</version>
-            </dependency>
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>3.1.5</version>
-            </dependency>
-            <dependency>
-                <groupId>tools.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>3.1.5</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 

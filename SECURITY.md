@@ -114,6 +114,23 @@ resolved version is outside every range that applies to us:
   Dependabot/`npm outdated` shows a new `@stryker-mutator/core` release.
   `npm audit` on the 46 production dependencies alone reports **0** vulnerabilities.
 
+## Update: 2026-10-22
+
+Routine dependency maintenance (not a full re-audit) bumped
+`spring-boot-starter-parent` 4.1.0 → **4.1.2** and `spring-modulith.version` 2.1.0 →
+**2.1.2** (latest stable patches in each line; 4.2.x/2.2.x are still pre-release
+`-RC1`/`-M*` as of this date). Spring Boot 4.1.2's own BOM now natively manages
+`org.postgresql:postgresql` at **42.7.14**, `log4j-api` at **2.25.5**, and
+`jackson-bom` at **3.1.7** — all at or past the versions the 2026-08-28 overrides
+above pinned to. The three `dependencyManagement` overrides were therefore removed
+(keeping the stale `jackson-core`/`jackson-databind` 3.1.5 pin would have actively
+*downgraded* below the BOM's own 3.1.7). `com.h2database:h2` was bumped via a
+`h2.version` property override to **2.5.252** (Boot's BOM still manages 2.4.240;
+h2 is dev/test-only here, not a CVE fix). `com.networknt:json-schema-validator`
+3.0.7 → 3.0.8 and `org.pitest:pitest-maven` 1.30.0 → 1.30.1 were also bumped as
+plain patch updates. Full backend suite (236 tests) re-run and green after every
+change. `org.mapstruct:mapstruct` stays at 1.6.3 (next release is `1.7.0.Beta2`).
+
 ## Reproducing this audit
 
 ```bash
