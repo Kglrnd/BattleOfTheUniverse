@@ -131,6 +131,32 @@ h2 is dev/test-only here, not a CVE fix). `com.networknt:json-schema-validator`
 plain patch updates. Full backend suite (236 tests) re-run and green after every
 change. `org.mapstruct:mapstruct` stays at 1.6.3 (next release is `1.7.0.Beta2`).
 
+Frontend: `npm update` brought `@angular/*` 22.1.4 → 22.2.3/22.2.4, `eslint` →
+10.13.0, `jsdom` → 30.1.3, `prettier` → 3.9.10, `vitest`/`@vitest/coverage-v8` →
+4.1.12 (all within their existing `^`-range, no `package.json` change needed).
+The exact-pinned `angular-eslint` 22.1.0 → **22.6.0** and `typescript-eslint`
+8.68.0 → **8.72.0** were bumped explicitly (peer-compatible: angular-eslint 22.6.0
+requires `typescript-eslint ^8.0.0`). `typescript` stays on `~6.0.2` and
+`vitest`/`@vitest/coverage-v8` stay on the `4.x` line - `@angular/compiler-cli`
+and `@angular/build` 22.x peer-require `typescript >=6.0 <6.1` and
+`vitest ^4.0.8` respectively, so `typescript@7.x` and `vitest@5.x` (both
+available upstream) would break the Angular toolchain.
+
+This `npm update` incidentally surfaced a **new high-severity** finding:
+`@angular/build` 22.2.4 (the latest stable release) depends on an *exact* pin of
+`vite@8.3.0`, which is inside the vulnerable range `8.3.0 - 8.3.2`
+([GHSA-9jrq-w75r-8gcw](https://github.com/advisories/GHSA-9jrq-w75r-8gcw) et al.,
+cross-origin script execution / path traversal in Vite's dev server). No newer
+stable `@angular/build` exists yet (only `22.3.0-next.*` prereleases). Fixed via
+an `"overrides": { "vite": "8.3.5" }` entry in `frontend/package.json` - `vitest`
+already allows `vite ^6 || ^7 || ^8`, so forcing the patched 8.3.x patch release
+is a safe, non-breaking override. `npm audit` now reports only the pre-existing,
+already-accepted `qs`/Stryker finding (see "Accepted risk" above). Full frontend
+suite (408 tests), `ng build`, and `ng lint` re-run and green/unchanged after
+every change (the 7 pre-existing lint errors are untouched legacy findings,
+confirmed identical before and after this update via a throwaway `npm ci` against
+the old lockfile).
+
 ## Reproducing this audit
 
 ```bash
