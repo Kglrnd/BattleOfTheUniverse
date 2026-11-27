@@ -28,7 +28,7 @@
     </scm>
     <properties>
         <java.version>25</java.version>
-        <spring-modulith.version>2.1.2</spring-modulith.version>
+        <spring-modulith.version>2.2.0</spring-modulith.version>
         <!-- Boot 4.1.2's BOM still manages h2 at 2.4.240; bumped via this Boot-defined
              property to the latest h2 release (dev/test-only embedded DB, no CVE involved). -->
         <h2.version>2.5.252</h2.version>
